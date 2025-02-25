@@ -1,0 +1,15 @@
+:concurrency: 5
+:queues:
+  - default
+  - mailers
+  - critical
+
+# Redis URL (optional if you prefer environment variables)
+:redis:
+  :url: <%= ENV.fetch("REDIS_URL", "redis://localhost:6379/0") %>
+
+
+:cron:
+  expire_broadcasts_worker:
+    cron: "0 * * * *" # every hour
+    class: "ExpireBroadcastsWorker"
