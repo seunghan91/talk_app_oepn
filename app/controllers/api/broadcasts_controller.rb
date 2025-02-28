@@ -1,24 +1,37 @@
 module Api
   class BroadcastsController < BaseController
     before_action :authorize_request
+    # 인증 요청 엔드포인트는 인증 없이 접근 가능하도록 설정
+    skip_before_action :authorize_request, only: [:request_code, :verify_code]
+
 
     def index
-      # Ideally:
-      broadcasts = Broadcast.where("expired_at > ?", Time.now).order(created_at: :desc).limit(20)
-      render json: broadcasts
+      # 캐싱 적용 (5분 유효)
+      @broadcasts = Rails.cache.fetch("broadcasts-recent", expires_in: 5.minutes) do
+        Broadcast.where("expired_at > ?", Time.current)
+                 .where(active: true)
+                 .includes(:user) # N+1 쿼리 문제 해결
+                 .order(created_at: :desc)
+                 .limit(20)
+                 .to_a
+      end
+      
+      render json: @broadcasts, include: { user: { only: [:id, :nickname, :gender] } }
     end
 
-  def create
-    # current_user 필요 -> authorize_request
-    @broadcast = current_user.broadcasts.new(active: true)
-    @broadcast.voice_file.attach(params[:voice_file]) if params[:voice_file]
-
-    if @broadcast.save
-      render json: { broadcast: @broadcast }, status: :created
-    else
-      render json: { errors: @broadcast.errors.full_messages }, status: :unprocessable_entity
+    def create
+      @broadcast = current_user.broadcasts.new(active: true)
+      @broadcast.voice_file.attach(params[:voice_file]) if params[:voice_file]
+      
+      if @broadcast.save
+        # 캐시 무효화
+        Rails.cache.delete("broadcasts-recent")
+        render json: { broadcast: @broadcast }, status: :created
+      else
+        render json: { errors: @broadcast.errors.full_messages }, status: :unprocessable_entity
+      end
     end
-  end
+    
 
   def show
     @broadcast = Broadcast.find(params[:id])

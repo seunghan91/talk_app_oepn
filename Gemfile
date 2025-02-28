@@ -45,7 +45,13 @@ group :development, :test do
   gem 'rack-cors'
   gem 'redis'
   gem 'sidekiq-cron'
-  gem 'rails_admin' 
+  gem 'rails_admin'
+
+  # rswag
+  #gem 'rswag-api'
+  #gem 'rswag-ui'
+  #gem 'rswag-specs'
+  #gem 'rspec-rails'
 end
 
 gem "sassc-rails"

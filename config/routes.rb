@@ -1,5 +1,9 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
+  #mount Rswag::Ui::Engine => '/api-docs'
+  #mount Rswag::Api::Engine => '/api-docs'
+  # 사이드킥(Sidekiq) 관리자 UI
   mount Sidekiq::Web => '/sidekiq'
   
   # 1) 웹용 루트
@@ -34,9 +38,14 @@ Rails.application.routes.draw do
       post :block
       post :unblock
     end
+
+    # update_push_token을 컬렉션(collection)으로 선언
+    # => 경로: POST /users/update_push_token
+    collection do
+      post :update_push_token
+    end
   end
 
   # 4) 관리자 페이지 (예시)
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
-
 end
