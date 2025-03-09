@@ -16,6 +16,11 @@ Rails.application.routes.draw do
     post "auth/request_code", to: "auth#request_code"
     post "auth/verify_code",  to: "auth#verify_code"
 
+    # 사용자 관련 API
+    get "me", to: "users#me"
+    post "change_nickname", to: "users#change_nickname"
+    get "generate_random_nickname", to: "users#generate_random_nickname"
+
     resources :broadcasts, only: [:index, :create, :show] do
       member do
         post :reply

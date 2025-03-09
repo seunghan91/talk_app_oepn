@@ -45,7 +45,7 @@ group :development, :test do
   gem 'rack-cors'
   gem 'redis'
   gem 'sidekiq-cron'
-  gem 'rails_admin'
+  gem 'rails_admin', '~> 3.0'
 
   # rswag
   #gem 'rswag-api'

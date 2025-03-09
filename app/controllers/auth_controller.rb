@@ -55,6 +55,13 @@ class AuthController < ApplicationController
       user = User.find_or_create_by(phone_number: phone_number) do |u|
         u.gender   = :unknown
         u.verified = true
+        # 새 사용자일 경우 랜덤 한글 닉네임 자동 생성
+        u.nickname = NicknameGenerator.generate_unique
+      end
+
+      # 기존 사용자인데 닉네임이 없는 경우에도 닉네임 생성
+      if user.nickname.blank?
+        user.update(nickname: NicknameGenerator.generate_unique)
       end
 
       # user가 nil이 아닌지 확인 (디버깅)
@@ -69,6 +76,7 @@ class AuthController < ApplicationController
         user: {
           id: user.id,
           phone_number: user.phone_number,
+          nickname: user.nickname,  # 닉네임 추가
           verified: user.verified,
           gender: user.gender
         }

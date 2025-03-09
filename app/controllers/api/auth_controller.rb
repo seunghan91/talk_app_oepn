@@ -22,7 +22,16 @@ module Api
       # 실제 서비스에서는 DB/Redis에서 코드 검증
       # 여기서는 테스트용으로 간단 처리
       # 유저 찾거나 생성
-      user = User.find_or_create_by(phone_number: phone_number)
+      user = User.find_or_create_by(phone_number: phone_number) do |u|
+        # 새 사용자인 경우 닉네임 자동 생성
+        u.nickname = NicknameGenerator.generate_unique
+      end
+      
+      # 기존 사용자인데 닉네임이 없는 경우 생성
+      if user.nickname.blank?
+        user.update(nickname: NicknameGenerator.generate_unique)
+      end
+      
       # JWT 발급
       token = JsonWebToken.encode({ user_id: user.id })
       render json: {
@@ -31,6 +40,7 @@ module Api
         user: {
           id: user.id,
           phone_number: user.phone_number,
+          nickname: user.nickname,
           # 등등
         }
       }

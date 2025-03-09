@@ -15,11 +15,8 @@ class Message < ApplicationRecord
 
   # 3) 실제 푸시 발송 로직 (Worker에서 호출)
   def send_push_notification
-    recipient_id = if conversation.user_a_id == sender_id
-                     conversation.user_b_id
-                   else
-                     conversation.user_a_id
-                   end
+    # 예: 대화 상대 찾기
+    recipient_id = (conversation.user_a_id == sender_id ? conversation.user_b_id : conversation.user_a_id)
     recipient = User.find(recipient_id)
     return unless recipient.push_token.present?
 
