@@ -1,17 +1,23 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "baseUrl": ".",
     "strict": true,
+    "allowJs": true,
+    "checkJs": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@lib/*": ["lib/*"]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+    "expo-env.d.ts",
+    "app/auth.js",
+    "app/index.js",
+    "app/_layout.js",
+    "app/lib/axios.js"
+, "app/(tabs)/_layout.js", "app/lib/pushNotificationHelper.js"  ]
 }
