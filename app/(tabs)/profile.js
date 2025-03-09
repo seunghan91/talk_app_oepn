@@ -2,8 +2,8 @@ import { View, StyleSheet, Button, TextInput, TouchableOpacity, Alert } from 're
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axiosInstance from '@/lib/axios';
-import { ThemedView, ThemedText } from '@/components/ThemedView';
+import axiosInstance from '../lib/axios';
+import { ThemedView, ThemedText } from '../../components/ThemedView';
 
 export default function ProfileScreen() {
   const router = useRouter();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Slider } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 

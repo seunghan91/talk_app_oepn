@@ -14,12 +14,46 @@ export default function AuthScreen() {
   const [code, setCode] = useState('');
   const [isVerified, setIsVerified] = useState(false); 
   const [userData, setUserData] = useState(null);
+  const [phoneNumberError, setPhoneNumberError] = useState('');
+
+  // 전화번호 유효성 검사 함수
+  const validatePhoneNumber = (number) => {
+    // 숫자만 추출 (하이픈 제거)
+    const digitsOnly = number.replace(/\D/g, '');
+    
+    // 한국 휴대전화 번호 패턴 검사 (010, 011, 016, 017, 018, 019로 시작하는 10-11자리)
+    const koreanPhonePattern = /^01[0-9]{8,9}$/;
+    
+    if (!koreanPhonePattern.test(digitsOnly)) {
+      setPhoneNumberError('유효한 휴대전화 번호를 입력해주세요 (01X-XXXX-XXXX)');
+      return false;
+    }
+    
+    setPhoneNumberError('');
+    return true;
+  };
+
+  // 전화번호 입력 처리
+  const handlePhoneNumberChange = (number) => {
+    // 숫자와 하이픈만 허용
+    const formattedNumber = number.replace(/[^\d-]/g, '');
+    setPhoneNumber(formattedNumber);
+    validatePhoneNumber(formattedNumber);
+  };
 
   // 1) 인증코드 요청 (POST /auth/request_code)
   const requestCode = async () => {
+    // 전화번호 유효성 검사
+    if (!validatePhoneNumber(phoneNumber)) {
+      return;
+    }
+    
     try {
+      // 하이픈 제거한 숫자만 서버로 전송
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      
       const res = await axiosInstance.post('/api/auth/request_code', {
-        phone_number: phoneNumber,
+        phone_number: digitsOnly,
       });
       console.log('인증코드 요청 성공:', res.data);
       Alert.alert('성공', '인증코드가 발송되었습니다.');
@@ -35,9 +69,17 @@ export default function AuthScreen() {
 
   // 2) 인증코드 검증 (POST /auth/verify_code)
   const verifyCode = async () => {
+    // 전화번호 유효성 검사
+    if (!validatePhoneNumber(phoneNumber)) {
+      return;
+    }
+    
     try {
+      // 하이픈 제거한 숫자만 서버로 전송
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      
       const res = await axiosInstance.post('/api/auth/verify_code', {
-        phone_number: phoneNumber,
+        phone_number: digitsOnly,
         code,
       });
       // { token, user, ... } 라고 가정
@@ -94,12 +136,16 @@ export default function AuthScreen() {
       ) : (
         <>
           <TextInput
-            placeholder="전화번호"
-            style={styles.input}
+            placeholder="전화번호 (01X-XXXX-XXXX)"
+            style={[styles.input, phoneNumberError ? styles.inputError : null]}
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={handlePhoneNumberChange}
             keyboardType="phone-pad"
+            maxLength={13} // 하이픈 포함 최대 13자리
           />
+          {phoneNumberError ? (
+            <Text style={styles.errorText}>{phoneNumberError}</Text>
+          ) : null}
           <Button title="인증코드 요청" onPress={requestCode} />
 
           <TextInput
@@ -108,6 +154,7 @@ export default function AuthScreen() {
             value={code}
             onChangeText={setCode}
             keyboardType="number-pad"
+            maxLength={6} // 인증코드는 보통 6자리
           />
           <Button title="인증코드 검증" onPress={verifyCode} />
         </>
@@ -134,6 +181,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 8,
+    marginBottom: 8,
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
     marginBottom: 8,
   },
   verifiedContainer: {

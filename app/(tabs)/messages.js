@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ThemedView, ThemedText } from '@/components/ThemedView';
-import axiosInstance from '../../lib/axios';
+import { ThemedView, ThemedText } from '../../components/ThemedView';
+import axiosInstance from '../lib/axios';
+
 import { Ionicons } from '@expo/vector-icons';
 
 export default function MessagesScreen() {
