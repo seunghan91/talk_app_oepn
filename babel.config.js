@@ -7,12 +7,19 @@ module.exports = function (api) {
         'module-resolver',
         {
           root: ['./'],
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
           alias: {
+            '@app': './app',
             '@components': './components',
             '@hooks': './hooks',
             '@constants': './constants',
             '@assets': './assets',
-            '@lib': './app/lib'
+            '@utils': './utils',
+            '@lib': './app/lib',
+            '@screens': './app/screens',
+            '@navigation': './app/navigation',
+            '@context': './app/context',
+            '@types': './types',
           },
         },
       ],

@@ -6,8 +6,17 @@
     "allowJs": true,
     "checkJs": true,
     "paths": {
-      "@/*": ["./*"],
-      "@lib/*": ["lib/*"]
+      "@app/*": ["app/*"],
+      "@components/*": ["components/*"],
+      "@hooks/*": ["hooks/*"],
+      "@constants/*": ["constants/*"],
+      "@assets/*": ["assets/*"],
+      "@utils/*": ["utils/*"],
+      "@lib/*": ["app/lib/*"],
+      "@screens/*": ["app/screens/*"],
+      "@navigation/*": ["app/navigation/*"],
+      "@context/*": ["app/context/*"],
+      "@types/*": ["types/*"]
     }
   },
   "include": [
@@ -18,6 +27,8 @@
     "app/auth.js",
     "app/index.js",
     "app/_layout.js",
-    "app/lib/axios.js"
-, "app/(tabs)/_layout.js", "app/lib/pushNotificationHelper.js"  ]
+    "app/lib/axios.js",
+    "app/(tabs)/_layout.js", 
+    "app/lib/pushNotificationHelper.js"
+  ]
 }
