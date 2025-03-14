@@ -23,9 +23,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  // 폰트 로딩
+  // 폰트 로딩 - 폰트 파일이 없으면 주석 처리
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    // SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   // 폰트·리소스가 로딩된 후 SplashScreen.hideAsync() 호출
@@ -58,6 +58,7 @@ export default function RootLayout() {
           <Stack.Screen name="+not-found" />
           {/* 인증 화면 */}
           <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="broadcast" options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

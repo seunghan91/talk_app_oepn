@@ -80,7 +80,7 @@ i18n
         translation: en,
       },
     },
-    lng: getDefaultLanguage(),
+    lng: 'ko', // 항상 한국어로 시작
     fallbackLng: 'ko',
     interpolation: {
       escapeValue: false,
@@ -94,8 +94,13 @@ i18n
 const loadSavedLanguageAsync = async () => {
   try {
     const savedLanguage = await AsyncStorage.getItem('user_language');
+    // 저장된 언어가 있고, 현재 언어와 다르면 변경
+    // 단, 저장된 언어가 없으면 한국어 유지
     if (savedLanguage && i18n.language !== savedLanguage) {
       i18n.changeLanguage(savedLanguage);
+    } else if (!savedLanguage) {
+      // 저장된 언어가 없으면 한국어로 저장
+      saveLanguage('ko');
     }
   } catch (error) {
     console.error('비동기 언어 설정 불러오기 실패:', error);

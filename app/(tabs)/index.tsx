@@ -160,7 +160,7 @@ export default function HomeScreen() {
           {isAuthenticated && user ? (
             <ThemedView style={styles.userInfoContainer}>
               <ThemedText style={styles.userInfoText}>
-                {t('home.loggedInAs', { nickname: user.nickname })}
+                {user.nickname}님으로 로그인 되었습니다
               </ThemedText>
             </ThemedView>
           ) : (
@@ -235,24 +235,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerButton: {
-    marginLeft: 16,
     position: 'relative',
+    marginLeft: 15,
+    padding: 5
   },
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
+    top: 0,
+    right: 0,
     backgroundColor: '#FF3B30',
     borderRadius: 10,
-    width: 20,
+    minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF'
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontWeight: 'bold'
   },
   content: {
     flex: 1,

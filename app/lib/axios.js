@@ -3,6 +3,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { Alert } from 'react-native';
 
 // 개발 환경인지 확인
 const isDev = __DEV__;
@@ -52,6 +53,17 @@ const mockResponses = {
   '/api/generate_random_nickname': {
     nickname: generateRandomNickname()
   },
+  '/api/users/update_profile': {
+    user: {
+      id: 1,
+      nickname: '테스트사용자',
+      phone_number: '01012345678',
+      gender: 'unspecified',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    message: '프로필이 성공적으로 업데이트되었습니다.'
+  },
   '/api/conversations': [
     {
       id: 1,
@@ -89,79 +101,249 @@ const mockResponses = {
 // 요청 인터셉터
 axiosInstance.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // 개발 환경에서 요청 로깅
+    if (__DEV__) {
+      console.log(`[API 요청] ${config.method?.toUpperCase() || 'UNKNOWN'} ${config.url}`, {
+        headers: config.headers,
+        data: config.data,
+        params: config.params
+      });
     }
+    
+    // 인증 토큰 추가
+    try {
+      const token = await AsyncStorage.getItem('jwt_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        if (__DEV__) {
+          console.log('인증 토큰 추가됨');
+        }
+      } else if (__DEV__) {
+        console.warn('인증 토큰이 없습니다');
+      }
+    } catch (error) {
+      console.error('토큰 가져오기 실패:', error);
+    }
+    
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('요청 인터셉터 오류:', error);
+    return Promise.reject(error);
+  }
 );
 
 // 응답 인터셉터
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 개발 환경에서 응답 로깅
+    if (__DEV__) {
+      console.log(`[API 응답] ${response.status} ${response.config.url}`, {
+        data: response.data,
+        headers: response.headers
+      });
+    }
+    
+    return response;
+  },
   async (error) => {
+    // 오류 로깅
+    if (__DEV__) {
+      console.error('[API 오류]', {
+        url: error.config?.url,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+    }
+    
     // 개발 환경에서 네트워크 오류 발생 시 모의 응답 제공
-    if (isDev && error.message === 'Network Error') {
-      const url = error.config.url;
+    if (__DEV__ && error.message === 'Network Error') {
+      const url = error.config?.url;
       console.log(`개발 환경: API 서버 연결 실패, 모의 응답 제공 (${url})`);
       
       // 요청 URL에 따라 모의 응답 제공
-      if (url === '/api/generate_random_nickname') {
-        // 랜덤 닉네임은 매번 새로 생성
-        return Promise.resolve({ 
-          data: { 
-            nickname: generateRandomNickname() 
-          } 
-        });
-      } else if (url === '/api/change_nickname') {
-        // 닉네임 변경 요청에 대한 모의 응답
-        const nickname = error.config.data ? JSON.parse(error.config.data).nickname : '기본닉네임';
-        console.log(`닉네임 변경 요청 처리: ${nickname}`);
+      if (url === '/api/users/update_profile') {
+        // 프로필 업데이트 요청에 대한 모의 응답
+        const userData = error.config.data ? JSON.parse(error.config.data).user : {};
+        console.log(`프로필 업데이트 요청 처리:`, userData);
+        
         return Promise.resolve({
           data: {
             user: {
               id: 1,
-              nickname: nickname,
+              nickname: userData.nickname || '테스트사용자',
               phone_number: '01012345678',
+              gender: userData.gender || 'unspecified',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             },
-            message: '닉네임이 성공적으로 변경되었습니다.'
+            message: '프로필이 성공적으로 업데이트되었습니다.'
           }
         });
-      } else if (mockResponses[url]) {
-        return Promise.resolve({ data: mockResponses[url] });
+      } else if (url === '/api/broadcasts') {
+        // 브로드캐스트 전송 요청에 대한 모의 응답
+        console.log(`브로드캐스트 전송 요청 처리`);
+        
+        // FormData 내용 확인 시도
+        let formDataContent = {};
+        let hasVoiceFile = false;
+        
+        try {
+          if (error.config.data && error.config.data instanceof FormData) {
+            console.log('FormData 객체 감지됨');
+            // FormData 내용을 로그로 출력 (디버깅용)
+            for (let pair of error.config.data.entries()) {
+              console.log(`FormData 항목: ${pair[0]}, 값 유형: ${typeof pair[1]}`);
+              if (pair[0] === 'voice_file' && pair[1]) {
+                hasVoiceFile = true;
+                console.log('음성 파일 정보:', {
+                  name: pair[1].name,
+                  type: pair[1].type,
+                  uri: pair[1].uri ? pair[1].uri.substring(0, 50) + '...' : 'undefined'
+                });
+              } else {
+                // 로그만 출력하고 객체에 저장하지 않음
+                console.log(`기타 FormData 항목: ${pair[0]} = ${pair[1]}`);
+              }
+            }
+          } else {
+            console.log('FormData 객체가 아님:', typeof error.config.data);
+          }
+        } catch (e) {
+          console.log('FormData 내용 확인 중 오류:', e);
+        }
+        
+        // 음성 파일이 없으면 오류 반환
+        if (!hasVoiceFile) {
+          return Promise.reject({
+            response: {
+              status: 400,
+              data: { error: "음성 파일이 필요합니다." }
+            }
+          });
+        }
+        
+        // 지연 효과 추가 (실제 API 호출처럼 보이게)
+        return new Promise(resolve => {
+          setTimeout(() => {
+            // 브로드캐스트 ID 생성
+            const broadcastId = Math.floor(Math.random() * 1000);
+            console.log(`모의 브로드캐스트 생성: ID ${broadcastId}`);
+            
+            resolve({
+              data: {
+                message: "방송이 성공적으로 생성되었습니다.",
+                broadcast: {
+                  id: broadcastId,
+                  created_at: new Date().toISOString(),
+                  expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  user: {
+                    id: 1,
+                    nickname: '테스트사용자'
+                  }
+                }
+              }
+            });
+          }, 1500); // 1.5초 지연
+        });
+      } else if (url && url.includes('/api/conversations/') && url.includes('/send_message')) {
+        // 대화 메시지 전송 요청에 대한 모의 응답
+        console.log(`대화 메시지 전송 요청 처리: ${url}`);
+        
+        // 대화 ID 추출
+        const conversationId = url.split('/')[3];
+        console.log(`대화 ID: ${conversationId}`);
+        
+        // FormData 내용 확인 시도
+        let hasVoiceFile = false;
+        
+        try {
+          if (error.config.data && error.config.data instanceof FormData) {
+            console.log('FormData 객체 감지됨');
+            // FormData 내용을 로그로 출력 (디버깅용)
+            for (let pair of error.config.data.entries()) {
+              console.log(`FormData 항목: ${pair[0]}, 값 유형: ${typeof pair[1]}`);
+              if (pair[0] === 'voice_file' && pair[1]) {
+                hasVoiceFile = true;
+                console.log('음성 파일 정보:', {
+                  name: pair[1].name,
+                  type: pair[1].type,
+                  uri: pair[1].uri ? pair[1].uri.substring(0, 50) + '...' : 'undefined'
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.log('FormData 내용 확인 중 오류:', e);
+        }
+        
+        // 음성 파일이 없으면 오류 반환
+        if (!hasVoiceFile) {
+          return Promise.reject({
+            response: {
+              status: 400,
+              data: { error: "음성 파일이 필요합니다." }
+            }
+          });
+        }
+        
+        // 지연 효과 추가 (실제 API 호출처럼 보이게)
+        return new Promise(resolve => {
+          setTimeout(() => {
+            // 메시지 ID 생성
+            const messageId = Math.floor(Math.random() * 10000);
+            console.log(`모의 메시지 생성: ID ${messageId}, 대화 ID ${conversationId}`);
+            
+            resolve({
+              data: {
+                message: "메시지가 성공적으로 전송되었습니다.",
+                conversation_message: {
+                  id: messageId,
+                  created_at: new Date().toISOString(),
+                  user: {
+                    id: 1,
+                    nickname: '테스트사용자'
+                  }
+                }
+              }
+            });
+          }, 1500); // 1.5초 지연
+        });
       }
     }
     
-    // 401 Unauthorized 오류 처리
-    if (error.response && error.response.status === 401) {
-      console.log('인증 오류 발생: 토큰이 만료되었거나 유효하지 않습니다.');
-      // 로컬 스토리지에서 토큰 제거
-      AsyncStorage.removeItem('jwt_token').catch(err => {
-        console.error('토큰 제거 실패:', err);
-      });
+    // 401 오류 처리 (인증 만료)
+    if (error.response?.status === 401) {
+      console.warn('인증 토큰이 만료되었거나 유효하지 않습니다');
       
-      // 개발 환경에서는 모의 응답 제공
-      if (isDev) {
-        const url = error.config.url;
-        if (url === '/api/change_nickname') {
-          const nickname = error.config.data ? JSON.parse(error.config.data).nickname : '기본닉네임';
-          console.log(`인증 오류 발생했지만 개발 환경에서 닉네임 변경 요청 처리: ${nickname}`);
-          return Promise.resolve({
-            data: {
-              user: {
-                id: 1,
-                nickname: nickname,
-                phone_number: '01012345678',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              },
-              message: '닉네임이 성공적으로 변경되었습니다.'
-            }
-          });
+      // 로그인 페이지로 리디렉션 (개발 환경에서는 제외)
+      if (!__DEV__) {
+        try {
+          // 토큰 제거
+          await AsyncStorage.removeItem('jwt_token');
+          
+          // 현재 경로가 로그인 페이지가 아닌 경우에만 리디렉션
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/auth')) {
+            // 리디렉션 전 알림
+            Alert.alert(
+              '로그인 필요',
+              '세션이 만료되었습니다. 다시 로그인해주세요.',
+              [
+                {
+                  text: '확인',
+                  onPress: () => {
+                    // 로그인 페이지로 이동
+                    const router = require('expo-router').router;
+                    router.replace('/auth');
+                  }
+                }
+              ]
+            );
+          }
+        } catch (storageError) {
+          console.error('토큰 제거 실패:', storageError);
         }
       }
     }

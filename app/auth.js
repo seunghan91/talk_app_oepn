@@ -1,6 +1,6 @@
 // app/auth.js
 
-import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +23,8 @@ export default function AuthScreen() {
   const [userData, setUserData] = useState(null);
   const [phoneNumberError, setPhoneNumberError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showGenderSelection, setShowGenderSelection] = useState(false);
+  const [selectedGender, setSelectedGender] = useState('');
 
   // 이미 인증된 사용자는 홈으로 리다이렉트
   // fromHome 파라미터가 true인 경우에는 리다이렉트하지 않음
@@ -33,10 +35,22 @@ export default function AuthScreen() {
     }
   }, [isAuthenticated, router, fromHome]);
 
+  // 랜덤 닉네임 생성 함수
+  const generateRandomNickname = () => {
+    const adjectives = ['행복한', '즐거운', '신나는', '멋진', '귀여운', '용감한', '똑똑한', '친절한', '재미있는', '활발한'];
+    const nouns = ['고양이', '강아지', '토끼', '여우', '사자', '호랑이', '판다', '코끼리', '기린', '원숭이'];
+    const randomNum = Math.floor(Math.random() * 1000);
+    
+    const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    
+    return `${randomAdj}${randomNoun}${randomNum}`;
+  };
+
   // 전화번호 유효성 검사 함수
   const validatePhoneNumber = (number) => {
     if (!isValidKoreanPhoneNumber(number)) {
-      setPhoneNumberError(t('auth.phoneNumberError'));
+      setPhoneNumberError(t('auth.invalidPhoneNumber') + ' (예: 010-1234-5678)');
       return false;
     }
     
@@ -140,9 +154,15 @@ export default function AuthScreen() {
       }
       
       // 테스트 모드: 서버 응답이 없거나 실패한 경우 테스트 사용자 정보 생성
+      const isNewUser = serverResponse?.is_new_user || !serverResponse;
+      
+      // 랜덤 닉네임 생성
+      const randomNickname = generateRandomNickname();
+      console.log('생성된 랜덤 닉네임:', randomNickname);
+      
       const userData = serverResponse?.user || {
         id: 1,
-        nickname: '테스트사용자',
+        nickname: randomNickname, // 랜덤 닉네임 사용
         phone_number: digitsOnly,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -150,19 +170,51 @@ export default function AuthScreen() {
       
       const token = serverResponse?.token || 'test_token_' + Math.random().toString(36).substring(2);
       
-      // AuthContext를 통해 로그인 처리
-      await login(token, userData);
-      
       // 사용자 정보 저장 및 인증 상태 업데이트
       setIsVerified(true);
       setUserData(userData);
       
+      // 새 사용자인 경우 성별 선택 화면 표시
+      if (isNewUser) {
+        setShowGenderSelection(true);
+        setIsLoading(false);
+      } else {
+        // 기존 사용자는 바로 로그인 처리
+        completeLogin(token, userData);
+      }
+    } catch (err) {
+      console.error('예상치 못한 오류:', err);
+      Alert.alert(t('common.error'), t('auth.verifyError'));
+      setIsLoading(false);
+    }
+  };
+  
+  // 성별 선택 후 로그인 완료
+  const handleGenderSelection = async (gender) => {
+    setSelectedGender(gender);
+    
+    // 사용자 데이터에 성별 추가
+    const updatedUserData = { ...userData, gender };
+    
+    // 토큰 생성 (실제로는 서버에서 받아야 함)
+    const token = 'test_token_' + Math.random().toString(36).substring(2);
+    
+    // 로그인 완료
+    completeLogin(token, updatedUserData);
+  };
+  
+  // 로그인 완료 처리
+  const completeLogin = async (token, userData) => {
+    setIsLoading(true);
+    
+    try {
+      // AuthContext를 통해 로그인 처리
+      await login(token, userData);
+      
       // 인증 성공 메시지와 함께 닉네임 표시
       Alert.alert(
-        serverError ? t('common.notice') : t('auth.verifySuccess'), 
-        serverError 
-          ? `테스트 모드: ${userData.nickname}님으로 로그인되었습니다.` 
-          : t('auth.welcome', { nickname: userData.nickname }), 
+        t('auth.verifySuccess'), 
+        t('auth.welcome', { nickname: userData.nickname }), 
         [
           { 
             text: t('auth.goToProfile'), 
@@ -175,18 +227,51 @@ export default function AuthScreen() {
         ]
       );
     } catch (err) {
-      console.error('예상치 못한 오류:', err);
-      Alert.alert(t('common.error'), t('auth.verifyError'));
+      console.error('로그인 처리 중 오류:', err);
+      Alert.alert(t('common.error'), t('auth.loginFailed'));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 성별 선택 화면 렌더링
+  const renderGenderSelection = () => {
+    return (
+      <View style={styles.genderContainer}>
+        <Text style={styles.genderTitle}>{t('profile.gender')}</Text>
+        <Text style={styles.genderSubtitle}>{t('auth.selectGenderRequired')}</Text>
+        
+        <TouchableOpacity 
+          style={[styles.genderButton, selectedGender === 'male' && styles.selectedGender]} 
+          onPress={() => handleGenderSelection('male')}
+        >
+          <Text style={styles.genderButtonText}>{t('profile.genderMale')}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.genderButton, selectedGender === 'female' && styles.selectedGender]} 
+          onPress={() => handleGenderSelection('female')}
+        >
+          <Text style={styles.genderButtonText}>{t('profile.genderFemale')}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.genderButton, selectedGender === 'unspecified' && styles.selectedGender]} 
+          onPress={() => handleGenderSelection('unspecified')}
+        >
+          <Text style={styles.genderButtonText}>{t('profile.genderUnspecified')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('auth.title')}</Text>
 
-      {isVerified ? (
+      {showGenderSelection ? (
+        renderGenderSelection()
+      ) : isVerified ? (
         <View style={styles.verifiedContainer}>
           <Text style={styles.welcomeText}>
             {t('auth.welcome', { nickname: userData?.nickname })}
@@ -257,33 +342,65 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
-    marginBottom: 12,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'center',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 8,
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
   },
   inputError: {
     borderColor: 'red',
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  verifiedContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 18,
     marginBottom: 16,
-    textAlign: 'center',
   },
   loader: {
     marginTop: 20,
+  },
+  verifiedContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  welcomeText: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  genderContainer: {
+    marginVertical: 20,
+  },
+  genderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  genderSubtitle: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#666',
+  },
+  genderButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  selectedGender: {
+    backgroundColor: '#007AFF',
+  },
+  genderButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

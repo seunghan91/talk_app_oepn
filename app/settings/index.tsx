@@ -50,6 +50,32 @@ export default function SettingsScreen() {
     loadSettings();
   }, []);
 
+  // 추가: 설정 화면이 표시될 때마다 항상 최신 설정을 불러옴
+  useEffect(() => {
+    // 페이지가 표시될 때마다 설정을 다시 로드
+    const loadSettingsOnFocus = async () => {
+      try {
+        console.log('설정 화면 포커스');
+        const storedSettings = await AsyncStorage.getItem('app_settings');
+        if (storedSettings) {
+          setSettings(JSON.parse(storedSettings));
+        }
+      } catch (error) {
+        console.error('설정 포커스 시 로드 실패:', error);
+      }
+    };
+
+    // 초기 로드
+    loadSettingsOnFocus();
+
+    // 주기적으로 설정 리로드 (5초마다)
+    const intervalId = setInterval(loadSettingsOnFocus, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
   // 설정 저장
   const saveSettings = async (newSettings: SettingsState) => {
     try {

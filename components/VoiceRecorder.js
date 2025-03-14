@@ -141,11 +141,10 @@ export default function VoiceRecorder({ onRecordingComplete }) {
         allowsRecordingIOS: false,
       });
       
-      // 녹음 완료 콜백
-      if (onRecordingComplete) {
-        onRecordingComplete(uri);
-      }
+      console.log('녹음 완료: URI 생성됨', uri);
       
+      // 녹음 완료 콜백은 사용자가 완료 버튼을 누를 때 호출하도록 변경
+      // 자동 호출 제거
     } catch (error) {
       console.error('녹음 중지 실패:', error);
     }
@@ -318,6 +317,12 @@ export default function VoiceRecorder({ onRecordingComplete }) {
               onPress={() => {
                 // 이미 onRecordingComplete는 녹음 완료 시 자동으로 호출됨
                 // 필요시 추가 동작 구현
+                if (recordingUri && onRecordingComplete) {
+                  console.log('완료 버튼 클릭: 녹음 URI 전송', recordingUri);
+                  onRecordingComplete(recordingUri);
+                } else {
+                  console.log('완료 버튼 클릭: 녹음 URI 없음');
+                }
               }}
             >
               <Ionicons name="checkmark" size={24} color="#fff" />

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedView } from '../../components/ThemedView';
@@ -250,63 +250,54 @@ export default function MessagesScreen() {
         {/* 프로필 이미지 */}
         <View style={styles.avatarContainer}>
           {item.user.profile_image ? (
-            <Image 
-              source={{ uri: item.user.profile_image }} 
-              style={styles.avatar} 
+            <Image
+              source={{ uri: item.user.profile_image }}
+              style={styles.avatar}
             />
           ) : (
-            <View style={styles.avatarPlaceholder}>
-              <ThemedText style={styles.avatarInitial}>
-                {item.user.nickname.charAt(0)}
-              </ThemedText>
+            <View style={[styles.avatar, styles.defaultAvatar]}>
+              <Text style={styles.defaultAvatarText}>
+                {item.user.nickname.charAt(0).toUpperCase()}
+              </Text>
             </View>
           )}
+          {/* 읽지 않은 메시지 배지 */}
           {item.unread_count > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+            <View style={styles.badgeContainer}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item.unread_count}</Text>
+              </View>
             </View>
           )}
         </View>
-        
-        {/* 대화 내용 */}
-        <View style={styles.conversationContent}>
-          <View style={styles.conversationHeader}>
-            <ThemedText style={styles.nickname}>{item.user.nickname}</ThemedText>
-            <ThemedText style={styles.timestamp}>
-              {formatDate(item.last_message.created_at)}
-            </ThemedText>
+
+        {/* 메시지 정보 */}
+        <View style={styles.messageInfo}>
+          <View style={styles.messageHeader}>
+            <ThemedText style={styles.username}>{item.user.nickname}</ThemedText>
+            <ThemedText style={styles.timestamp}>{formatDate(item.last_message.created_at)}</ThemedText>
           </View>
-          
-          <ThemedText 
-            style={[
-              styles.messagePreview, 
-              !item.last_message.is_read && styles.unreadMessage
-            ]}
-            numberOfLines={1}
-          >
-            {item.last_message.content}
-          </ThemedText>
-        </View>
-        
-        {/* 액션 버튼 */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={() => toggleFavorite(item)}
-          >
-            <Ionicons
-              name={item.is_favorite ? 'star' : 'star-outline'}
-              size={22}
-              color={item.is_favorite ? '#FFD700' : '#AAAAAA'}
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteConversation(item.id)}
-          >
-            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-          </TouchableOpacity>
+          <View style={styles.messageContent}>
+            <ThemedText 
+              style={[
+                styles.lastMessage, 
+                !item.last_message.is_read && styles.unreadMessage
+              ]} 
+              numberOfLines={1}
+            >
+              {item.last_message.content}
+            </ThemedText>
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={() => toggleFavorite(item)}
+            >
+              <Ionicons
+                name={item.is_favorite ? 'star' : 'star-outline'}
+                size={24}
+                color={item.is_favorite ? '#FFD700' : '#CCCCCC'}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -318,7 +309,7 @@ export default function MessagesScreen() {
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color="#999999" style={styles.searchIcon} />
-          <ThemedText
+          <TextInput
             style={styles.searchInput}
             placeholder={t('messages.searchPlaceholder')}
             value={searchQuery}
@@ -473,47 +464,48 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
   },
-  avatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  defaultAvatar: {
     backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: {
+  defaultAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#666666',
   },
-  unreadBadge: {
+  badgeContainer: {
     position: 'absolute',
     top: -5,
     right: -5,
+    zIndex: 1,
+  },
+  badge: {
     backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 5,
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  unreadBadgeText: {
+  badgeText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  conversationContent: {
+  messageInfo: {
     flex: 1,
   },
-  conversationHeader: {
+  messageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
-  nickname: {
+  username: {
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -521,22 +513,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999999',
   },
-  messagePreview: {
+  messageContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lastMessage: {
     fontSize: 14,
     color: '#666666',
   },
-  unreadMessage: {
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   favoriteButton: {
-    padding: 8,
-  },
-  deleteButton: {
     padding: 8,
   },
   emptyContainer: {
@@ -560,5 +546,9 @@ const styles = StyleSheet.create({
   },
   exploreButton: {
     marginTop: 16,
+  },
+  unreadMessage: {
+    fontWeight: 'bold',
+    color: '#000000',
   },
 });

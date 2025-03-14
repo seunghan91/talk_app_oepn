@@ -49,12 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await AsyncStorage.removeItem('jwt_token');
       setUser(null);
-      
-      // 로그아웃 후 인증 화면으로 이동
-      router.replace({
-        pathname: '/auth',
-        params: { fromHome: 'true' }
-      });
+      router.replace('/');
     } catch (error) {
       console.error('로그아웃 실패:', error);
     }
@@ -69,62 +64,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 앱 시작 시 자동 로그인 시도
   useEffect(() => {
-    const loadUser = async (): Promise<void> => {
+    const checkLoginStatus = async (): Promise<void> => {
       try {
+        setIsLoading(true);
         const token = await AsyncStorage.getItem('jwt_token');
         
         if (token) {
+          console.log('저장된 토큰 발견, 자동 로그인 시도...');
+          
           try {
             // 토큰이 있으면 사용자 정보 요청
             const response = await axiosInstance.get<{ user: User }>('/api/me');
+            const userData = response.data.user;
             
-            // 사용자 정보가 있으면 설정
-            if (response.data && response.data.user) {
-              setUser(response.data.user);
-            } else {
-              // 응답은 성공했지만 사용자 정보가 없는 경우
-              await AsyncStorage.removeItem('jwt_token');
-              setUser(null);
-            }
+            // 사용자 정보 설정
+            setUser(userData);
+            console.log('자동 로그인 성공:', userData.nickname);
           } catch (error) {
-            console.error('사용자 정보 요청 실패:', error);
+            console.error('자동 로그인 실패:', error);
             
-            // 개발 모드에서는 토큰이 있으면 테스트 사용자로 자동 로그인
+            // 개발 환경에서는 테스트 사용자로 로그인
             if (__DEV__) {
-              console.log('개발 모드: 테스트 사용자로 자동 로그인합니다.');
-              // 개발 모드에서도 자동 로그인 비활성화
-              // const testUser: User = {
-              //   id: 1,
-              //   nickname: '테스트사용자',
-              //   phone_number: '01012345678',
-              //   created_at: new Date().toISOString(),
-              //   updated_at: new Date().toISOString()
-              // };
-              // setUser(testUser);
-              // return; // 토큰 삭제하지 않고 테스트 사용자로 로그인 유지
-              
-              // 개발 모드에서도 토큰이 유효하지 않으면 삭제
-              await AsyncStorage.removeItem('jwt_token');
-              setUser(null);
+              console.log('개발 환경에서 테스트 사용자로 자동 로그인');
+              const testUser = {
+                id: 1,
+                nickname: '테스트사용자',
+                phone_number: '01012345678',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+              setUser(testUser);
             } else {
-              // 토큰이 유효하지 않으면 삭제
+              // 프로덕션 환경에서는 토큰 삭제
               await AsyncStorage.removeItem('jwt_token');
-              setUser(null);
             }
           }
-        } else {
-          // 토큰이 없는 경우
-          setUser(null);
         }
       } catch (error) {
-        console.error('자동 로그인 실패:', error);
-        setUser(null);
+        console.error('로그인 상태 확인 중 오류:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    loadUser();
+    
+    checkLoginStatus();
   }, []);
 
   const value = {
