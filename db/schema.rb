@@ -47,8 +47,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_25_123723) do
     t.bigint "blocked_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["blocked_id"], name: "index_blocks_on_blocked_id"
-    t.index ["blocker_id"], name: "index_blocks_on_blocker_id"
   end
 
   create_table "broadcasts", force: :cascade do |t|
@@ -94,8 +92,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_02_25_123723) do
     t.string "reason"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["reported_id"], name: "index_reports_on_reported_id"
-    t.index ["reporter_id"], name: "index_reports_on_reporter_id"
   end
 
   create_table "users", force: :cascade do |t|

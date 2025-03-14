@@ -10,6 +10,17 @@ Rails.application.routes.draw do
   root 'pages#home'
   get "purchases/create"
   get "purchases/index"
+  
+  # 관리자 분석 대시보드
+  namespace :admin do
+    get 'analytics', to: 'analytics#index'
+    get 'analytics/daily', to: 'analytics#daily'
+    get 'analytics/weekly', to: 'analytics#weekly'
+    get 'analytics/monthly', to: 'analytics#monthly'
+  end
+  
+  # RailsAdmin 마운트
+  mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
 
   # 2) API
   namespace :api do
@@ -20,6 +31,7 @@ Rails.application.routes.draw do
     get "me", to: "users#me"
     post "change_nickname", to: "users#change_nickname"
     get "generate_random_nickname", to: "users#generate_random_nickname"
+    post "update_profile", to: "users#update_profile"
 
     resources :broadcasts, only: [:index, :create, :show] do
       member do
@@ -50,7 +62,4 @@ Rails.application.routes.draw do
       post :update_push_token
     end
   end
-
-  # 4) 관리자 페이지 (예시)
-  mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
 end

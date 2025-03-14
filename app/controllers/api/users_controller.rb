@@ -65,5 +65,45 @@ module Api
         nickname: random_nickname
       }
     end
+    
+    # 사용자 프로필 업데이트 API
+    def update_profile
+      # 허용된 파라미터만 추출
+      profile_params = params.permit(:nickname, :gender)
+      
+      # 로그 추가
+      Rails.logger.info("프로필 업데이트 요청: #{profile_params.inspect}")
+      
+      # 닉네임이 비어있으면 랜덤 생성
+      if profile_params[:nickname].blank?
+        profile_params[:nickname] = NicknameGenerator.generate_unique
+      end
+      
+      # 성별이 유효한지 확인 (male, female, unknown)
+      if profile_params[:gender].present? && !User.genders.keys.include?(profile_params[:gender])
+        return render json: { error: "유효하지 않은 성별입니다." }, status: :bad_request
+      end
+      
+      if current_user.update(profile_params)
+        # 업데이트 성공 로그
+        Rails.logger.info("프로필 업데이트 성공: User ID #{current_user.id}, 닉네임: #{current_user.nickname}, 성별: #{current_user.gender}")
+        
+        render json: {
+          message: "프로필이 업데이트되었습니다.",
+          user: {
+            id: current_user.id,
+            phone_number: current_user.phone_number,
+            nickname: current_user.nickname,
+            gender: current_user.gender,
+            verified: current_user.verified
+          }
+        }
+      else
+        # 업데이트 실패 로그
+        Rails.logger.error("프로필 업데이트 실패: #{current_user.errors.full_messages}")
+        
+        render json: { error: current_user.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
   end
 end
