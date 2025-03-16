@@ -56,9 +56,9 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           {/* 기타 화면 */}
           <Stack.Screen name="+not-found" />
-          {/* 인증 화면 */}
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          {/* 방송 화면 */}
           <Stack.Screen name="broadcast" options={{ headerShown: false }} />
+          {/* auth 디렉토리에 _layout.js가 있어 여기서는 정의하지 않습니다 */}
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

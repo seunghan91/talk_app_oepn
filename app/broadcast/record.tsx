@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Alert, TouchableOpacity, Platform, View, Animated, ActivityIndicator } from 'react-native';
+import { StyleSheet, Alert, TouchableOpacity, Platform, View, Animated, ActivityIndicator, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
@@ -244,33 +244,82 @@ export default function RecordScreen() {
   // 녹음 시작
   const startRecording = async () => {
     try {
-      // 권한 확인
-      if (hasPermission === false) {
-        await checkPermissions();
-        if (hasPermission === false) {
+      console.log('녹음 시작 시도...', { hasPermission });
+      
+      // 권한 확인 및 재요청
+      if (hasPermission !== true) {
+        console.log('마이크 권한 요청 중...');
+        const { status } = await Audio.requestPermissionsAsync();
+        console.log('마이크 권한 상태:', status);
+        setHasPermission(status === 'granted');
+        
+        if (status !== 'granted') {
+          Alert.alert(
+            t('common.error'), 
+            t('broadcast.micPermissionDenied'),
+            [
+              { 
+                text: t('common.cancel'),
+                style: 'cancel'
+              },
+              { 
+                text: t('broadcast.goToSettings'),
+                onPress: () => {
+                  // 설정으로 이동 코드
+                  if (Platform.OS === 'ios') {
+                    Linking.openURL('app-settings:');
+                  } else {
+                    Linking.openSettings();
+                  }
+                }
+              }
+            ]
+          );
           return;
         }
       }
       
       // 이전 녹음 정리
       if (sound) {
+        console.log('이전 녹음 사운드 언로드');
         await sound.unloadAsync();
         setSound(null);
       }
       setRecordingUri(null);
       setRecordingDuration(0);
       
-      console.log('녹음 시작 시도...');
+      console.log('녹음 시작 설정 중...');
+      
+      // 오디오 세션 재설정
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+      
+      console.log('오디오 세션 설정 완료');
       
       // 녹음 시작
       const newRecording = new Audio.Recording();
       try {
+        console.log('녹음 준비 중...');
+        
         // 안드로이드와 iOS에 맞는 녹음 옵션 설정
-        await newRecording.prepareToRecordAsync(
-          Platform.OS === 'ios' 
-            ? Audio.RecordingOptionsPresets.HIGH_QUALITY
-            : Audio.RecordingOptionsPresets.LOW_QUALITY
-        );
+        const recordingOptions = Platform.OS === 'ios' 
+          ? Audio.RecordingOptionsPresets.HIGH_QUALITY
+          : {
+              ...Audio.RecordingOptionsPresets.LOW_QUALITY,
+              android: {
+                ...Audio.RecordingOptionsPresets.LOW_QUALITY.android,
+                extension: '.m4a',
+                outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+                audioEncoder: Audio.AndroidAudioEncoder.AAC,
+              }
+            };
+        
+        await newRecording.prepareToRecordAsync(recordingOptions);
         
         console.log('녹음 준비 완료, 시작 중...');
         await newRecording.startAsync();
@@ -403,14 +452,6 @@ export default function RecordScreen() {
     setUploading(true);
     console.log('전송 시작: 업로딩 상태 설정됨', { uploading: true });
     
-    // 전송 중 알림 표시
-    Alert.alert(
-      t('common.sending'),
-      t('broadcast.sendingMessage'),
-      [],
-      { cancelable: false }
-    );
-    
     try {
       // 인증 토큰 확인
       const token = await AsyncStorage.getItem('jwt_token');
@@ -418,12 +459,12 @@ export default function RecordScreen() {
         console.error('인증 토큰이 없습니다.');
         Alert.alert(
           t('common.error'),
-          '인증 토큰이 없습니다. 다시 로그인해주세요.',
+          t('auth.loginRequired'),
           [
             { text: t('common.ok') },
             { 
               text: t('auth.login'),
-              onPress: () => router.replace('/auth')
+              onPress: () => router.push('/auth')
             }
           ]
         );
@@ -456,144 +497,129 @@ export default function RecordScreen() {
       // FormData에 파일 추가
       formData.append('voice_file', fileObj as any);
       
-      // 추가 메타데이터
+      // 메타데이터 추가
       formData.append('duration', String(recordingDuration));
-      formData.append('is_public', 'true'); // 공개 설정
+      formData.append('expires_in', '259200'); // 기본값 3일(초 단위)
       
-      console.log('브로드캐스트 전송 시작...', {
-        uri: recordingUri,
-        duration: recordingDuration,
-        fileName: fileName,
-        fileType: fileType
+      // API 요청
+      console.log('API 요청 URL:', '/api/broadcasts');
+      console.log('API 요청 헤더:', { 
+        Authorization: `Bearer ${token.substring(0, 5)}...`,
+        'Content-Type': 'multipart/form-data' 
       });
       
-      // API 엔드포인트 및 헤더 로깅
-      const apiUrl = '/api/broadcasts';
-      const headers = {
-        'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-      
-      console.log('API 요청 정보:', {
-        url: apiUrl,
-        headers: {
-          'Content-Type': headers['Content-Type'],
-          'Accept': headers['Accept'],
-          'Authorization': headers['Authorization'].substring(0, 15) + '...'
+      // 개발 환경에서만 formData 내용 로깅
+      if (__DEV__) {
+        console.log('FormData 내용:');
+        for (const pair of (formData as any)._parts) {
+          if (pair[0] === 'voice_file') {
+            console.log('음성 파일:', pair[1].name, pair[1].type);
+          } else {
+            console.log(pair[0] + ':', pair[1]);
+          }
         }
+      }
+      
+      // API 호출 (타임아웃 30초)
+      const response = await axiosInstance.post('/api/broadcasts', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30초
       });
       
-      let success = false;
-      let errorMessage = '';
-      let responseData = null;
-      let statusCode = 0;
+      // 성공 응답 처리
+      console.log('API 응답:', response.status, response.data);
       
-      try {
-        // API 호출
-        const response = await axiosInstance.post(apiUrl, formData, {
-          headers,
-          timeout: 30000, // 30초 타임아웃
-        });
+      // 성공 메시지 표시
+      Alert.alert(
+        t('common.success'),
+        t('broadcast.sendSuccess'),
+        [
+          { 
+            text: t('common.ok'),
+            onPress: () => {
+              // 상태 초기화
+              setRecordingUri(null);
+              setRecordingDuration(0);
+              
+              if (sound) {
+                sound.unloadAsync();
+                setSound(null);
+                setIsPlaying(false);
+              }
+              
+              // 파형 애니메이션 중지
+              stopWaveformAnimation();
+              
+              // 오디오 레벨 초기화
+              setAudioLevels(Array(WAVEFORM_BARS).fill(0));
+              
+              // 홈 화면으로 이동
+              router.push('/');
+            }
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('브로드캐스트 전송 실패:', error);
+      
+      // 오류 유형에 따른 처리
+      if (error.response) {
+        // 서버 응답이 있는 경우
+        console.log('서버 응답 오류:', error.response.status, error.response.data);
         
-        statusCode = response.status;
-        console.log('브로드캐스트 전송 성공:', response.data, '상태 코드:', statusCode);
-        success = true;
-        responseData = response.data;
-      } catch (error: any) {
-        console.error('서버 API 호출 실패:', error);
-        
-        // 상태 코드 및 응답 데이터 확인
-        statusCode = error.response?.status || 0;
-        console.error('에러 상태 코드:', statusCode);
-        console.error('에러 상세:', error.response?.data || error.message);
-        
-        // 인증 오류 처리
-        if (statusCode === 401) {
-          errorMessage = '인증에 실패했습니다. 다시 로그인해주세요.';
-          
-          // 로그인 화면으로 이동 옵션 제공
+        // 인증 오류인 경우
+        if (error.response.status === 401) {
           Alert.alert(
             t('common.error'),
-            errorMessage,
+            t('auth.loginRequired'),
             [
               { text: t('common.ok') },
               { 
                 text: t('auth.login'),
-                onPress: () => router.replace('/auth')
+                onPress: () => router.push('/auth')
               }
             ]
           );
-          
-          // 업로딩 상태 해제
-          setUploading(false);
-          return;
         } else {
-          errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
+          // 기타 서버 오류
+          Alert.alert(t('common.error'), `${t('broadcast.sendError')}: ${error.response.data?.message || '서버 오류'}`);
         }
-        
-        // 개발 환경에서는 성공으로 처리 (서버 연결 없이 테스트)
-        if (process.env.NODE_ENV === 'development' || __DEV__) {
-          console.log('개발 환경에서 브로드캐스트 전송 성공으로 처리');
-          success = true;
-          responseData = {
-            message: "방송이 성공적으로 생성되었습니다.",
-            broadcast: {
-              id: Math.floor(Math.random() * 1000),
-              created_at: new Date().toISOString(),
-              expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-              user: {
-                id: 1,
-                nickname: '테스트사용자'
-              }
-            }
-          };
-        }
-      }
-      
-      // 업로딩 상태 해제
-      setUploading(false);
-      console.log('전송 완료: 업로딩 상태 해제됨', { uploading: false, success, statusCode });
-      
-      if (success) {
-        // 성공 메시지 표시
-        Alert.alert(
-          t('common.success'), 
-          t('broadcast.sendSuccess'),
-          [{ 
-            text: t('common.ok'),
-            onPress: () => {
-              // 브로드캐스트 목록 화면으로 이동
-              router.replace('/broadcast' as any);
-            }
-          }]
-        );
-        
-        // 브로드캐스트 ID 로깅
-        if (responseData && responseData.broadcast && responseData.broadcast.id) {
-          console.log('생성된 브로드캐스트 ID:', responseData.broadcast.id);
-        }
+      } else if (error.request) {
+        // 요청은 전송되었지만 응답을 받지 못한 경우
+        console.log('요청 오류:', error.request);
+        Alert.alert(t('common.error'), `${t('broadcast.sendError')}: 서버 응답 없음`);
       } else {
-        // 실패 메시지 표시
-        Alert.alert(
-          t('common.error'), 
-          `${t('broadcast.sendError')}\n${errorMessage}`,
-          [{ text: t('common.ok') }]
-        );
+        // 요청 생성 중 발생한 오류
+        console.log('기타 오류:', error.message);
+        Alert.alert(t('common.error'), `${t('broadcast.sendError')}: ${error.message}`);
       }
-    } catch (error: any) {
-      console.error('브로드캐스트 전송 실패:', error);
-      Alert.alert(t('common.error'), t('broadcast.sendError'));
+    } finally {
       setUploading(false);
-      console.log('전송 오류: 업로딩 상태 해제됨', { uploading: false });
+      console.log('전송 완료: 업로딩 상태 해제됨', { uploading: false });
     }
   };
 
   // 녹음 취소
   const cancelRecording = () => {
-    // 녹음 중이면 바로 중지
+    // 녹음 중이면 먼저 확인 알림 표시
     if (isRecording) {
-      stopRecording();
+      Alert.alert(
+        t('common.notice'),
+        t('broadcast.deleteConfirm'),
+        [
+          {
+            text: t('common.cancel'),
+            style: 'cancel'
+          },
+          {
+            text: t('common.stop'),
+            onPress: stopRecording
+          }
+        ]
+      );
       return;
     }
     

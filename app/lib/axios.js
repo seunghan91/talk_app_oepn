@@ -10,6 +10,11 @@ const isDev = __DEV__;
 
 // 플랫폼에 따라 다른 baseURL 사용
 const getBaseURL = () => {
+  // 사용자 지정 IP 주소 사용
+  return 'http://192.168.50.105:3000';
+  
+  // 아래는 기존 코드로, 필요시 주석 해제하여 사용
+  /*
   if (Platform.OS === 'web') {
     // 웹에서는 상대 경로 사용 (동일 도메인 가정)
     return '';
@@ -19,6 +24,38 @@ const getBaseURL = () => {
   } else {
     // Android 에뮬레이터에서는 10.0.2.2 사용 (에뮬레이터의 localhost)
     return 'http://10.0.2.2:3000';
+  }
+  */
+};
+
+// API 서버 연결 상태 확인 함수
+const checkServerConnection = async () => {
+  try {
+    // fetch API는 timeout 옵션을 직접 지원하지 않으므로 AbortController 사용
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+    
+    const response = await fetch(`${getBaseURL()}/api/health_check`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (response.ok) {
+      console.log('API 서버 연결 성공');
+      return true;
+    } else {
+      console.log('API 서버 응답 오류:', response.status);
+      return false;
+    }
+  } catch (error) {
+    console.log('API 서버 연결 실패:', error);
+    return false;
   }
 };
 
@@ -52,6 +89,47 @@ const mockResponses = {
   },
   '/api/generate_random_nickname': {
     nickname: generateRandomNickname()
+  },
+  '/api/auth/request_code': {
+    message: '인증코드가 발송되었습니다.',
+    success: true,
+    test_code: '123456' // 테스트용 인증코드 추가
+  },
+  '/api/auth/verify_code': {
+    token: 'test_token_' + Math.random().toString(36).substring(2),
+    user: {
+      id: 1,
+      nickname: '테스트사용자',
+      phone_number: '01012345678',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    is_new_user: false
+  },
+  '/api/auth/login': {
+    token: 'test_token_' + Math.random().toString(36).substring(2),
+    user: {
+      id: 1,
+      nickname: '테스트사용자',
+      phone_number: '01012345678',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  },
+  '/api/auth/register': {
+    token: 'test_token_' + Math.random().toString(36).substring(2),
+    user: {
+      id: 1,
+      nickname: '테스트사용자',
+      phone_number: '01012345678',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    message: '회원가입이 완료되었습니다.'
+  },
+  '/api/auth/logout': {
+    message: '로그아웃이 완료되었습니다.',
+    success: true
   },
   '/api/users/update_profile': {
     user: {
@@ -108,6 +186,14 @@ axiosInstance.interceptors.request.use(
         data: config.data,
         params: config.params
       });
+      
+      // API 서버 연결 상태 확인 (개발 환경에서만)
+      const isServerConnected = await checkServerConnection();
+      if (!isServerConnected) {
+        console.log('API 서버에 연결할 수 없습니다. 모의 응답을 사용합니다.');
+        // 연결 실패 시 모의 응답을 사용하도록 설정
+        config.headers['X-Use-Mock-Response'] = 'true';
+      }
     }
     
     // 인증 토큰 추가
@@ -116,7 +202,7 @@ axiosInstance.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         if (__DEV__) {
-          console.log('인증 토큰 추가됨');
+          console.log('인증 토큰 추가됨:', token.substring(0, 10) + '...');
         }
       } else if (__DEV__) {
         console.warn('인증 토큰이 없습니다');
@@ -158,12 +244,53 @@ axiosInstance.interceptors.response.use(
     }
     
     // 개발 환경에서 네트워크 오류 발생 시 모의 응답 제공
-    if (__DEV__ && error.message === 'Network Error') {
+    if (__DEV__ && (error.message === 'Network Error' || error.config?.headers['X-Use-Mock-Response'] === 'true')) {
       const url = error.config?.url;
-      console.log(`개발 환경: API 서버 연결 실패, 모의 응답 제공 (${url})`);
+      console.log(`개발 환경: API 서버 연결 실패 또는 모의 응답 요청, 모의 응답 제공 (${url})`);
       
       // 요청 URL에 따라 모의 응답 제공
-      if (url === '/api/users/update_profile') {
+      if (url && typeof url === 'string' && Object.prototype.hasOwnProperty.call(mockResponses, url)) {
+        console.log(`모의 응답 제공: ${url}`);
+        
+        // 로그인 요청의 경우 사용자 인증 확인
+        if (url === '/api/auth/login' && error.config.data) {
+          try {
+            const loginData = JSON.parse(error.config.data);
+            console.log('로그인 요청 데이터:', loginData);
+            
+            // 테스트 계정 확인 (01012345678/password)
+            if (loginData.phone_number === '01012345678' && loginData.password === 'password') {
+              // 로그인 성공 응답
+              return new Promise(resolve => {
+                setTimeout(() => {
+                  resolve({
+                    data: mockResponses[url]
+                  });
+                }, 1000);
+              });
+            } else {
+              // 로그인 실패 응답
+              return Promise.reject({
+                response: {
+                  status: 401,
+                  data: { error: "전화번호 또는 비밀번호가 올바르지 않습니다." }
+                }
+              });
+            }
+          } catch (e) {
+            console.log('로그인 데이터 파싱 오류:', e);
+          }
+        }
+        
+        // 기타 요청은 일반적인 모의 응답 제공
+        return new Promise(resolve => {
+          setTimeout(() => {
+            resolve({
+              data: mockResponses[url]
+            });
+          }, 1000); // 1초 지연
+        });
+      } else if (url === '/api/users/update_profile') {
         // 프로필 업데이트 요청에 대한 모의 응답
         const userData = error.config.data ? JSON.parse(error.config.data).user : {};
         console.log(`프로필 업데이트 요청 처리:`, userData);
@@ -187,128 +314,18 @@ axiosInstance.interceptors.response.use(
         
         // FormData 내용 확인 시도
         let formDataContent = {};
-        let hasVoiceFile = false;
         
-        try {
-          if (error.config.data && error.config.data instanceof FormData) {
-            console.log('FormData 객체 감지됨');
-            // FormData 내용을 로그로 출력 (디버깅용)
-            for (let pair of error.config.data.entries()) {
-              console.log(`FormData 항목: ${pair[0]}, 값 유형: ${typeof pair[1]}`);
-              if (pair[0] === 'voice_file' && pair[1]) {
-                hasVoiceFile = true;
-                console.log('음성 파일 정보:', {
-                  name: pair[1].name,
-                  type: pair[1].type,
-                  uri: pair[1].uri ? pair[1].uri.substring(0, 50) + '...' : 'undefined'
-                });
-              } else {
-                // 로그만 출력하고 객체에 저장하지 않음
-                console.log(`기타 FormData 항목: ${pair[0]} = ${pair[1]}`);
-              }
-            }
-          } else {
-            console.log('FormData 객체가 아님:', typeof error.config.data);
-          }
-        } catch (e) {
-          console.log('FormData 내용 확인 중 오류:', e);
-        }
-        
-        // 음성 파일이 없으면 오류 반환
-        if (!hasVoiceFile) {
-          return Promise.reject({
-            response: {
-              status: 400,
-              data: { error: "음성 파일이 필요합니다." }
-            }
-          });
-        }
-        
-        // 지연 효과 추가 (실제 API 호출처럼 보이게)
-        return new Promise(resolve => {
-          setTimeout(() => {
-            // 브로드캐스트 ID 생성
-            const broadcastId = Math.floor(Math.random() * 1000);
-            console.log(`모의 브로드캐스트 생성: ID ${broadcastId}`);
-            
-            resolve({
-              data: {
-                message: "방송이 성공적으로 생성되었습니다.",
-                broadcast: {
-                  id: broadcastId,
-                  created_at: new Date().toISOString(),
-                  expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                  user: {
-                    id: 1,
-                    nickname: '테스트사용자'
-                  }
-                }
-              }
-            });
-          }, 1500); // 1.5초 지연
-        });
-      } else if (url && url.includes('/api/conversations/') && url.includes('/send_message')) {
-        // 대화 메시지 전송 요청에 대한 모의 응답
-        console.log(`대화 메시지 전송 요청 처리: ${url}`);
-        
-        // 대화 ID 추출
-        const conversationId = url.split('/')[3];
-        console.log(`대화 ID: ${conversationId}`);
-        
-        // FormData 내용 확인 시도
-        let hasVoiceFile = false;
-        
-        try {
-          if (error.config.data && error.config.data instanceof FormData) {
-            console.log('FormData 객체 감지됨');
-            // FormData 내용을 로그로 출력 (디버깅용)
-            for (let pair of error.config.data.entries()) {
-              console.log(`FormData 항목: ${pair[0]}, 값 유형: ${typeof pair[1]}`);
-              if (pair[0] === 'voice_file' && pair[1]) {
-                hasVoiceFile = true;
-                console.log('음성 파일 정보:', {
-                  name: pair[1].name,
-                  type: pair[1].type,
-                  uri: pair[1].uri ? pair[1].uri.substring(0, 50) + '...' : 'undefined'
-                });
-              }
+        // 모의 응답 제공
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: '방송이 성공적으로 전송되었습니다.',
+            broadcast: {
+              id: Math.floor(Math.random() * 1000),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           }
-        } catch (e) {
-          console.log('FormData 내용 확인 중 오류:', e);
-        }
-        
-        // 음성 파일이 없으면 오류 반환
-        if (!hasVoiceFile) {
-          return Promise.reject({
-            response: {
-              status: 400,
-              data: { error: "음성 파일이 필요합니다." }
-            }
-          });
-        }
-        
-        // 지연 효과 추가 (실제 API 호출처럼 보이게)
-        return new Promise(resolve => {
-          setTimeout(() => {
-            // 메시지 ID 생성
-            const messageId = Math.floor(Math.random() * 10000);
-            console.log(`모의 메시지 생성: ID ${messageId}, 대화 ID ${conversationId}`);
-            
-            resolve({
-              data: {
-                message: "메시지가 성공적으로 전송되었습니다.",
-                conversation_message: {
-                  id: messageId,
-                  created_at: new Date().toISOString(),
-                  user: {
-                    id: 1,
-                    nickname: '테스트사용자'
-                  }
-                }
-              }
-            });
-          }, 1500); // 1.5초 지연
         });
       }
     }
@@ -317,39 +334,48 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       console.warn('인증 토큰이 만료되었거나 유효하지 않습니다');
       
-      // 로그인 페이지로 리디렉션 (개발 환경에서는 제외)
-      if (!__DEV__) {
-        try {
-          // 토큰 제거
-          await AsyncStorage.removeItem('jwt_token');
-          
-          // 현재 경로가 로그인 페이지가 아닌 경우에만 리디렉션
-          const currentPath = window.location.pathname;
-          if (!currentPath.includes('/auth')) {
-            // 리디렉션 전 알림
-            Alert.alert(
-              '로그인 필요',
-              '세션이 만료되었습니다. 다시 로그인해주세요.',
-              [
-                {
-                  text: '확인',
-                  onPress: () => {
-                    // 로그인 페이지로 이동
-                    const router = require('expo-router').router;
-                    router.replace('/auth');
-                  }
+      try {
+        // 토큰 제거
+        await AsyncStorage.removeItem('jwt_token');
+        
+        // 현재 경로가 로그인 페이지가 아닌 경우에만 리디렉션
+        if (!error.config.url.includes('/auth/')) {
+          // 리디렉션 전 알림
+          Alert.alert(
+            '로그인 필요',
+            '세션이 만료되었습니다. 다시 로그인해주세요.',
+            [
+              {
+                text: '확인',
+                onPress: () => {
+                  // 로그인 페이지로 이동
+                  const router = require('expo-router').router;
+                  router.replace('/auth/login');
                 }
-              ]
-            );
-          }
-        } catch (storageError) {
-          console.error('토큰 제거 실패:', storageError);
+              }
+            ]
+          );
         }
+      } catch (storageError) {
+        console.error('토큰 제거 실패:', storageError);
       }
     }
     
     return Promise.reject(error);
   }
 );
+
+/*
+참고: Rails API 서버에서 CORS 설정이 필요합니다.
+
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins '*'
+    resource '*', headers: :any, methods: [:get, :post, :patch, :put, :delete, :options, :head]
+  end
+end
+
+Rails Gemfile에 gem 'rack-cors'를 추가하고, config/initializers/cors.rb 파일에 위 설정을 추가해야 합니다.
+*/
 
 export default axiosInstance;

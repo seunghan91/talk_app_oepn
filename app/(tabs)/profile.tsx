@@ -63,12 +63,51 @@ export default function ProfileScreen() {
 
   // 로그아웃 처리
   const handleLogout = async (): Promise<void> => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error('로그아웃 실패:', err);
-      Alert.alert(t('common.error'), t('profile.logoutError'));
-    }
+    // 로그아웃 확인 알림
+    Alert.alert(
+      '로그아웃',
+      '정말 로그아웃 하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel'
+        },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              console.log('로그아웃 요청 시작...');
+              
+              // API 서버에 로그아웃 요청
+              try {
+                const response = await axiosInstance.post('/api/auth/logout');
+                console.log('서버 로그아웃 응답:', response.data);
+              } catch (error) {
+                // 서버 오류가 있어도 로컬에서는 로그아웃 진행
+                console.error('서버 로그아웃 요청 실패:', error);
+              }
+              
+              // 로컬 로그아웃 처리
+              await logout();
+              console.log('로그아웃 성공');
+              
+              // 로그아웃 성공 알림
+              Alert.alert('성공', '로그아웃 되었습니다.');
+              
+              // 홈 화면으로 이동
+              router.replace('/');
+            } catch (err) {
+              console.error('로그아웃 실패:', err);
+              Alert.alert('오류', '로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   // 닉네임 변경 저장
@@ -107,13 +146,30 @@ export default function ProfileScreen() {
       
       // 성공 메시지 표시
       Alert.alert(
-        t('common.success'), 
-        t('profile.updateSuccess'),
-        [{ text: t('common.ok') }]
+        '성공', 
+        '프로필이 성공적으로 저장되었습니다.',
+        [
+          { 
+            text: '프로필 새로고침',
+            onPress: () => {
+              // 프로필 화면 새로고침
+              fetchUserData();
+            }
+          },
+          { 
+            text: '홈으로 이동',
+            onPress: () => {
+              // 프로필 화면 새로고침
+              fetchUserData();
+              // 홈 화면으로 이동
+              router.replace('/');
+            }
+          }
+        ]
       );
     } catch (err: any) {
-      console.error('프로필 업데이트 실패:', err);
-      Alert.alert(t('common.error'), t('profile.updateError'));
+      console.error('프로필 저장 실패:', err);
+      Alert.alert('오류', '프로필 저장 중 문제가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -141,23 +197,30 @@ export default function ProfileScreen() {
       
       // 성공 메시지 표시
       Alert.alert(
-        t('common.success'), 
-        t('profile.profileSaved'),
-        [{ 
-          text: t('common.ok'),
-          onPress: () => {
-            // 프로필 화면 새로고침
-            fetchUserData();
-            // 1초 후 홈 화면으로 이동
-            setTimeout(() => {
+        '성공', 
+        '프로필이 성공적으로 저장되었습니다.',
+        [
+          { 
+            text: '프로필 새로고침',
+            onPress: () => {
+              // 프로필 화면 새로고침
+              fetchUserData();
+            }
+          },
+          { 
+            text: '홈으로 이동',
+            onPress: () => {
+              // 프로필 화면 새로고침
+              fetchUserData();
+              // 홈 화면으로 이동
               router.replace('/');
-            }, 1000);
+            }
           }
-        }]
+        ]
       );
     } catch (err: any) {
       console.error('프로필 저장 실패:', err);
-      Alert.alert(t('common.error'), t('profile.updateError'));
+      Alert.alert('오류', '프로필 저장 중 문제가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
