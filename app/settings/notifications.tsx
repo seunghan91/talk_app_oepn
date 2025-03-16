@@ -184,6 +184,36 @@ export default function NotificationsSettings() {
               />
             </ThemedView>
             
+            {/* 새로운 편지 수신 설정 */}
+            <ThemedView style={styles.settingRow}>
+              <ThemedView>
+                <ThemedText>새로운 편지 수신</ThemedText>
+                <ThemedText style={styles.settingDescription}>새로운 편지 수신을 허용합니다. 비활성화하면 새 편지를 받지 않습니다.</ThemedText>
+              </ThemedView>
+              <Switch
+                value={settings.newMessageReceiveEnabled}
+                onValueChange={(value) => handleSettingChange('newMessageReceiveEnabled', value)}
+                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.newMessageReceiveEnabled ? '#FFFFFF' : '#F4F3F4'}
+                disabled={!settings.notificationsEnabled || loading}
+              />
+            </ThemedView>
+            
+            {/* 편지 수신 알람 설정 */}
+            <ThemedView style={styles.settingRow}>
+              <ThemedView>
+                <ThemedText>편지 수신 알람</ThemedText>
+                <ThemedText style={styles.settingDescription}>새 편지가 도착하면 알림을 표시합니다.</ThemedText>
+              </ThemedView>
+              <Switch
+                value={settings.messageAlarmEnabled}
+                onValueChange={(value) => handleSettingChange('messageAlarmEnabled', value)}
+                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.messageAlarmEnabled ? '#FFFFFF' : '#F4F3F4'}
+                disabled={!settings.notificationsEnabled || !settings.newMessageReceiveEnabled || loading}
+              />
+            </ThemedView>
+            
             <ThemedView style={styles.settingRow}>
               <ThemedView>
                 <ThemedText>{t('notifications.sound')}</ThemedText>
@@ -257,34 +287,6 @@ export default function NotificationsSettings() {
             <ThemedView style={styles.sectionHeader}>
               <Ionicons name="list" size={22} color="#007AFF" />
               <ThemedText type="subtitle" style={styles.sectionTitle}>{t('notifications.notificationTypes')}</ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.settingRow}>
-              <ThemedView>
-                <ThemedText>{t('settings.newMessageReceiveEnabled')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.newMessageReceiveDescription')}</ThemedText>
-              </ThemedView>
-              <Switch
-                value={settings.newMessageReceiveEnabled}
-                onValueChange={(value) => handleSettingChange('newMessageReceiveEnabled', value)}
-                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
-                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.newMessageReceiveEnabled ? '#FFFFFF' : '#F4F3F4'}
-                disabled={!settings.notificationsEnabled || loading}
-              />
-            </ThemedView>
-            
-            <ThemedView style={styles.settingRow}>
-              <ThemedView>
-                <ThemedText>{t('settings.messageAlarmEnabled')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.messageAlarmDescription')}</ThemedText>
-              </ThemedView>
-              <Switch
-                value={settings.messageAlarmEnabled}
-                onValueChange={(value) => handleSettingChange('messageAlarmEnabled', value)}
-                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
-                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.messageAlarmEnabled ? '#FFFFFF' : '#F4F3F4'}
-                disabled={!settings.notificationsEnabled || loading}
-              />
             </ThemedView>
             
             <ThemedView style={styles.settingRow}>

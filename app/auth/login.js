@@ -1,4 +1,4 @@
-import { View, TextInput, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -131,6 +131,11 @@ export default function LoginScreen() {
               }
             ]
           );
+          
+          // 알림 후 자동으로 홈 화면으로 이동
+          setTimeout(() => {
+            router.replace('/');
+          }, 500);
         } else {
           Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
         }
@@ -153,6 +158,14 @@ export default function LoginScreen() {
             }
           ]
         );
+        
+        // 알림 후 자동으로 홈 화면으로 이동
+        setTimeout(() => {
+          router.replace('/');
+        }, 500);
+      } else {
+        // 서버 응답도 없고 개발 환경도 아닌 경우
+        Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
       }
     } catch (err) {
       console.error('예상치 못한 오류:', err);
@@ -169,61 +182,62 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>로그인</ThemedText>
-        
-        <ThemedView style={styles.formContainer}>
-          <ThemedText style={styles.label}>전화번호</ThemedText>
-          <TextInput
-            placeholder="전화번호를 입력하세요"
-            style={[styles.input, phoneNumberError ? styles.inputError : null]}
-            value={phoneNumber}
-            onChangeText={handlePhoneNumberChange}
-            keyboardType="phone-pad"
-            maxLength={13} // 하이픈 포함 최대 13자리
-          />
-          {phoneNumberError ? (
-            <ThemedText style={styles.errorText}>{phoneNumberError}</ThemedText>
-          ) : null}
-          
-          <ThemedText style={styles.label}>비밀번호</ThemedText>
-          <TextInput
-            placeholder="비밀번호를 입력하세요"
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true}
-          />
-          
-          <StylishButton
-            title={isLoading ? "처리 중..." : "로그인"}
-            onPress={handleLogin}
-            disabled={isLoading || phoneNumberError !== ''} 
-            type="primary"
-            size="medium"
-            style={styles.button}
-          />
-          
-          {isLoading && (
-            <ActivityIndicator 
-              style={styles.loader} 
-              size="large" 
-              color="#007AFF" 
-            />
-          )}
-        </ThemedView>
-        
-        <ThemedView style={styles.footer}>
-          <ThemedText style={styles.footerText}>
-            계정이 없으신가요?
-          </ThemedText>
-          <TouchableOpacity onPress={goToRegister}>
-            <ThemedText style={styles.registerLink}>
-              회원가입
-            </ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      </ThemedView>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <ThemedView style={styles.container}>
+            <ThemedView style={styles.formContainer}>
+              <ThemedText style={styles.label}>{t('auth.phoneNumber')}</ThemedText>
+              <TextInput
+                placeholder={t('auth.enterPhoneNumber')}
+                style={[styles.input, phoneNumberError ? styles.inputError : null]}
+                value={phoneNumber}
+                onChangeText={handlePhoneNumberChange}
+                keyboardType="phone-pad"
+                maxLength={13} // 하이픈 포함 최대 13자리
+              />
+              {phoneNumberError ? (
+                <ThemedText style={styles.errorText}>{phoneNumberError}</ThemedText>
+              ) : null}
+              
+              <ThemedText style={styles.label}>{t('auth.password')}</ThemedText>
+              <TextInput
+                placeholder={t('auth.enterPassword')}
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={true}
+              />
+              
+              <StylishButton
+                title={isLoading ? t('common.processing') : t('auth.login')}
+                onPress={handleLogin}
+                disabled={isLoading || phoneNumberError !== ''} 
+                type="primary"
+                size="medium"
+                style={styles.button}
+              />
+              
+              {isLoading && (
+                <ActivityIndicator 
+                  style={styles.loader} 
+                  size="large" 
+                  color="#007AFF" 
+                />
+              )}
+            </ThemedView>
+            
+            <ThemedView style={styles.footer}>
+              <ThemedText>{t('auth.noAccount')}</ThemedText>
+              <TouchableOpacity onPress={goToRegister}>
+                <ThemedText style={styles.link}>{t('auth.register')}</ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          </ThemedView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -235,55 +249,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    marginBottom: 30,
-    marginTop: 20,
-    textAlign: 'center',
+    justifyContent: 'center',
   },
   formContainer: {
-    width: '90%',
-    alignItems: 'stretch',
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   label: {
+    marginBottom: 5,
     fontSize: 16,
-    marginBottom: 8,
-    marginLeft: 4,
+    fontWeight: '600',
   },
   input: {
+    height: 50,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    marginBottom: 15,
+    paddingHorizontal: 10,
     fontSize: 16,
+    backgroundColor: '#fff',
   },
   inputError: {
     borderColor: 'red',
   },
   errorText: {
     color: 'red',
-    marginBottom: 16,
-    marginLeft: 4,
+    marginBottom: 10,
   },
   button: {
-    marginBottom: 24,
+    marginTop: 10,
   },
   loader: {
     marginTop: 20,
   },
   footer: {
     flexDirection: 'row',
-    marginTop: 40,
+    justifyContent: 'center',
+    marginTop: 30,
+    gap: 5,
   },
-  footerText: {
-    fontSize: 16,
-  },
-  registerLink: {
-    fontSize: 16,
-    marginLeft: 8,
+  link: {
     color: '#007AFF',
-  }
+    fontWeight: 'bold',
+  },
 }); 

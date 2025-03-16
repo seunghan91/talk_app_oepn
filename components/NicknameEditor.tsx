@@ -13,11 +13,11 @@ interface NicknameEditorProps {
 }
 
 interface ApiResponse {
+  message: string;
   user: {
+    id: number;
     nickname: string;
-    [key: string]: any;
   };
-  [key: string]: any;
 }
 
 const NicknameEditor: React.FC<NicknameEditorProps> = ({ 
@@ -74,7 +74,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       // 사용자에게 피드백 제공
       Alert.alert(
         t('common.success'),
-        t('profile.randomNicknameGenerated', { nickname: newNickname }),
+        t('profile.randomNicknameGenerated').replace('%{nickname}', newNickname),
         [{ text: t('common.ok') }]
       );
     } catch (err: any) {
@@ -115,7 +115,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       // 성공 메시지와 함께 변경된 닉네임 표시
       Alert.alert(
         t('common.success'), 
-        t('profile.nicknameChangedTo', { nickname: savedNickname }),
+        t('profile.nicknameChangedTo').replace('%{nickname}', savedNickname),
         [{ 
           text: t('common.ok'),
           onPress: () => {
@@ -134,60 +134,64 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.inputContainer}>
+      <ThemedView style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
-          style={[
-            styles.input, 
-            randomNicknameGenerated && styles.highlightedInput
-          ]}
+          style={styles.input}
           value={nickname}
-          onChangeText={(text) => {
-            setNickname(text);
-            setRandomNicknameGenerated(false);
-          }}
+          onChangeText={setNickname}
           placeholder={t('profile.enterNickname')}
           editable={!isLoading}
+          autoFocus
         />
-        {randomNicknameGenerated && (
-          <Ionicons 
-            name="checkmark-circle" 
-            size={24} 
-            color="#4CAF50" 
-            style={styles.checkIcon} 
+        
+        {isLoading && (
+          <ActivityIndicator 
+            style={styles.loadingIndicator} 
+            size="small" 
+            color="#007AFF" 
           />
         )}
-      </View>
+      </ThemedView>
       
       <TouchableOpacity 
-        style={styles.randomButton}
+        style={[styles.randomButton, isLoading && styles.disabledButton]}
         onPress={generateRandomNickname}
         disabled={isLoading}
       >
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#007AFF" />
-        ) : (
-          <ThemedView style={styles.buttonContent}>
-            <Ionicons name="shuffle" size={16} color="#333" />
-            <ThemedText style={styles.buttonText}>{t('profile.generateRandomNickname')}</ThemedText>
-          </ThemedView>
-        )}
+        <Ionicons name="shuffle" size={16} color="#FFFFFF" style={styles.buttonIcon} />
+        <ThemedText style={styles.buttonText}>{t('profile.generateRandomNickname')}</ThemedText>
       </TouchableOpacity>
       
       <ThemedView style={styles.buttonRow}>
-        <Button 
-          title={t('common.cancel')} 
-          onPress={onCancel} 
-          disabled={isLoading} 
-        />
-        <Button 
-          title={isLoading ? t('common.processing') : t('common.save')} 
-          onPress={handleSave} 
-          disabled={isLoading || !nickname.trim()} 
-        />
+        <TouchableOpacity 
+          style={[styles.cancelButton, isLoading && styles.disabledButton]}
+          onPress={onCancel}
+          disabled={isLoading}
+        >
+          <ThemedText style={styles.cancelButtonText}>{t('common.cancel')}</ThemedText>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[
+            styles.saveButton, 
+            (isLoading || !nickname.trim()) && styles.disabledButton
+          ]}
+          onPress={handleSave}
+          disabled={isLoading || !nickname.trim()}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="save" size={16} color="#FFFFFF" style={styles.buttonIcon} />
+              <ThemedText style={styles.saveButtonText}>{t('common.save')}</ThemedText>
+            </>
+          )}
+        </TouchableOpacity>
       </ThemedView>
       
-      <ThemedText style={styles.paymentNotice}>
+      <ThemedText style={styles.infoText}>
         {t('profile.paymentNotice')}
       </ThemedText>
     </ThemedView>
@@ -196,52 +200,82 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
-    marginBottom: 16,
+    padding: 16,
+    borderRadius: 8,
+    width: '100%',
   },
   inputContainer: {
-    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
   input: {
     flex: 1,
+    height: 40,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: '#fff',
+    borderColor: '#CCCCCC',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
   },
-  highlightedInput: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#F0FFF0',
-  },
-  checkIcon: {
+  loadingIndicator: {
     position: 'absolute',
-    right: 10,
+    right: 12,
   },
   randomButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#5856D6',
     padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  buttonContent: {
+    borderRadius: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
   buttonText: {
-    marginLeft: 8,
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 10,
+    marginBottom: 16,
   },
-  paymentNotice: {
+  cancelButton: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  cancelButtonText: {
+    color: '#666666',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  infoText: {
     fontSize: 12,
-    fontStyle: 'italic',
+    color: '#666666',
+    textAlign: 'center',
   },
 });
 

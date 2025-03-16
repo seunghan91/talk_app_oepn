@@ -1,4 +1,4 @@
-import { StyleSheet, Alert, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, Alert, ScrollView, TouchableOpacity, ActivityIndicator, View, Text, TextInput, Switch } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,7 @@ import StylishButton from '../../components/StylishButton';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { Platform } from 'react-native';
 
 // 성별 타입 정의
 type Gender = 'male' | 'female' | 'unspecified';
@@ -33,6 +34,8 @@ export default function ProfileScreen() {
   const [editingProfile, setEditingProfile] = useState<boolean>(false);
   const [editedUser, setEditedUser] = useState<Partial<User>>({});
   const [user, setUser] = useState<User | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [nickname, setNickname] = useState<string>('');
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -48,10 +51,12 @@ export default function ProfileScreen() {
         // AuthContext에서 가져온 사용자 정보 사용
         setUser(authUser);
         setEditedUser(authUser);
+        setNickname(authUser.nickname || ''); // 닉네임 상태 설정
         console.log('사용자 정보 로드됨:', authUser);
       } else {
         setUser(null);
         setEditedUser({});
+        setNickname('');
       }
     } catch (error) {
       console.error('사용자 정보 로드 실패:', error);
@@ -61,53 +66,9 @@ export default function ProfileScreen() {
     }
   };
 
-  // 로그아웃 처리
-  const handleLogout = async (): Promise<void> => {
-    // 로그아웃 확인 알림
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃 하시겠습니까?',
-      [
-        {
-          text: '취소',
-          style: 'cancel'
-        },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              console.log('로그아웃 요청 시작...');
-              
-              // API 서버에 로그아웃 요청
-              try {
-                const response = await axiosInstance.post('/api/auth/logout');
-                console.log('서버 로그아웃 응답:', response.data);
-              } catch (error) {
-                // 서버 오류가 있어도 로컬에서는 로그아웃 진행
-                console.error('서버 로그아웃 요청 실패:', error);
-              }
-              
-              // 로컬 로그아웃 처리
-              await logout();
-              console.log('로그아웃 성공');
-              
-              // 로그아웃 성공 알림
-              Alert.alert('성공', '로그아웃 되었습니다.');
-              
-              // 홈 화면으로 이동
-              router.replace('/');
-            } catch (err) {
-              console.error('로그아웃 실패:', err);
-              Alert.alert('오류', '로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.');
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ]
-    );
+  // 닉네임 변경 처리
+  const handleNicknameChange = (text: string) => {
+    setNickname(text);
   };
 
   // 닉네임 변경 저장
@@ -122,7 +83,100 @@ export default function ProfileScreen() {
       
       // 성공 메시지 표시
       console.log('닉네임 변경됨:', newNickname);
+      
+      // 성공 알림 표시
+      Alert.alert(
+        '성공',
+        `닉네임이 '${newNickname}'(으)로 변경되었습니다.`,
+        [
+          { 
+            text: '확인',
+            style: 'default'
+          }
+        ]
+      );
     }
+  };
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    // 로그아웃 확인 알림
+    Alert.alert(
+      '로그아웃',
+      '정말 로그아웃 하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel'
+        },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // 웹 환경에서 로그아웃 처리 개선
+              if (Platform.OS === 'web') {
+                // AsyncStorage에서 토큰과 사용자 데이터 직접 제거
+                await AsyncStorage.removeItem('token');
+                await AsyncStorage.removeItem('user');
+                await AsyncStorage.removeItem('userToken');
+                
+                // axios 헤더에서 토큰 제거
+                delete axiosInstance.defaults.headers.common['Authorization'];
+                
+                // 상태 업데이트
+                updateUser({});
+                setUser(null);
+                
+                console.log('웹 환경에서 로그아웃 성공');
+                
+                // 로그아웃 성공 알림
+                Alert.alert(
+                  '성공',
+                  '로그아웃 되었습니다.',
+                  [
+                    {
+                      text: '확인',
+                      onPress: () => {
+                        // 웹에서는 직접 URL 변경 대신 router.replace 사용
+                        try {
+                          router.replace('/');
+                        } catch (error) {
+                          console.error('라우팅 오류:', error);
+                          // 라우팅 실패 시 window.location 사용
+                          window.location.href = '/';
+                        }
+                      }
+                    }
+                  ]
+                );
+                return;
+              }
+              
+              // 네이티브 환경에서는 기존 로그아웃 함수 사용
+              await logout();
+              
+              // 로그아웃 성공 알림
+              Alert.alert(
+                '성공',
+                '로그아웃 되었습니다.',
+                [
+                  {
+                    text: '확인',
+                    onPress: () => {
+                      router.replace('/');
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('로그아웃 오류:', error);
+              Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   // 프로필 정보 변경 처리
@@ -133,7 +187,42 @@ export default function ProfileScreen() {
   // 프로필 정보 저장
   const saveProfileChanges = async (): Promise<void> => {
     try {
-      // 실제 API 호출 (현재는 더미 구현)
+      console.log('프로필 변경 저장 요청:', editedUser);
+      
+      // 웹 환경에서 프로필 저장 처리 개선
+      if (Platform.OS === 'web') {
+        // 사용자 정보 업데이트
+        if (user) {
+          const updatedUser = { ...user, ...editedUser };
+          setUser(updatedUser);
+          
+          // AsyncStorage에 업데이트된 사용자 정보 저장
+          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // AuthContext의 updateUser 함수를 호출하여 전역 상태 업데이트
+          updateUser(editedUser);
+          
+          setEditingProfile(false);
+          
+          // 성공 메시지 표시
+          Alert.alert(
+            '성공', 
+            '프로필이 성공적으로 저장되었습니다.',
+            [
+              { 
+                text: '확인',
+                onPress: () => {
+                  // 프로필 화면 새로고침
+                  fetchUserData();
+                }
+              }
+            ]
+          );
+        }
+        return;
+      }
+      
+      // 실제 API 호출 (네이티브 환경)
       // const res = await axiosInstance.put<{ user: User }>('/api/update_profile', editedUser);
       
       // 성공 시 사용자 정보 업데이트
@@ -178,6 +267,30 @@ export default function ProfileScreen() {
     try {
       console.log('프로필 저장 요청:', user);
       
+      // 웹 환경에서 프로필 저장 처리 개선
+      if (Platform.OS === 'web') {
+        if (user) {
+          // AsyncStorage에 업데이트된 사용자 정보 저장
+          await AsyncStorage.setItem('user', JSON.stringify(user));
+          
+          // 성공 메시지 표시
+          Alert.alert(
+            '성공', 
+            '프로필이 성공적으로 저장되었습니다.',
+            [
+              { 
+                text: '확인',
+                onPress: () => {
+                  // 프로필 화면 새로고침
+                  fetchUserData();
+                }
+              }
+            ]
+          );
+        }
+        return;
+      }
+      
       // 실제 API 호출
       try {
         const res = await axiosInstance.put<{ user: User }>('/api/users/update_profile', {
@@ -221,6 +334,86 @@ export default function ProfileScreen() {
     } catch (err: any) {
       console.error('프로필 저장 실패:', err);
       Alert.alert('오류', '프로필 저장 중 문제가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  // 프로필 저장
+  const saveProfile = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // 웹 환경에서 프로필 저장 처리 개선
+      if (Platform.OS === 'web') {
+        // 사용자 정보 업데이트
+        const updatedUser = { ...user, nickname };
+        
+        // AsyncStorage에 업데이트된 사용자 정보 저장
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // 상태 업데이트
+        setUser(updatedUser);
+        updateUser(updatedUser);
+        
+        // 성공 알림
+        Alert.alert(
+          '성공',
+          '프로필이 성공적으로 저장되었습니다.',
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                // 웹에서는 직접 URL 변경 대신 router.replace 사용
+                try {
+                  router.replace('/');
+                } catch (error) {
+                  console.error('라우팅 오류:', error);
+                  // 라우팅 실패 시 window.location 사용
+                  window.location.href = '/';
+                }
+              }
+            }
+          ]
+        );
+        
+        setIsSaving(false);
+        return;
+      }
+      
+      // 프로필 업데이트 API 호출
+      const response = await axiosInstance.post(`/api/update_profile`, {
+        nickname: nickname, // 수정된 닉네임 사용
+        gender: user.gender // 현재 성별 정보 유지
+        // 다른 필드도 필요하면 추가
+      });
+      
+      console.log('프로필 업데이트 응답:', response.data);
+      
+      // 사용자 정보 업데이트
+      if (response.data && response.data.user) {
+        updateUser(response.data.user);
+        setUser(response.data.user);
+      }
+      
+      // 성공 알림
+      Alert.alert(
+        '성공',
+        '프로필이 성공적으로 저장되었습니다.',
+        [
+          {
+            text: '확인',
+            onPress: () => {
+              router.back();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('프로필 업데이트 오류:', error);
+      Alert.alert('오류', '프로필 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -348,10 +541,28 @@ export default function ProfileScreen() {
               <ThemedView style={styles.stepContainer}>
                 <StylishButton 
                   title={t('profile.saveProfile')} 
-                  onPress={handleSaveProfile}
+                  onPress={saveProfile}
                   type="primary"
                   size="medium"
                   icon={<Ionicons name="save" size={18} color="#FFFFFF" />}
+                />
+              </ThemedView>
+              
+              {/* 설정 화면으로 이동하는 버튼 */}
+              <ThemedView style={styles.stepContainer}>
+                <StylishButton 
+                  title={t('settings.title')} 
+                  onPress={() => {
+                    if (Platform.OS === 'web') {
+                      // 웹 환경에서는 window.location.href 사용
+                      window.location.href = '/settings';
+                    } else {
+                      router.push('/settings');
+                    }
+                  }}
+                  type="secondary"
+                  size="medium"
+                  icon={<Ionicons name="settings" size={18} color="#FFFFFF" />}
                 />
               </ThemedView>
               
@@ -441,5 +652,11 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-  }
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
 }); 

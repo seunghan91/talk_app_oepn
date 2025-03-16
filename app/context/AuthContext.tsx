@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import axiosInstance from '../lib/axios';
+import { Alert } from 'react-native';
 
 interface User {
   id: number;
@@ -34,53 +35,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // 토큰 저장 및 사용자 정보 설정
+  // 앱 시작 시 저장된 토큰으로 자동 로그인 시도
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const userData = await AsyncStorage.getItem('user');
+        
+        if (token && userData) {
+          // 토큰을 axios 인스턴스의 기본 헤더에 설정
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          setUser(JSON.parse(userData));
+          setIsLoading(false);
+          console.log('자동 로그인 성공');
+        }
+      } catch (error) {
+        console.error('자동 로그인 실패:', error);
+      }
+    };
+
+    loadToken();
+  }, []);
+
+  // 로그인 함수
   const login = async (token: string, userData: User): Promise<void> => {
     try {
-      await AsyncStorage.setItem('jwt_token', token);
+      // 토큰과 사용자 데이터를 AsyncStorage에 저장
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('userToken', token); // 호환성을 위해 userToken도 저장
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      
+      // 토큰을 axios 인스턴스의 기본 헤더에 설정
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // 상태 업데이트
       setUser(userData);
+      setIsLoading(false);
+      
+      console.log('로그인 성공:', userData);
     } catch (error) {
-      console.error('로그인 실패:', error);
+      console.error('로그인 중 오류 발생:', error);
+      throw error;
     }
   };
 
-  // 로그아웃 및 토큰 삭제
+  // 로그아웃 함수
   const logout = async (): Promise<void> => {
     try {
-      console.log('로그아웃 시작...');
-      
-      // 서버에 로그아웃 요청 시도
+      // 서버에 로그아웃 요청 (선택적)
       try {
-        const token = await AsyncStorage.getItem('jwt_token');
-        if (token) {
-          console.log('서버에 로그아웃 요청 전송...');
-          await axiosInstance.post('/api/auth/logout');
-          console.log('서버 로그아웃 요청 성공');
-        }
-      } catch (serverError) {
-        // 서버 오류가 있어도 로컬에서는 로그아웃 진행
-        console.error('서버 로그아웃 요청 실패:', serverError);
-        console.log('로컬에서만 로그아웃 진행');
+        await axiosInstance.post('/api/auth/logout');
+      } catch (error) {
+        console.warn('서버 로그아웃 실패:', error);
+        // 서버 로그아웃이 실패해도 로컬 로그아웃은 진행
       }
       
-      // 로컬 스토리지에서 토큰 삭제
-      await AsyncStorage.removeItem('jwt_token');
-      console.log('토큰 삭제 완료');
+      // AsyncStorage에서 토큰과 사용자 데이터 제거
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('userToken');
       
-      // 사용자 정보 초기화
+      // axios 헤더에서 토큰 제거
+      delete axiosInstance.defaults.headers.common['Authorization'];
+      
+      // 상태 업데이트
       setUser(null);
-      console.log('사용자 정보 초기화 완료');
+      setIsLoading(false);
       
-      // 개발 환경에서 로그아웃 확인
-      if (__DEV__) {
-        console.log('로그아웃 성공');
-      }
+      console.log('로그아웃 성공');
       
       // 홈 화면으로 리다이렉트
       router.replace('/');
     } catch (error) {
-      console.error('로그아웃 실패:', error);
-      throw error; // 에러를 상위로 전파하여 UI에서 처리할 수 있도록 함
+      console.error('로그아웃 중 오류 발생:', error);
+      throw error;
     }
   };
 
@@ -90,54 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({ ...user, ...userData });
     }
   };
-
-  // 앱 시작 시 자동 로그인 시도
-  useEffect(() => {
-    const checkLoginStatus = async (): Promise<void> => {
-      try {
-        setIsLoading(true);
-        const token = await AsyncStorage.getItem('jwt_token');
-        
-        if (token) {
-          console.log('저장된 토큰 발견, 자동 로그인 시도...');
-          
-          try {
-            // 토큰이 있으면 사용자 정보 요청
-            const response = await axiosInstance.get<{ user: User }>('/api/me');
-            const userData = response.data.user;
-            
-            // 전화번호 형식 변경
-            const digitsOnly = userData.phone_number.replace(/\D/g, '');
-            // 국제 형식으로 변환 (한국)
-            const formattedNumber = '+82' + digitsOnly.substring(1);
-            
-            // 사용자 정보 설정
-            setUser({ ...userData, phone_number: formattedNumber });
-            console.log('자동 로그인 성공:', userData.nickname);
-          } catch (error) {
-            console.error('자동 로그인 실패:', error);
-            
-            // 개발 환경에서도 자동 로그인 실패 시 토큰 삭제
-            await AsyncStorage.removeItem('jwt_token');
-            console.log('토큰 삭제됨: 자동 로그인 실패');
-            
-            // 테스트 사용자로 자동 로그인하지 않음
-            setUser(null);
-          }
-        } else {
-          console.log('저장된 토큰 없음, 로그인 필요');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('로그인 상태 확인 중 오류:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkLoginStatus();
-  }, []);
 
   const value = {
     user,

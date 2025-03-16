@@ -43,18 +43,18 @@ export default function MessagesScreen() {
       // const response = await axiosInstance.get('/api/conversations');
       // setConversations(response.data);
       
-      // 더미 데이터
+      // 더미 데이터 - 테스트용 사용자 5명 (A, B, C, D, E)
       const dummyData = [
         {
           id: 1,
           user: {
             id: 101,
-            nickname: '김철수',
+            nickname: 'A - 김철수',
             profile_image: 'https://randomuser.me/api/portraits/men/32.jpg',
           },
           last_message: {
             content: '안녕하세요, 오늘 방송 잘 들었습니다!',
-            created_at: '2023-03-15T14:30:00Z',
+            created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
             is_read: false,
           },
           is_favorite: true,
@@ -64,12 +64,12 @@ export default function MessagesScreen() {
           id: 2,
           user: {
             id: 102,
-            nickname: '이영희',
+            nickname: 'B - 이영희',
             profile_image: 'https://randomuser.me/api/portraits/women/44.jpg',
           },
           last_message: {
             content: '다음 방송은 언제 하시나요?',
-            created_at: '2023-03-14T09:15:00Z',
+            created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
             is_read: true,
           },
           is_favorite: false,
@@ -79,12 +79,12 @@ export default function MessagesScreen() {
           id: 3,
           user: {
             id: 103,
-            nickname: '박지민',
+            nickname: 'C - 박지민',
             profile_image: 'https://randomuser.me/api/portraits/men/67.jpg',
           },
           last_message: {
             content: '협업 제안이 있습니다. 연락 주세요.',
-            created_at: '2023-03-13T18:45:00Z',
+            created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
             is_read: true,
           },
           is_favorite: true,
@@ -94,11 +94,12 @@ export default function MessagesScreen() {
           id: 4,
           user: {
             id: 104,
-            nickname: '최수진',
+            nickname: 'D - 최수진',
+            profile_image: 'https://randomuser.me/api/portraits/women/22.jpg',
           },
           last_message: {
             content: '안녕하세요! 팬입니다. 다음 방송 기대할게요.',
-            created_at: '2023-03-12T11:20:00Z',
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
             is_read: true,
           },
           is_favorite: false,
@@ -108,12 +109,12 @@ export default function MessagesScreen() {
           id: 5,
           user: {
             id: 105,
-            nickname: '정민준',
+            nickname: 'E - 정민준',
             profile_image: 'https://randomuser.me/api/portraits/men/22.jpg',
           },
           last_message: {
             content: '질문이 있습니다. 확인 부탁드려요.',
-            created_at: '2023-03-11T16:05:00Z',
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
             is_read: false,
           },
           is_favorite: false,
@@ -311,7 +312,7 @@ export default function MessagesScreen() {
           <Ionicons name="search" size={20} color="#999999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder={t('messages.searchPlaceholder')}
+            placeholder=""
             value={searchQuery}
             onChangeText={setSearchQuery}
           />

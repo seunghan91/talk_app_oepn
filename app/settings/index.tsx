@@ -17,6 +17,8 @@ interface SettingsState {
   darkMode: 'system' | 'light' | 'dark';
   autoPlayAudio: boolean;
   dataUsage: 'low' | 'medium' | 'high';
+  receiveNewLetters: boolean;
+  receiveLetterAlerts: boolean;
 }
 
 export default function SettingsScreen() {
@@ -29,6 +31,8 @@ export default function SettingsScreen() {
     darkMode: 'system',
     autoPlayAudio: true,
     dataUsage: 'medium',
+    receiveNewLetters: true,
+    receiveLetterAlerts: true,
   });
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -36,10 +40,27 @@ export default function SettingsScreen() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
+        // 앱 설정 로드
         const storedSettings = await AsyncStorage.getItem('app_settings');
+        let newSettings = { ...settings };
+        
         if (storedSettings) {
-          setSettings(JSON.parse(storedSettings));
+          newSettings = { ...newSettings, ...JSON.parse(storedSettings) };
         }
+        
+        // 사용자 설정 로드 (이전 프로필 화면에서 사용하던 설정)
+        const userSettingsJson = await AsyncStorage.getItem('userSettings');
+        if (userSettingsJson) {
+          const userSettings = JSON.parse(userSettingsJson);
+          if (userSettings.receiveNewLetters !== undefined) {
+            newSettings.receiveNewLetters = userSettings.receiveNewLetters;
+          }
+          if (userSettings.receiveLetterAlerts !== undefined) {
+            newSettings.receiveLetterAlerts = userSettings.receiveLetterAlerts;
+          }
+        }
+        
+        setSettings(newSettings);
       } catch (error) {
         console.error('설정 로드 실패:', error);
       } finally {
@@ -92,6 +113,47 @@ export default function SettingsScreen() {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     saveSettings(newSettings);
+  };
+
+  // 모든 설정 저장
+  const saveAllSettings = async () => {
+    try {
+      await AsyncStorage.setItem('app_settings', JSON.stringify(settings));
+      
+      // 사용자 설정도 함께 저장 (이전 프로필 화면에서 사용하던 설정)
+      const userSettings = {
+        receiveNewLetters: settings.receiveNewLetters,
+        receiveLetterAlerts: settings.receiveLetterAlerts
+      };
+      await AsyncStorage.setItem('userSettings', JSON.stringify(userSettings));
+      
+      Alert.alert(
+        t('common.success'),
+        t('settings.settingsSaved'),
+        [
+          {
+            text: t('common.ok'),
+            onPress: () => {
+              // 웹 환경에서는 라우팅 처리 개선
+              if (Platform.OS === 'web') {
+                try {
+                  router.back();
+                } catch (error) {
+                  console.error('라우팅 오류:', error);
+                  // 라우팅 실패 시 홈으로 이동
+                  window.location.href = '/';
+                }
+              } else {
+                router.back();
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('설정 저장 실패:', error);
+      Alert.alert(t('common.error'), t('settings.saveError'));
+    }
   };
 
   // 알림 설정 화면으로 이동
@@ -201,17 +263,31 @@ export default function SettingsScreen() {
               />
             </ThemedView>
             
+            {/* 새로운 편지 수신 설정 */}
             <ThemedView style={styles.settingRow}>
               <ThemedView>
-                <ThemedText>{t('settings.messageAlarmEnabled')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.messageAlarmDescription')}</ThemedText>
+                <ThemedText>{t('profile.receiveNewLetters')}</ThemedText>
+                <ThemedText style={styles.settingDescription}>{t('settings.receiveNewLettersDescription')}</ThemedText>
               </ThemedView>
               <Switch
-                value={settings.messageAlarmEnabled}
-                onValueChange={(value) => handleSettingChange('messageAlarmEnabled', value)}
+                value={settings.receiveNewLetters}
+                onValueChange={(value) => handleSettingChange('receiveNewLetters', value)}
                 trackColor={{ false: '#D1D1D6', true: '#34C759' }}
-                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.messageAlarmEnabled ? '#FFFFFF' : '#F4F3F4'}
-                disabled={!settings.notificationsEnabled}
+                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.receiveNewLetters ? '#FFFFFF' : '#F4F3F4'}
+              />
+            </ThemedView>
+            
+            {/* 편지 수신 알림 설정 */}
+            <ThemedView style={styles.settingRow}>
+              <ThemedView>
+                <ThemedText>{t('profile.receiveLetterAlerts')}</ThemedText>
+                <ThemedText style={styles.settingDescription}>{t('settings.receiveLetterAlertsDescription')}</ThemedText>
+              </ThemedView>
+              <Switch
+                value={settings.receiveLetterAlerts}
+                onValueChange={(value) => handleSettingChange('receiveLetterAlerts', value)}
+                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
+                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.receiveLetterAlerts ? '#FFFFFF' : '#F4F3F4'}
               />
             </ThemedView>
             
@@ -400,6 +476,17 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
             </TouchableOpacity>
           </ThemedView>
+
+          {/* 설정 저장 버튼 */}
+          <ThemedView style={styles.saveButtonContainer}>
+            <StylishButton
+              title={t('common.save')}
+              onPress={saveAllSettings}
+              type="primary"
+              size="large"
+              icon={<Ionicons name="save" size={20} color="#FFFFFF" />}
+            />
+          </ThemedView>
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -515,5 +602,10 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontWeight: 'bold',
     marginRight: 8,
+  },
+  saveButtonContainer: {
+    marginTop: 20,
+    marginBottom: 40,
+    alignItems: 'center',
   },
 });

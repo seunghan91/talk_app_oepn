@@ -10,6 +10,8 @@ import { Platform } from 'react-native';
 import { FileSystem } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
+import { SafeAreaView } from 'react-native';
 
 export default function ConversationDetail() {
   const { id } = useLocalSearchParams();
@@ -28,29 +30,48 @@ export default function ConversationDetail() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState(null);
   
   const flatListRef = useRef(null);
+  const intervalRef = useRef(null);
   
   // 대화 상세 정보 불러오기
   const fetchConversationDetail = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/conversations/${id}`);
       
-      const { conversation, messages } = response.data;
-      setConversation(conversation);
-      setMessages(messages || []);
+      // 실제 API 호출 대신 더미 데이터 사용
+      // const response = await axiosInstance.get(`/api/conversations/${id}`);
       
-      // 현재 사용자 ID 가져오기
-      const meResponse = await axiosInstance.get('/api/me');
-      const currentUserId = meResponse.data.user.id;
-      setCurrentUser(meResponse.data.user);
+      // 더미 대화 데이터
+      const dummyConversation = {
+        id: parseInt(id),
+        user_a_id: 100, // 현재 사용자 ID
+        user_b_id: 100 + parseInt(id), // 상대방 ID
+        user_a: { id: 100, nickname: '나' },
+        user_b: { id: 100 + parseInt(id), nickname: getDummyUserName(parseInt(id)) },
+        favorite: Math.random() > 0.5,
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // 더미 메시지 데이터
+      const dummyMessages = generateDummyMessages(parseInt(id), 5);
+      
+      setConversation(dummyConversation);
+      setMessages(dummyMessages);
+      
+      // 현재 사용자 정보 설정
+      const currentUserData = { id: 100, nickname: '나' };
+      setCurrentUser(currentUserData);
       
       // 상대방 정보 설정
-      const otherUser = conversation.user_a_id === currentUserId ? 
-        { id: conversation.user_b_id, nickname: conversation.user_b?.nickname } : 
-        { id: conversation.user_a_id, nickname: conversation.user_a?.nickname };
-      setOtherUser(otherUser);
+      const otherUserData = { 
+        id: 100 + parseInt(id), 
+        nickname: getDummyUserName(parseInt(id)) 
+      };
+      setOtherUser(otherUserData);
+      
     } catch (error) {
       console.error('대화 정보 로드 실패:', error.response?.data || error.message);
       Alert.alert('오류', '대화 정보를 불러오는데 실패했습니다.');
@@ -58,6 +79,35 @@ export default function ConversationDetail() {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+  
+  // 더미 사용자 이름 가져오기
+  const getDummyUserName = (userId) => {
+    const names = ['김철수', '이영희', '박지민', '최수진', '정민준'];
+    return names[(userId - 1) % names.length];
+  };
+  
+  // 더미 메시지 생성
+  const generateDummyMessages = (conversationId, count) => {
+    const messages = [];
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    
+    for (let i = 0; i < count; i++) {
+      const isMyMessage = i % 2 === 0;
+      const messageDate = new Date(now - (count - i) * day / count);
+      
+      messages.push({
+        id: `msg-${conversationId}-${i}`,
+        sender_id: isMyMessage ? 100 : 100 + conversationId,
+        content: `더미 메시지 ${i + 1}`,
+        created_at: messageDate.toISOString(),
+        voice_file_url: 'https://example.com/audio.m4a', // 더미 오디오 URL
+        is_read: true
+      });
+    }
+    
+    return messages;
   };
   
   useEffect(() => {
@@ -77,153 +127,49 @@ export default function ConversationDetail() {
   
   // 메시지 전송
   const handleSendMessage = async (uri) => {
-    if (!uri) {
-      Alert.alert('오류', '녹음된 내용이 없습니다.');
-      return;
-    }
-    
-    // 전송 중 상태 설정
-    setSendingMessage(true);
-    console.log(`메시지 전송 시작 - 대화 ID: ${id}, 녹음 URI: ${uri}`);
-    
-    // 전송 중 알림 표시
-    Alert.alert(
-      '전송 중',
-      '메시지를 전송하고 있습니다. 잠시만 기다려주세요.',
-      [],
-      { cancelable: false }
-    );
-    
     try {
-      // 인증 토큰 확인
-      const token = await AsyncStorage.getItem('jwt_token');
-      if (!token) {
-        console.error('인증 토큰이 없습니다.');
-        Alert.alert(
-          '오류',
-          '인증 토큰이 없습니다. 다시 로그인해주세요.',
-          [
-            { text: '확인' },
-            { 
-              text: '로그인',
-              onPress: () => router.replace('/auth')
-            }
-          ]
-        );
-        setSendingMessage(false);
+      if (!uri) {
+        Alert.alert(t('common.error'), t('conversations.noRecording'));
         return;
       }
+
+      setSendingMessage(true);
       
-      console.log('인증 토큰 확인됨:', token.substring(0, 10) + '...');
+      // 모의 전송 (실제 API 호출 대신)
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // 파일 정보 가져오기
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      console.log('녹음 파일 정보:', fileInfo);
-      
-      // 폼 데이터 생성
-      const formData = new FormData();
-      
-      // 파일 이름에서 확장자 추출
-      const fileName = uri.split('/').pop() || 'voice_message.m4a';
-      const fileType = fileName.includes('.') ? 
-        `audio/${fileName.split('.').pop()}` : 'audio/m4a';
-      
-      // 파일 객체 생성 및 로깅
-      const fileObj = {
-        uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
-        name: fileName,
-        type: fileType,
-      };
-      console.log('파일 객체:', fileObj);
-      
-      // FormData에 파일 추가
-      formData.append('voice_file', fileObj);
-      
-      // API 엔드포인트 및 헤더 로깅
-      const apiUrl = `/api/conversations/${id}/send_message`;
-      const headers = {
-        'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
+      // 새 메시지 추가
+      const newMessage = {
+        id: `msg-${id}-${messages.length}`,
+        sender_id: currentUser.id,
+        content: '새 음성 메시지',
+        created_at: new Date().toISOString(),
+        voice_file_url: uri,
+        is_read: true
       };
       
-      console.log('API 요청 정보:', {
-        url: apiUrl,
-        headers: {
-          'Content-Type': headers['Content-Type'],
-          'Accept': headers['Accept'],
-          'Authorization': headers['Authorization'].substring(0, 15) + '...'
-        }
-      });
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setRecordingUri(null);
       
-      // API 호출
-      const response = await axiosInstance.post(apiUrl, formData, {
-        headers,
-        timeout: 30000, // 30초 타임아웃
-      });
-      
-      console.log('메시지 전송 성공:', response.data, '상태 코드:', response.status);
-      
-      // 성공 알림 표시
       Alert.alert(
-        '전송 완료',
-        '메시지가 성공적으로 전송되었습니다.',
-        [{ text: '확인' }]
+        t('common.success'), 
+        `메시지가 성공적으로 전송되었습니다.\n\n수신자: ${otherUser?.nickname || '알 수 없음'}`,
+        [
+          { text: '확인', onPress: () => {
+            setShowRecorder(false);
+            // 스크롤을 맨 아래로 이동
+            if (flatListRef.current) {
+              setTimeout(() => {
+                flatListRef.current.scrollToEnd({ animated: true });
+              }, 300);
+            }
+          }}
+        ]
       );
       
-      // 메시지 전송 후 대화 새로고침
-      await fetchConversationDetail();
-      
-      // 녹음기 숨기기
-      setShowRecorder(false);
-      
-      // 리스트 맨 아래로 스크롤
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
     } catch (error) {
-      console.error('메시지 전송 실패:', error);
-      
-      // 상태 코드 및 응답 데이터 확인
-      const statusCode = error.response?.status || 0;
-      console.error('에러 상태 코드:', statusCode);
-      console.error('에러 상세:', error.response?.data || error.message);
-      
-      // 인증 오류 처리
-      if (statusCode === 401) {
-        const errorMessage = '인증에 실패했습니다. 다시 로그인해주세요.';
-        
-        // 로그인 화면으로 이동 옵션 제공
-        Alert.alert(
-          '오류',
-          errorMessage,
-          [
-            { text: '확인' },
-            { 
-              text: '로그인',
-              onPress: () => router.replace('/auth')
-            }
-          ]
-        );
-      } else {
-        const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
-        Alert.alert('오류', `메시지 전송에 실패했습니다.\n${errorMessage}`);
-      }
-      
-      // 개발 환경에서는 성공으로 처리
-      if (__DEV__) {
-        console.log('개발 환경: 메시지 전송 실패를 성공으로 처리');
-        
-        // 성공 알림 표시
-        Alert.alert(
-          '전송 완료 (개발 모드)',
-          '메시지가 성공적으로 전송되었습니다.',
-          [{ text: '확인' }]
-        );
-        
-        setShowRecorder(false);
-        await fetchConversationDetail();
-      }
+      console.error('Error sending message:', error);
+      Alert.alert(t('common.error'), t('conversations.sendError'));
     } finally {
       setSendingMessage(false);
     }
@@ -234,17 +180,19 @@ export default function ConversationDetail() {
     if (!conversation) return;
     
     try {
-      const endpoint = conversation.favorite ? 
-        `/api/conversations/${id}/unfavorite` : 
-        `/api/conversations/${id}/favorite`;
+      // 모의 API 호출
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      await axiosInstance.post(endpoint);
-      
-      // 대화 정보 새로고침
+      // 대화 정보 업데이트
       setConversation({
         ...conversation,
         favorite: !conversation.favorite,
       });
+      
+      Alert.alert(
+        '성공', 
+        conversation.favorite ? '즐겨찾기에서 제거되었습니다.' : '즐겨찾기에 추가되었습니다.'
+      );
     } catch (error) {
       console.error('즐겨찾기 업데이트 실패:', error.response?.data || error.message);
       Alert.alert('오류', '즐겨찾기 업데이트에 실패했습니다.');
@@ -290,113 +238,154 @@ export default function ConversationDetail() {
             styles.voicePlayerContainer,
             isMyMessage ? styles.myVoicePlayer : styles.otherVoicePlayer
           ]}>
-            <VoicePlayer 
-              uri={item.voice_file_url} 
-              style={styles.player}
-            />
+            {/* 실제 오디오 URL이 없는 경우 더미 플레이어 표시 */}
+            {item.voice_file_url === 'https://example.com/audio.m4a' ? (
+              <View style={styles.dummyPlayer}>
+                <Ionicons name="volume-medium" size={24} color="#999999" />
+                <Text style={styles.dummyPlayerText}>더미 오디오 메시지</Text>
+              </View>
+            ) : (
+              <VoicePlayer 
+                uri={item.voice_file_url} 
+                style={styles.player}
+              />
+            )}
           </View>
         </View>
       </>
     );
   };
   
+  const renderFooter = () => {
+    if (sendingMessage) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.footer}>
+        <VoiceRecorder
+          onRecordingComplete={(uri) => {
+            setRecordingUri(uri);
+            handleSendMessage(uri);
+          }}
+          maxDuration={30000} // 30초
+          style={styles.recorder}
+          recordingMessage={t('conversations.recordingInstructions')}
+        />
+      </View>
+    );
+  };
+  
   if (loading && !conversation) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>로딩 중...</Text>
-      </View>
+      <SafeAreaView style={styles.safeAreaContainer}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={styles.loadingText}>로딩 중...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
   
   return (
-    <View style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>
-          {otherUser?.nickname || '대화'}
-        </Text>
-        
-        <TouchableOpacity 
-          style={styles.favoriteButton}
-          onPress={toggleFavorite}
-        >
-          <Ionicons 
-            name={conversation?.favorite ? "star" : "star-outline"} 
-            size={24} 
-            color={conversation?.favorite ? "#FFC107" : "#BBBBBB"} 
-          />
-        </TouchableOpacity>
-      </View>
-      
-      {/* 메시지 목록 */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={renderMessageItem}
-        contentContainerStyle={styles.messagesList}
-        inverted={false}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        onContentSizeChange={() => {
-          if (flatListRef.current && messages.length > 0) {
-            flatListRef.current.scrollToEnd({ animated: true });
-          }
-        }}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              메시지가 없습니다. 첫 메시지를 보내보세요!
-            </Text>
-          </View>
-        }
-      />
-      
-      {/* 녹음기 */}
-      {showRecorder ? (
-        <View style={styles.recorderContainer}>
-          <View style={styles.recorderHeader}>
-            <Text style={styles.recorderTitle}>메시지 녹음</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowRecorder(false)}
-            >
-              <Ionicons name="close" size={24} color="#FF3B30" />
-            </TouchableOpacity>
-          </View>
-          <VoiceRecorder onRecordingComplete={handleSendMessage} />
-        </View>
-      ) : (
-        <View style={styles.inputContainer}>
-          <TouchableOpacity
-            style={styles.recordButton}
-            onPress={() => setShowRecorder(true)}
-            disabled={sendingMessage}
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <View style={styles.container}>
+        {/* 헤더 */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.push('/')}
           >
-            {sendingMessage ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="mic" size={24} color="#FFFFFF" />
-                <Text style={styles.recordButtonText}>메시지 녹음</Text>
-              </>
-            )}
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitle}>
+            {otherUser?.nickname || '대화'}
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.favoriteButton}
+            onPress={toggleFavorite}
+          >
+            <Ionicons 
+              name={conversation?.favorite ? "star" : "star-outline"} 
+              size={24} 
+              color={conversation?.favorite ? "#FFC107" : "#BBBBBB"} 
+            />
           </TouchableOpacity>
         </View>
-      )}
-    </View>
+        
+        {/* 메시지 목록 */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderMessageItem}
+          contentContainerStyle={styles.messagesList}
+          inverted={false}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          onContentSizeChange={() => {
+            if (flatListRef.current && messages.length > 0) {
+              flatListRef.current.scrollToEnd({ animated: true });
+            }
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                메시지가 없습니다. 첫 메시지를 보내보세요!
+              </Text>
+            </View>
+          }
+        />
+        
+        {/* 녹음기 */}
+        {showRecorder ? (
+          <View style={styles.recorderContainer}>
+            <View style={styles.recorderHeader}>
+              <Text style={styles.recorderTitle}>메시지 녹음</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowRecorder(false)}
+              >
+                <Ionicons name="close" size={24} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+            {renderFooter()}
+          </View>
+        ) : (
+          <View style={styles.inputContainer}>
+            <TouchableOpacity
+              style={styles.recordButton}
+              onPress={() => setShowRecorder(true)}
+              disabled={sendingMessage}
+            >
+              {sendingMessage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="mic" size={24} color="#FFFFFF" />
+                  <Text style={styles.recordButtonText}>메시지 녹음하기</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -495,13 +484,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: 15,
     borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   recordButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 8,
+    fontSize: 16,
   },
   recorderContainer: {
     padding: 10,
@@ -531,5 +526,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999999',
     textAlign: 'center',
+  },
+  footer: {
+    padding: 10,
+    backgroundColor: '#F9F9F9',
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  recorder: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  dummyPlayer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+  },
+  dummyPlayerText: {
+    marginLeft: 8,
+    color: '#666666',
+    fontSize: 14,
   },
 });
