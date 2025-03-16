@@ -2,8 +2,8 @@ module Api
   class BroadcastsController < BaseController
     before_action :authorize_request
     # 인증 요청 엔드포인트는 인증 없이 접근 가능하도록 설정
-    skip_before_action :authorize_request, only: [:request_code, :verify_code]
-
+    # request_code와 verify_code 액션이 없으므로 제거
+    # skip_before_action :authorize_request, only: [:request_code, :verify_code]
 
     def index
       # 캐싱 적용 (5분 유효)
@@ -161,5 +161,6 @@ module Api
       Rails.logger.error("답장 중 오류 발생: #{e.message}")
       render json: { error: "답장 처리 중 오류가 발생했습니다." }, status: :internal_server_error
     end
+  end
   end
 end

@@ -15,7 +15,7 @@ gem "puma", ">= 5.0"
 # gem "kredis"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-# gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1.7"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
@@ -27,7 +27,7 @@ gem "bootsnap", require: false
 # gem "image_processing", "~> 1.2"
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
-# gem "rack-cors"
+gem "rack-cors"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -42,7 +42,6 @@ group :development, :test do
   gem 'sidekiq'
 
   # 추가된 라이브러리 (2.16)
-  gem 'rack-cors'
   gem 'redis'
   gem 'sidekiq-cron'
   gem 'rails_admin', '~> 3.0'
@@ -51,7 +50,7 @@ group :development, :test do
   #gem 'rswag-api'
   #gem 'rswag-ui'
   #gem 'rswag-specs'
-  #gem 'rspec-rails'
+  gem "rspec-rails"
 end
 
 gem "sassc-rails"

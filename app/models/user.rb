@@ -1,7 +1,14 @@
 # app/models/user.rb
 class User < ApplicationRecord
+  # 비밀번호 암호화 및 인증 기능
+  has_secure_password validations: false
+  
   encrypts :phone  # Rails 7 AR 암호화
 
+  # status 필드를 attribute로 선언
+  attribute :status, :integer, default: 0
+  attribute :gender, :integer, default: 0
+  
   enum :gender, { unknown: 0, male: 1, female: 2 }, prefix: true
   enum :status, { active: 0, suspended: 1, banned: 2 }, prefix: true
   
@@ -10,6 +17,9 @@ class User < ApplicationRecord
   has_many :reports_as_reported, class_name: 'Report', foreign_key: :reported_id
   has_many :blocks_as_blocker, class_name: 'Block', foreign_key: :blocker_id
   has_many :blocks_as_blocked, class_name: 'Block', foreign_key: :blocked_id
+  
+  # 비밀번호 유효성 검사 (비밀번호가 있는 경우에만)
+  validates :password, length: { minimum: 6 }, if: -> { password.present? }
   
   # 푸시 알림 설정
   attribute :push_enabled, :boolean, default: true

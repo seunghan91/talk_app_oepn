@@ -6,6 +6,9 @@ Rails.application.routes.draw do
   # 사이드킥(Sidekiq) 관리자 UI
   mount Sidekiq::Web => '/sidekiq'
   
+  # 헬스 체크 엔드포인트
+  get "/api/health_check", to: "health_check#index"
+  
   # 1) 웹용 루트
   root 'pages#home'
   get "purchases/create"
@@ -26,6 +29,8 @@ Rails.application.routes.draw do
   namespace :api do
     post "auth/request_code", to: "auth#request_code"
     post "auth/verify_code",  to: "auth#verify_code"
+    post "auth/register",     to: "auth#register"
+    post "auth/login",        to: "auth#login"
 
     # 사용자 관련 API
     get "me", to: "users#me"
