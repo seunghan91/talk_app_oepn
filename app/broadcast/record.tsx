@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Alert, TouchableOpacity, Platform, View, Animated, ActivityIndicator, Linking } from 'react-native';
+import { StyleSheet, Alert, TouchableOpacity, Platform, View, Animated, ActivityIndicator, Linking, StatusBar } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
@@ -54,6 +54,7 @@ export default function RecordScreen() {
   );
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
   const currentBarIndex = useRef<number>(0);
+  const [playbackTime, setPlaybackTime] = useState<{ current: number, total: number }>({ current: 0, total: 0 });
 
   // 컴포넌트 마운트 시 오디오 세션 설정 및 권한 요청
   useEffect(() => {
@@ -654,149 +655,245 @@ export default function RecordScreen() {
     }
   };
 
+  // 녹음 삭제 (Cancel 버튼 클릭 시)
+  const cancelRecording = async () => {
+    try {
+      // 삭제 확인 알림 표시
+      Alert.alert(
+        t('common.confirm'),
+        t('broadcast.deleteConfirm'),
+        [
+          {
+            text: t('common.cancel'),
+            style: 'cancel'
+          },
+          {
+            text: t('common.delete'),
+            onPress: async () => {
+              if (sound) {
+                await sound.stopAsync();
+                await sound.unloadAsync();
+                setSound(null);
+              }
+              setIsPlaying(false);
+              setRecordingUri(null);
+              setRecordingDuration(0);
+              stopWaveformAnimation();
+            },
+            style: 'destructive'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('녹음 취소 중 오류:', error);
+    }
+  };
+
   // 녹음 재생
   const playRecording = async () => {
     try {
+      if (!recordingUri) return;
+      
+      // 이미 재생 중인 경우 일시 정지
       if (isPlaying) {
-        stopPlayback();
+        console.log('재생 중인 오디오 일시 정지');
+        if (sound) {
+          await sound.pauseAsync();
+        }
+        setIsPlaying(false);
+        stopWaveformAnimation();
         return;
       }
       
-      if (!recordingUri) {
-        Alert.alert('오류', '재생할 녹음이 없습니다.');
-        return;
-      }
-      
-      // 웹 환경에서는 모의 재생
-      if (isWeb) {
-        setIsPlaying(true);
-        setTimeout(() => {
-          setIsPlaying(false);
-        }, recordingDuration * 1000);
-        return;
-      }
-      
+      // 이미 사운드 객체가 존재하는 경우 재활용
       if (sound) {
-        await sound.unloadAsync();
+        console.log('기존 사운드 재생 시작');
+        // 현재 재생 위치 가져오기 및 표시
+        const status = await sound.getStatusAsync();
+        console.log('현재 재생 상태:', status);
+        
+        await sound.playAsync();
+        setIsPlaying(true);
+        startPlaybackAnimation();
+        
+        // 재생 상태 모니터링 (재생 시간 및 완료 확인)
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            // 현재 재생 시간 표시 (밀리초 -> 초)
+            const currentPosition = Math.floor((status.positionMillis || 0) / 1000);
+            const totalDuration = Math.floor((status.durationMillis || 0) / 1000);
+            // 재생 시간 상태 업데이트 (UI에 표시)
+            setPlaybackTime({
+              current: currentPosition,
+              total: totalDuration || recordingDuration // 녹음 시간을 폴백으로 사용
+            });
+            
+            // 재생 완료 확인
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+              stopWaveformAnimation();
+              // 재생 위치 초기화
+              setPlaybackTime({
+                current: 0,
+                total: totalDuration || recordingDuration
+              });
+            }
+          }
+        });
+        
+        return;
       }
       
+      // 이상적으로는 웹 환경을 위한 경우 분기 처리
+      if (isWeb && !recordingUri.startsWith('file:')) {
+        console.log('웹 환경에서 모의 오디오 재생');
+        const mockDuration = 10; // 10초 가정
+        setIsPlaying(true);
+        startPlaybackAnimation();
+        
+        // 모의 재생 타이머
+        let currentTime = 0;
+        setPlaybackTime({
+          current: currentTime,
+          total: mockDuration
+        });
+        
+        const playbackTimer = setInterval(() => {
+          currentTime += 1;
+          setPlaybackTime({
+            current: currentTime,
+            total: mockDuration
+          });
+          
+          if (currentTime >= mockDuration) {
+            clearInterval(playbackTimer);
+            setIsPlaying(false);
+            stopWaveformAnimation();
+            setPlaybackTime({
+              current: 0,
+              total: mockDuration
+            });
+          }
+        }, 1000);
+        
+        return;
+      }
+      
+      // 새로운 사운드 객체 생성
+      console.log('새 사운드 객체 생성 및 로드 중...');
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: recordingUri },
         { shouldPlay: true },
         (status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setIsPlaying(false);
+          // 재생 상태 모니터링
+          if (status.isLoaded) {
+            // 현재 재생 시간 표시 (밀리초 -> 초)
+            const currentPosition = Math.floor((status.positionMillis || 0) / 1000);
+            const totalDuration = Math.floor((status.durationMillis || 0) / 1000);
+            // 재생 시간 상태 업데이트
+            setPlaybackTime({
+              current: currentPosition,
+              total: totalDuration || recordingDuration
+            });
+            
+            // 재생 완료 확인
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+              stopWaveformAnimation();
+              // 재생 위치 초기화
+              setPlaybackTime({
+                current: 0,
+                total: totalDuration || recordingDuration
+              });
+            }
           }
         }
       );
       
       setSound(newSound);
       setIsPlaying(true);
-    } catch (err) {
-      console.error('재생 오류:', err);
-      Alert.alert('오류', '녹음을 재생할 수 없습니다.');
-    }
-  };
-
-  // 재생 중지
-  const stopPlayback = async () => {
-    try {
-      if (!sound) return;
+      startPlaybackAnimation();
       
-      await sound.pauseAsync();
+      // 오디오 세션 재설정 (필요한 경우)
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+      });
+    } catch (error) {
+      console.error('오디오 재생 실패:', error);
       setIsPlaying(false);
-    } catch (err) {
-      console.error('재생 중지 오류:', err);
+      Alert.alert(t('common.error'), t('broadcast.playbackError'));
     }
-  };
-
-  // 녹음 취소 (웹 환경 대응)
-  const cancelRecording = () => {
-    if (sound) {
-      sound.unloadAsync();
-      setSound(null);
-    }
-    setIsPlaying(false);
-    setRecordingUri(null);
-    setRecordingDuration(0);
-    setAudioLevels(Array(WAVEFORM_BARS).fill(0));
   };
 
   // 브로드캐스트 전송
   const sendBroadcast = async () => {
+    if (!recordingUri || uploading) return;
+    
+    // 인증 여부 확인
+    if (!isAuthenticated) {
+      Alert.alert(
+        t('common.notice'),
+        t('auth.loginRequired'),
+        [
+          {
+            text: t('common.cancel'),
+            style: 'cancel'
+          },
+          {
+            text: t('auth.login'),
+            onPress: () => router.push('/auth/login')
+          }
+        ]
+      );
+      return;
+    }
+    
+    setUploading(true);
+    
     try {
-      if (!recordingUri) {
-        Alert.alert(t('common.error'), t('broadcast.noRecording'));
-        return;
-      }
+      console.log('녹음 파일 정보:', await FileSystem.getInfoAsync(recordingUri));
       
-      // 웹 환경에서는 모의 전송
-      if (isWeb) {
-        // 모의 전송 처리
-        setUploading(true);
-        
-        // 3초 후 모의 전송 완료
-        setTimeout(() => {
-          setUploading(false);
-          
-          // 모의 수신자 정보 생성
-          const recipientCount = Math.floor(Math.random() * 10) + 1;
-          const mockRecipients = [
-            '김철수', '이영희', '박지민', '최수진', '정민준',
-            '강지훈', '윤서연', '임준호', '한미영', '송태민'
-          ].slice(0, recipientCount);
-          
-          // 수신자 정보 포함한 성공 메시지 표시
-          Alert.alert(
-            t('common.success'),
-            `${t('broadcast.broadcastSentTo', { count: recipientCount })}\n${t('broadcast.broadcastRecipients', { names: mockRecipients.join(', ') })}\n\n${t('broadcast.broadcastExpiry')}`,
-            [
-              {
-                text: t('common.ok'),
-                onPress: () => {
-                  // 녹음 상태 초기화
-                  setRecordingUri(null);
-                  setRecordingDuration(0);
-                  router.back();
-                }
-              }
-            ]
-          );
-        }, 3000);
-        
-        return;
-      }
-      
-      // 업로드 시작
-      setUploading(true);
-      
-      // 파일 정보 확인
-      const fileInfo = await FileSystem.getInfoAsync(recordingUri);
-      console.log('파일 정보:', fileInfo);
-      
-      // 파일 형식 확인
-      const fileExtension = recordingUri.split('.').pop()?.toLowerCase();
-      const mimeType = fileExtension === 'm4a' ? 'audio/m4a' : 'audio/mpeg';
-      
-      // 폼데이터 생성
       const formData = new FormData();
-      formData.append('broadcast[voice_file]', {
+      
+      // 파일 형식 확인 (파일 경로에 따라 mime 타입 추정)
+      const fileType = recordingUri.endsWith('.m4a') ? 'audio/x-m4a' : 
+                        recordingUri.endsWith('.mp3') ? 'audio/mpeg' : 'audio/aac';
+      
+      // 파일명 설정
+      const fileName = `recording_${Date.now()}.m4a`;
+      
+      // 파일 추가 - 키 이름을 'broadcast[voice_file]'에서 'voice_file'로 변경
+      formData.append('voice_file', {
         uri: recordingUri,
-        name: `recording_${Date.now()}.${fileExtension}`,
-        type: mimeType,
+        name: fileName,
+        type: fileType
       } as any);
       
-      // 서버에 전송
+      // API 요청 로깅
+      console.log('API 요청:', {
+        url: '/api/broadcasts',
+        method: 'post',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json'
+        },
+        data: formData
+      });
+      
+      // API 요청
       const response = await axiosInstance.post('/api/broadcasts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
+          'Accept': 'application/json'
+        }
       });
       
-      console.log('브로드캐스트 전송 응답:', response.data);
-      
-      // 업로드 완료
       setUploading(false);
+      
+      console.log('브로드캐스트 전송 응답:', response.data);
       
       // 수신자 정보 추출
       const recipientCount = response.data.recipient_count || Math.floor(Math.random() * 10) + 1;
@@ -819,7 +916,7 @@ export default function RecordScreen() {
       // 성공 메시지 표시
       Alert.alert(
         t('common.success'),
-        `${t('broadcast.broadcastSentTo', { count: recipientCount })}\n${t('broadcast.broadcastRecipients', { names: recipientNames.join(', ') })}\n\n${t('broadcast.broadcastExpiry')}`,
+        `방송이 ${recipientCount}명에게 전송되었습니다\n수신자: ${recipientNames.join(', ')}\n\n${t('broadcast.broadcastExpiry')}`,
         [
           {
             text: t('common.ok'),
@@ -848,7 +945,7 @@ export default function RecordScreen() {
         // 수신자 정보 포함한 성공 메시지 표시
         Alert.alert(
           t('common.success'),
-          `${t('broadcast.broadcastSentTo', { count: recipientCount })}\n${t('broadcast.broadcastRecipients', { names: mockRecipients.join(', ') })}\n\n${t('broadcast.broadcastExpiry')}`,
+          `방송이 ${recipientCount}명에게 전송되었습니다\n수신자: ${mockRecipients.join(', ')}\n\n${t('broadcast.broadcastExpiry')}`,
           [
             {
               text: t('common.ok'),
@@ -877,34 +974,47 @@ export default function RecordScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
       <ThemedView style={styles.container}>
-        {/* 녹음 상태 표시 */}
-        <ThemedView style={styles.statusContainer}>
+        {/* 상단 영역: 녹음 상태 표시 */}
+        <ThemedView style={styles.headerContainer}>
           {isRecording ? (
-            <>
-              <ThemedView style={styles.recordingIndicator}>
-                <Ionicons name="radio" size={24} color="#FF3B30" />
-                <ThemedText style={styles.recordingText}>
-                  {t('broadcast.recording')}
-                </ThemedText>
-              </ThemedView>
-              <ThemedText style={styles.timerText}>
-                {Math.floor(recordingDuration / 60).toString().padStart(2, '0')}:
-                {(recordingDuration % 60).toString().padStart(2, '0')}
+            <ThemedView style={styles.recordingIndicator}>
+              <Ionicons name="radio" size={24} color="#FF3B30" />
+              <ThemedText style={styles.recordingText}>
+                {t('broadcast.recording')}
               </ThemedText>
-            </>
+            </ThemedView>
           ) : recordingUri ? (
             <ThemedView style={styles.recordingIndicator}>
               <Ionicons name="checkmark-circle" size={24} color="#34C759" />
-              {/* 녹음 완료 텍스트 제거하고 아이콘만 표시 */}
             </ThemedView>
           ) : (
             <ThemedText style={styles.instructionText}>
               {t('broadcast.recordingInstructions')}
             </ThemedText>
           )}
+        </ThemedView>
+        
+        {/* 중앙 영역: 시간 표시 - 파형 위로 이동 */}
+        <ThemedView style={styles.mainContentContainer}>
+          {/* 타이머 영역 */}
+          <ThemedView style={styles.timerContainer}>
+            {isRecording && (
+              <ThemedText style={styles.timerText}>
+                {Math.floor(recordingDuration / 60).toString().padStart(2, '0')}:
+                {(recordingDuration % 60).toString().padStart(2, '0')}
+              </ThemedText>
+            )}
+            
+            {isPlaying && recordingUri && (
+              <ThemedText style={styles.playbackTimerText}>
+                {formatTime(playbackTime.current)} / {formatTime(playbackTime.total)}
+              </ThemedText>
+            )}
+          </ThemedView>
           
-          {/* 오디오 파형 */}
+          {/* 파형 영역 */}
           <ThemedView style={styles.waveformContainer}>
             {waveformAnimations.current.map((anim, index) => (
               <Animated.View
@@ -923,7 +1033,7 @@ export default function RecordScreen() {
           </ThemedView>
         </ThemedView>
         
-        {/* 녹음 컨트롤 */}
+        {/* 하단 영역: 컨트롤 */}
         <ThemedView style={styles.controlsContainer}>
           {!recordingUri ? (
             <TouchableOpacity
@@ -1001,17 +1111,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 50 : 60, // 상단 여백 증가
   },
-  statusContainer: {
+  headerContainer: {
+    paddingTop: Platform.OS === 'ios' ? 30 : 20,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   recordingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
   },
   recordingText: {
     fontSize: 16,
@@ -1022,23 +1132,38 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  mainContentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  timerContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   timerText: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: 'bold',
-    marginVertical: 10,
+    textAlign: 'center',
+  },
+  playbackTimerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    textAlign: 'center',
   },
   waveformContainer: {
+    height: 120,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    height: 80, // 높이 감소
-    marginBottom: 20, // 여백 감소
+    marginBottom: 20,
   },
   waveformBar: {
-    width: 6, // 너비 감소
+    width: 6,
     backgroundColor: '#007AFF',
     borderRadius: 4,
   },
@@ -1046,7 +1171,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    paddingVertical: 20,
+    marginBottom: Platform.OS === 'ios' ? 20 : 0,
   },
   recordButton: {
     width: 80,
@@ -1097,6 +1223,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   permissionContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
     padding: 20,
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
     borderRadius: 10,

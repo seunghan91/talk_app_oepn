@@ -101,7 +101,7 @@ export default function NotificationsScreen() {
       case 'message':
         if (notification.data?.conversation_id) {
           router.push({
-            pathname: '/conversation/[id]',
+            pathname: '/conversations/[id]',
             params: { id: notification.data.conversation_id }
           });
         }
@@ -194,7 +194,7 @@ export default function NotificationsScreen() {
           style={styles.markAllButton}
           onPress={markAllAsRead}
         >
-          <ThemedText style={styles.markAllText}>{t('notifications.markAllRead')}</ThemedText>
+          <ThemedText style={styles.markAllText}>{t('notifications.markAllAsRead')}</ThemedText>
         </TouchableOpacity>
       </ThemedView>
       

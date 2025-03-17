@@ -40,38 +40,31 @@ export default function ConversationDetail() {
     try {
       setLoading(true);
       
-      // 실제 API 호출 대신 더미 데이터 사용
-      // const response = await axiosInstance.get(`/api/conversations/${id}`);
+      // API 호출
+      const response = await axiosInstance.get(`/api/conversations/${id}`);
+      console.log('대화 상세 응답:', response.data);
       
-      // 더미 대화 데이터
-      const dummyConversation = {
-        id: parseInt(id),
-        user_a_id: 100, // 현재 사용자 ID
-        user_b_id: 100 + parseInt(id), // 상대방 ID
-        user_a: { id: 100, nickname: '나' },
-        user_b: { id: 100 + parseInt(id), nickname: getDummyUserName(parseInt(id)) },
-        favorite: Math.random() > 0.5,
-        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // 대화 정보 설정
+      setConversation(response.data.conversation);
       
-      // 더미 메시지 데이터
-      const dummyMessages = generateDummyMessages(parseInt(id), 5);
+      // 메시지 목록 설정
+      setMessages(response.data.messages || []);
       
-      setConversation(dummyConversation);
-      setMessages(dummyMessages);
-      
-      // 현재 사용자 정보 설정
-      const currentUserData = { id: 100, nickname: '나' };
-      setCurrentUser(currentUserData);
-      
-      // 상대방 정보 설정
-      const otherUserData = { 
-        id: 100 + parseInt(id), 
-        nickname: getDummyUserName(parseInt(id)) 
-      };
-      setOtherUser(otherUserData);
-      
+      // 현재 사용자와 상대방 정보 설정
+      const conv = response.data.conversation;
+      if (conv) {
+        // 현재 사용자 ID 확인 (JWT 토큰에서 추출)
+        const currentUserId = await getCurrentUserId();
+        
+        // 현재 사용자와 상대방 정보 설정
+        if (conv.user_a_id === currentUserId) {
+          setCurrentUser(conv.user_a);
+          setOtherUser(conv.user_b);
+        } else {
+          setCurrentUser(conv.user_b);
+          setOtherUser(conv.user_a);
+        }
+      }
     } catch (error) {
       console.error('대화 정보 로드 실패:', error.response?.data || error.message);
       Alert.alert('오류', '대화 정보를 불러오는데 실패했습니다.');
@@ -81,33 +74,20 @@ export default function ConversationDetail() {
     }
   };
   
-  // 더미 사용자 이름 가져오기
-  const getDummyUserName = (userId) => {
-    const names = ['김철수', '이영희', '박지민', '최수진', '정민준'];
-    return names[(userId - 1) % names.length];
-  };
-  
-  // 더미 메시지 생성
-  const generateDummyMessages = (conversationId, count) => {
-    const messages = [];
-    const now = Date.now();
-    const day = 24 * 60 * 60 * 1000;
-    
-    for (let i = 0; i < count; i++) {
-      const isMyMessage = i % 2 === 0;
-      const messageDate = new Date(now - (count - i) * day / count);
-      
-      messages.push({
-        id: `msg-${conversationId}-${i}`,
-        sender_id: isMyMessage ? 100 : 100 + conversationId,
-        content: `더미 메시지 ${i + 1}`,
-        created_at: messageDate.toISOString(),
-        voice_file_url: 'https://example.com/audio.m4a', // 더미 오디오 URL
-        is_read: true
-      });
+  // 현재 사용자 ID 가져오기
+  const getCurrentUserId = async () => {
+    try {
+      // AsyncStorage에서 사용자 정보 가져오기
+      const userJson = await AsyncStorage.getItem('user');
+      if (userJson) {
+        const userData = JSON.parse(userJson);
+        return userData.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('사용자 정보 가져오기 실패:', error);
+      return null;
     }
-    
-    return messages;
   };
   
   useEffect(() => {
@@ -135,20 +115,35 @@ export default function ConversationDetail() {
 
       setSendingMessage(true);
       
-      // 모의 전송 (실제 API 호출 대신)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 파일 정보 확인
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      console.log('파일 정보:', fileInfo);
       
-      // 새 메시지 추가
-      const newMessage = {
-        id: `msg-${id}-${messages.length}`,
-        sender_id: currentUser.id,
-        content: '새 음성 메시지',
-        created_at: new Date().toISOString(),
-        voice_file_url: uri,
-        is_read: true
-      };
+      // 파일 형식 확인
+      const fileExtension = uri.split('.').pop()?.toLowerCase();
+      const mimeType = fileExtension === 'm4a' ? 'audio/m4a' : 'audio/mpeg';
       
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      // 폼데이터 생성
+      const formData = new FormData();
+      formData.append('voice_file', {
+        uri: uri,
+        name: `recording_${Date.now()}.${fileExtension}`,
+        type: mimeType,
+      });
+      
+      console.log('메시지 전송 시도:', uri);
+      
+      // 실제 API 호출
+      const response = await axiosInstance.post(`/api/conversations/${id}/send_message`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('메시지 전송 응답:', response.data);
+      
+      // 새로고침하여 최신 메시지 가져오기
+      fetchConversationDetail();
       setRecordingUri(null);
       
       Alert.alert(
@@ -168,8 +163,40 @@ export default function ConversationDetail() {
       );
       
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('메시지 전송 실패:', error.response?.data || error.message);
       Alert.alert(t('common.error'), t('conversations.sendError'));
+      
+      // 오류 발생 시 모의 전송 (개발 환경에서만)
+      if (__DEV__) {
+        // 새 메시지 추가
+        const newMessage = {
+          id: `msg-${id}-${messages.length}`,
+          sender_id: currentUser?.id,
+          content: '새 음성 메시지',
+          created_at: new Date().toISOString(),
+          voice_file_url: uri,
+          is_read: true
+        };
+        
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+        setRecordingUri(null);
+        
+        Alert.alert(
+          t('common.success'), 
+          `(개발 모드) 메시지가 성공적으로 전송되었습니다.\n\n수신자: ${otherUser?.nickname || '알 수 없음'}`,
+          [
+            { text: '확인', onPress: () => {
+              setShowRecorder(false);
+              // 스크롤을 맨 아래로 이동
+              if (flatListRef.current) {
+                setTimeout(() => {
+                  flatListRef.current.scrollToEnd({ animated: true });
+                }, 300);
+              }
+            }}
+          ]
+        );
+      }
     } finally {
       setSendingMessage(false);
     }

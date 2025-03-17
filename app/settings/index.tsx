@@ -113,6 +113,16 @@ export default function SettingsScreen() {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     saveSettings(newSettings);
+    
+    // 설정 변경 시 사용자에게 피드백 제공
+    if (key === 'receiveNewLetters' || key === 'receiveLetterAlerts') {
+      const message = value 
+        ? `${key === 'receiveNewLetters' ? '새로운 편지 수신' : '편지 수신 알람'}이 활성화되었습니다.` 
+        : `${key === 'receiveNewLetters' ? '새로운 편지 수신' : '편지 수신 알람'}이 비활성화되었습니다.`;
+      
+      // 토스트 메시지 또는 작은 알림으로 표시
+      console.log(message);
+    }
   };
 
   // 모든 설정 저장
@@ -238,8 +248,8 @@ export default function SettingsScreen() {
             
             <ThemedView style={styles.settingRow}>
               <ThemedView>
-                <ThemedText>{t('settings.notificationsEnabled')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.notificationsEnabledDescription')}</ThemedText>
+                <ThemedText>알림 활성화</ThemedText>
+                <ThemedText style={styles.settingDescription}>앱 알림을 활성화합니다.</ThemedText>
               </ThemedView>
               <Switch
                 value={settings.notificationsEnabled}
@@ -249,55 +259,35 @@ export default function SettingsScreen() {
               />
             </ThemedView>
             
-            <ThemedView style={styles.settingRow}>
-              <ThemedView>
-                <ThemedText>{t('settings.newMessageReceiveEnabled')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.newMessageReceiveDescription')}</ThemedText>
-              </ThemedView>
-              <Switch
-                value={settings.newMessageReceiveEnabled}
-                onValueChange={(value) => handleSettingChange('newMessageReceiveEnabled', value)}
-                trackColor={{ false: '#D1D1D6', true: '#34C759' }}
-                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.newMessageReceiveEnabled ? '#FFFFFF' : '#F4F3F4'}
-                disabled={!settings.notificationsEnabled}
-              />
-            </ThemedView>
-            
             {/* 새로운 편지 수신 설정 */}
             <ThemedView style={styles.settingRow}>
               <ThemedView>
-                <ThemedText>{t('profile.receiveNewLetters')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.receiveNewLettersDescription')}</ThemedText>
+                <ThemedText>새로운 편지 수신</ThemedText>
+                <ThemedText style={styles.settingDescription}>새로운 편지 수신을 허용합니다. 비활성화하면 새 편지를 받지 않습니다.</ThemedText>
               </ThemedView>
               <Switch
                 value={settings.receiveNewLetters}
                 onValueChange={(value) => handleSettingChange('receiveNewLetters', value)}
                 trackColor={{ false: '#D1D1D6', true: '#34C759' }}
                 thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.receiveNewLetters ? '#FFFFFF' : '#F4F3F4'}
+                disabled={!settings.notificationsEnabled}
               />
             </ThemedView>
             
-            {/* 편지 수신 알림 설정 */}
+            {/* 편지 수신 알람 설정 */}
             <ThemedView style={styles.settingRow}>
               <ThemedView>
-                <ThemedText>{t('profile.receiveLetterAlerts')}</ThemedText>
-                <ThemedText style={styles.settingDescription}>{t('settings.receiveLetterAlertsDescription')}</ThemedText>
+                <ThemedText>편지 수신 알람</ThemedText>
+                <ThemedText style={styles.settingDescription}>새 편지가 도착하면 알림을 표시합니다.</ThemedText>
               </ThemedView>
               <Switch
-                value={settings.receiveLetterAlerts}
-                onValueChange={(value) => handleSettingChange('receiveLetterAlerts', value)}
+                value={settings.messageAlarmEnabled}
+                onValueChange={(value) => handleSettingChange('messageAlarmEnabled', value)}
                 trackColor={{ false: '#D1D1D6', true: '#34C759' }}
-                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.receiveLetterAlerts ? '#FFFFFF' : '#F4F3F4'}
+                thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : settings.messageAlarmEnabled ? '#FFFFFF' : '#F4F3F4'}
+                disabled={!settings.notificationsEnabled || !settings.receiveNewLetters}
               />
             </ThemedView>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={goToNotificationSettings}
-            >
-              <ThemedText>{t('settings.notificationAdvanced')}</ThemedText>
-              <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
-            </TouchableOpacity>
           </ThemedView>
 
           {/* 표시 설정 */}

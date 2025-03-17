@@ -39,93 +39,53 @@ export default function MessagesScreen() {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      // 실제 API 호출 (현재는 더미 데이터 사용)
-      // const response = await axiosInstance.get('/api/conversations');
-      // setConversations(response.data);
       
-      // 더미 데이터 - 테스트용 사용자 5명 (A, B, C, D, E)
-      const dummyData = [
-        {
-          id: 1,
-          user: {
-            id: 101,
-            nickname: 'A - 김철수',
-            profile_image: 'https://randomuser.me/api/portraits/men/32.jpg',
-          },
-          last_message: {
-            content: '안녕하세요, 오늘 방송 잘 들었습니다!',
-            created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-            is_read: false,
-          },
-          is_favorite: true,
-          unread_count: 3,
-        },
-        {
-          id: 2,
-          user: {
-            id: 102,
-            nickname: 'B - 이영희',
-            profile_image: 'https://randomuser.me/api/portraits/women/44.jpg',
-          },
-          last_message: {
-            content: '다음 방송은 언제 하시나요?',
-            created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            is_read: true,
-          },
-          is_favorite: false,
-          unread_count: 0,
-        },
-        {
-          id: 3,
-          user: {
-            id: 103,
-            nickname: 'C - 박지민',
-            profile_image: 'https://randomuser.me/api/portraits/men/67.jpg',
-          },
-          last_message: {
-            content: '협업 제안이 있습니다. 연락 주세요.',
-            created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            is_read: true,
-          },
-          is_favorite: true,
-          unread_count: 0,
-        },
-        {
-          id: 4,
-          user: {
-            id: 104,
-            nickname: 'D - 최수진',
-            profile_image: 'https://randomuser.me/api/portraits/women/22.jpg',
-          },
-          last_message: {
-            content: '안녕하세요! 팬입니다. 다음 방송 기대할게요.',
-            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            is_read: true,
-          },
-          is_favorite: false,
-          unread_count: 0,
-        },
-        {
-          id: 5,
-          user: {
-            id: 105,
-            nickname: 'E - 정민준',
-            profile_image: 'https://randomuser.me/api/portraits/men/22.jpg',
-          },
-          last_message: {
-            content: '질문이 있습니다. 확인 부탁드려요.',
-            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            is_read: false,
-          },
-          is_favorite: false,
-          unread_count: 1,
-        },
-      ];
-      
-      setConversations(dummyData);
+      // 실제 API 호출
+      try {
+        const response = await axiosInstance.get('/api/conversations');
+        console.log('대화 목록 응답:', response.data);
+        
+        // API 응답 데이터 처리
+        if (response.data && Array.isArray(response.data)) {
+          // 서버 응답 데이터 형식에 맞게 변환
+          const formattedConversations = response.data.map(conv => {
+            // 상대방 정보 추출
+            const otherUser = conv.user_a_id === conv.current_user_id ? conv.user_b : conv.user_a;
+            
+            // 마지막 메시지 정보 (없을 경우 기본값 설정)
+            const lastMessage = conv.last_message || {
+              content: '새로운 대화가 시작되었습니다.',
+              created_at: conv.updated_at || new Date().toISOString(),
+              is_read: true
+            };
+            
+            return {
+              id: conv.id,
+              user: {
+                id: otherUser.id,
+                nickname: otherUser.nickname,
+                profile_image: otherUser.profile_image || undefined
+              },
+              last_message: lastMessage,
+              is_favorite: conv.favorite || false,
+              unread_count: conv.unread_count || 0
+            };
+          });
+          
+          setConversations(formattedConversations);
+        } else {
+          // 응답이 배열이 아닌 경우 빈 배열로 설정
+          setConversations([]);
+        }
+      } catch (apiError) {
+        console.error('API 호출 실패:', apiError);
+        // API 호출 실패 시 빈 배열 설정
+        setConversations([]);
+      }
     } catch (error: any) {
       console.error('대화 목록 로드 실패:', error.response?.data || error.message);
       Alert.alert(t('common.error'), t('messages.loadError'));
+      setConversations([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -368,16 +328,6 @@ export default function MessagesScreen() {
               ? t('messages.noSearchResultsDescription') 
               : t('messages.noMessagesDescription')}
         </ThemedText>
-        
-        {!searchQuery && !filterFavorites && (
-          <StylishButton
-            title={t('messages.exploreUsers')}
-            onPress={() => router.push('/explore' as any)}
-            type="primary"
-            icon={<Ionicons name="people" size={18} color="#FFFFFF" />}
-            style={styles.exploreButton}
-          />
-        )}
       </View>
     );
   };
@@ -545,11 +495,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-  exploreButton: {
-    marginTop: 16,
-  },
   unreadMessage: {
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#007AFF',
   },
 });

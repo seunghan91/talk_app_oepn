@@ -135,6 +135,32 @@ const mockResponses = {
       };
     }
   },
+  '/api/broadcasts': (config) => {
+    // 테스트용 브로드캐스트 응답 생성
+    const now = new Date();
+    const expiry = new Date(now);
+    expiry.setDate(expiry.getDate() + 6); // 6일 후 만료
+    
+    return {
+      message: "방송이 성공적으로 생성되었습니다.",
+      broadcast: {
+        id: Date.now(),
+        created_at: now.toISOString(),
+        expired_at: expiry.toISOString(),
+        user: {
+          id: 2, // 이영희의 ID
+          nickname: "B - 이영희"
+        }
+      },
+      recipient_count: 4, // 자기 자신 제외
+      recipients: [
+        { id: 1, nickname: "김철수" },
+        { id: 3, nickname: "박지민" },
+        { id: 4, nickname: "최수진" },
+        { id: 5, nickname: "정민준" }
+      ]
+    };
+  },
   '/api/conversations': [
     {
       id: 1,
@@ -169,10 +195,39 @@ const mockResponses = {
   ]
 };
 
-// 요청 인터셉터 설정
+// 인터셉터 설정
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
+      // 개발 환경에서 테스트 용도로 요청 우회 처리
+      if (__DEV__) {
+        // 로그인 요청 특별 처리
+        if (config.url && config.url.includes('/api/auth/login') && config.method === 'post') {
+          const requestData = JSON.parse(config.data || '{}');
+          const { phone_number, password } = requestData;
+          
+          // 전화번호 형식 정리 (하이픈 제거)
+          const digits_only = phone_number ? phone_number.replace(/-/g, '') : '';
+          
+          console.log('로그인 요청 데이터:', { phone_number: digits_only, password });
+          
+          // 테스트 계정 확인
+          const testAccounts = [
+            { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
+            { phone: '01022222222', password: 'test1234', id: 2, nickname: 'B - 이영희', gender: 'female' },
+            { phone: '01033333333', password: 'test1234', id: 3, nickname: 'C - 박지민', gender: 'male' },
+            { phone: '01044444444', password: 'test1234', id: 4, nickname: 'D - 최수진', gender: 'female' },
+            { phone: '01055555555', password: 'test1234', id: 5, nickname: 'E - 정민준', gender: 'male' }
+          ];
+          
+          // 전화번호 형식 수정 (하이픈 제거)
+          config.data = JSON.stringify({
+            ...requestData,
+            phone_number: digits_only
+          });
+        }
+      }
+      
       // AsyncStorage에서 토큰 가져오기
       const token = await AsyncStorage.getItem('token');
       
@@ -226,6 +281,25 @@ axiosInstance.interceptors.response.use(
         data: error.response?.data,
       });
       
+      // 401 Unauthorized 오류 처리 (토큰 만료 또는 유효하지 않음)
+      if (error.response && error.response.status === 401) {
+        // 현재 토큰 가져오기
+        const token = await AsyncStorage.getItem('token');
+        
+        if (token) {
+          console.log('인증 토큰이 만료되었거나 유효하지 않습니다. 토큰 갱신 시도...');
+          
+          // 토큰 갱신 로직 (실제 구현 필요)
+          // 여기서는 간단히 토큰을 제거하고 사용자에게 알림
+          await AsyncStorage.removeItem('token');
+          
+          // 개발 환경에서는 모의 응답 사용
+          if (__DEV__) {
+            console.log('개발 환경에서 토큰 갱신 실패, 모의 응답 사용 시도');
+          }
+        }
+      }
+      
       // 개발 환경에서 API 요청 실패 시 모의 응답 사용 (테스트 목적)
       if (error.config) {
         console.log('개발 환경에서 API 요청 실패, 모의 응답 사용 시도');
@@ -236,6 +310,65 @@ axiosInstance.interceptors.response.use(
           // URL에서 baseURL 제거하여 경로만 추출
           const path = url.replace(API_URL, '');
           
+          // 로그인 요청 특별 처리
+          if (path.includes('/api/auth/login') && error.config.method === 'post') {
+            try {
+              const requestData = JSON.parse(error.config.data || '{}');
+              const { phone_number, password } = requestData;
+              
+              // 전화번호 형식 정리 (하이픈 제거)
+              const digits_only = phone_number ? phone_number.replace(/-/g, '') : '';
+              
+              // 테스트 계정 확인
+              const testAccounts = [
+                { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
+                { phone: '01022222222', password: 'test1234', id: 2, nickname: 'B - 이영희', gender: 'female' },
+                { phone: '01033333333', password: 'test1234', id: 3, nickname: 'C - 박지민', gender: 'male' },
+                { phone: '01044444444', password: 'test1234', id: 4, nickname: 'D - 최수진', gender: 'female' },
+                { phone: '01055555555', password: 'test1234', id: 5, nickname: 'E - 정민준', gender: 'male' }
+              ];
+              
+              const account = testAccounts.find(acc => acc.phone === digits_only && acc.password === password);
+              
+              if (account) {
+                console.log(`테스트 계정 로그인 성공: ${account.nickname}`);
+                return Promise.resolve({ 
+                  data: {
+                    message: '로그인에 성공했습니다.',
+                    token: `test_token_${account.id}_${Date.now()}`,
+                    user: {
+                      id: account.id,
+                      phone_number: account.phone,
+                      nickname: account.nickname,
+                      gender: account.gender,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    }
+                  },
+                  status: 200,
+                  statusText: 'OK (Mocked)',
+                  headers: {},
+                  config: error.config
+                });
+              }
+            } catch (e) {
+              console.error('모의 로그인 처리 오류:', e);
+            }
+          }
+          
+          if (path.includes('/api/conversations') && error.config.method === 'get') {
+            // 대화 목록 모의 응답
+            const mockConversations = mockResponses['/api/conversations'] || [];
+            return Promise.resolve({ 
+              data: mockConversations,
+              status: 200,
+              statusText: 'OK (Mocked)',
+              headers: {},
+              config: error.config
+            });
+          }
+          
+          // 다른 API 경로에 대한 모의 응답 처리
           if (mockResponses[path]) {
             console.log(`모의 응답 사용: ${path}`);
             let mockData;
@@ -260,22 +393,6 @@ axiosInstance.interceptors.response.use(
               config: error.config
             });
           }
-        }
-        
-        // 웹 환경에서는 더 적극적으로 모의 응답 사용
-        if (isWeb) {
-          console.log('웹 환경에서 모의 응답 사용');
-          return Promise.resolve({ 
-            data: { 
-              success: true, 
-              message: '웹 환경 모의 응답',
-              mock: true
-            },
-            status: 200,
-            statusText: 'OK (Web Mocked)',
-            headers: {},
-            config: error.config
-          });
         }
       }
     }

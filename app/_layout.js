@@ -62,6 +62,11 @@ export default function RootLayout() {
             headerShown: false, // 헤더 완전히 숨기기
             title: "" 
           }} />
+          {/* 프로필 화면 */}
+          <Stack.Screen name="profile" options={{ 
+            headerShown: false, // 헤더 완전히 숨기기
+            title: "프로필" 
+          }} />
           {/* 관리자 화면 */}
           <Stack.Screen name="admin" options={{ title: "관리자" }} />
           {/* auth 디렉토리에 _layout.js가 있어 여기서는 정의하지 않습니다 */}
