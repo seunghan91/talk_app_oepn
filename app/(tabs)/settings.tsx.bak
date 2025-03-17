@@ -189,69 +189,11 @@ export default function SettingsTab() {
           onPress: async () => {
             try {
               setLoading(true);
-              console.log('로그아웃 시작 - 설정 화면에서 요청');
-              
-              // 로그아웃 전 현재 상태 확인
-              const token = await AsyncStorage.getItem('token');
-              console.log('로그아웃 전 토큰 존재 여부:', !!token);
-              
-              // 로그아웃 실행
               await logout();
-              console.log('로그아웃 함수 실행 완료');
-              
-              // 로그아웃 후 상태 확인
-              const tokenAfter = await AsyncStorage.getItem('token');
-              console.log('로그아웃 후 토큰 존재 여부:', !!tokenAfter);
-              
-              // 사용자에게 피드백 제공
-              Alert.alert(
-                '로그아웃 완료',
-                '성공적으로 로그아웃되었습니다.',
-                [
-                  {
-                    text: '확인',
-                    onPress: () => {
-                      console.log('홈으로 이동');
-                      router.replace('/');
-                    }
-                  }
-                ]
-              );
+              router.replace('/');
             } catch (error) {
               console.error('로그아웃 실패:', error);
-              
-              // 오류 발생 시 수동으로 로그아웃 시도
-              try {
-                console.log('수동 로그아웃 시도');
-                await AsyncStorage.removeItem('token');
-                await AsyncStorage.removeItem('user');
-                await AsyncStorage.removeItem('userToken');
-                
-                // 웹 환경에서 추가 처리
-                if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-                  window.localStorage.removeItem('token');
-                  window.localStorage.removeItem('user');
-                  window.localStorage.removeItem('userToken');
-                }
-                
-                Alert.alert(
-                  '로그아웃',
-                  '로그아웃 처리가 완료되었습니다.',
-                  [
-                    {
-                      text: '확인',
-                      onPress: () => {
-                        console.log('홈으로 이동 (수동 로그아웃 후)');
-                        window.location.reload(); // 웹에서는 페이지 새로고침
-                        router.replace('/');
-                      }
-                    }
-                  ]
-                );
-              } catch (manualError) {
-                console.error('수동 로그아웃 실패:', manualError);
-                Alert.alert(t('common.error') || '오류', '로그아웃 처리에 실패했습니다. 앱을 다시 시작해주세요.');
-              }
+              Alert.alert(t('common.error') || '오류', t('auth.logoutError') || '로그아웃 중 오류가 발생했습니다.');
             } finally {
               setLoading(false);
             }
@@ -544,4 +486,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999999',
   },
-});
+}); 

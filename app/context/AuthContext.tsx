@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import axiosInstance from '../lib/axios';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 interface User {
   id: number;
@@ -48,9 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(JSON.parse(userData));
           setIsLoading(false);
           console.log('자동 로그인 성공');
+        } else {
+          setIsLoading(false);
+          console.log('저장된 토큰이 없음');
         }
       } catch (error) {
         console.error('자동 로그인 실패:', error);
+        setIsLoading(false);
       }
     };
 
@@ -60,6 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 로그인 함수
   const login = async (token: string, userData: User): Promise<void> => {
     try {
+      console.log('로그인 시작:', { token: token.substring(0, 10) + '...', userData });
+      
       // 토큰과 사용자 데이터를 AsyncStorage에 저장
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('userToken', token); // 호환성을 위해 userToken도 저장
@@ -82,21 +88,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 로그아웃 함수
   const logout = async (): Promise<void> => {
     try {
+      console.log('로그아웃 시작...');
+      console.log('현재 사용자 상태:', user ? '로그인됨' : '로그인되지 않음');
+      console.log('현재 플랫폼:', Platform.OS);
+      
       // 서버에 로그아웃 요청 (선택적)
       try {
         await axiosInstance.post('/api/auth/logout');
+        console.log('서버 로그아웃 요청 성공');
       } catch (error) {
         console.warn('서버 로그아웃 실패:', error);
         // 서버 로그아웃이 실패해도 로컬 로그아웃은 진행
       }
       
       // AsyncStorage에서 토큰과 사용자 데이터 제거
+      console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 시작');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('userToken');
+      console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 완료');
       
       // axios 헤더에서 토큰 제거
       delete axiosInstance.defaults.headers.common['Authorization'];
+      console.log('axios 헤더에서 토큰 제거 완료');
+      
+      // 웹 환경에서 추가 처리
+      if (Platform.OS === 'web') {
+        console.log('웹 환경에서 추가 로그아웃 처리');
+        // 웹 환경에서는 localStorage도 함께 정리
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem('token');
+            window.localStorage.removeItem('user');
+            window.localStorage.removeItem('userToken');
+            console.log('localStorage에서 토큰 및 사용자 데이터 제거 완료');
+          }
+        } catch (webError) {
+          console.error('웹 로그아웃 추가 처리 중 오류:', webError);
+        }
+      }
       
       // 상태 업데이트
       setUser(null);
@@ -105,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('로그아웃 성공');
       
       // 홈 화면으로 리다이렉트
+      console.log('홈 화면으로 리다이렉트');
       router.replace('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);

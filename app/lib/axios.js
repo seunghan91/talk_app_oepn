@@ -23,8 +23,8 @@ const API_URL = (() => {
       return 'http://192.168.50.105:3000';
     }
   } else {
-    // 프로덕션 환경
-    return 'https://api.talkk.app';
+    // 프로덕션 환경 - Render.com 배포 URL로 변경
+    return 'https://talkk-api.onrender.com';
   }
 })();
 
@@ -93,6 +93,28 @@ const mockResponses = {
     message: '인증코드가 발송되었습니다.',
     success: true,
     test_code: '123456' // 테스트용 인증코드 추가
+  },
+  '/api/auth/verify_code': {
+    message: '인증코드가 확인되었습니다.',
+    success: true,
+    verified: true
+  },
+  '/api/auth/register': (config) => {
+    // 요청 데이터 파싱
+    const requestData = JSON.parse(config.data || '{}');
+    const { phone_number, password, nickname } = requestData;
+    
+    return {
+      message: '회원가입에 성공했습니다.',
+      token: `test_token_${Date.now()}`,
+      user: {
+        id: Math.floor(Math.random() * 1000) + 10,
+        phone_number: phone_number,
+        nickname: nickname || generateRandomNickname(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    };
   },
   '/api/auth/login': (config) => {
     // 요청 데이터 파싱
@@ -192,7 +214,31 @@ const mockResponses = {
       is_favorite: false,
       unread_count: 0,
     }
-  ]
+  ],
+  '/api/users/notification_settings': {
+    receive_new_letter: true,
+    letter_receive_alarm: true
+  }
+};
+
+// 모의 응답 처리 함수
+const handleMockResponse = (config) => {
+  const url = config.url.replace(/^\/api\//, '/api/');
+  
+  // 모의 응답 데이터 확인
+  let mockData = mockResponses[url];
+  
+  // 함수 형태의 모의 응답 처리
+  if (typeof mockData === 'function') {
+    mockData = mockData(config);
+  }
+  
+  if (mockData) {
+    console.log(`모의 응답 사용: ${url}`, mockData);
+    return [200, mockData];
+  }
+  
+  return null;
 };
 
 // 인터셉터 설정
@@ -248,12 +294,11 @@ axiosInstance.interceptors.request.use(
       
       return config;
     } catch (error) {
-      console.error('API 요청 인터셉터 오류:', error);
+      console.error('요청 인터셉터 오류:', error);
       return config;
     }
   },
   (error) => {
-    console.error('API 요청 오류:', error);
     return Promise.reject(error);
   }
 );
@@ -264,150 +309,113 @@ axiosInstance.interceptors.response.use(
     // 개발 환경에서 응답 로깅
     if (__DEV__) {
       console.log('API 응답:', {
+        url: response.config.url,
         status: response.status,
         data: response.data,
-        headers: response.headers,
       });
     }
     
     return response;
   },
   async (error) => {
-    // 개발 환경에서 오류 로깅
-    if (__DEV__) {
-      console.log('API 응답 오류:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-      
-      // 401 Unauthorized 오류 처리 (토큰 만료 또는 유효하지 않음)
-      if (error.response && error.response.status === 401) {
-        // 현재 토큰 가져오기
-        const token = await AsyncStorage.getItem('token');
-        
-        if (token) {
-          console.log('인증 토큰이 만료되었거나 유효하지 않습니다. 토큰 갱신 시도...');
-          
-          // 토큰 갱신 로직 (실제 구현 필요)
-          // 여기서는 간단히 토큰을 제거하고 사용자에게 알림
-          await AsyncStorage.removeItem('token');
-          
-          // 개발 환경에서는 모의 응답 사용
-          if (__DEV__) {
-            console.log('개발 환경에서 토큰 갱신 실패, 모의 응답 사용 시도');
-          }
+    // 개발 환경에서 모의 응답 처리
+    if (__DEV__ && error.config) {
+      // 웹 환경이거나 서버 연결 실패 시 모의 응답 사용
+      if (isWeb || !(await checkServerConnection())) {
+        const mockResponse = handleMockResponse(error.config);
+        if (mockResponse) {
+          const [status, data] = mockResponse;
+          console.log(`모의 응답 반환 (${error.config.url}):`, data);
+          return Promise.resolve({ status, data });
         }
       }
       
-      // 개발 환경에서 API 요청 실패 시 모의 응답 사용 (테스트 목적)
-      if (error.config) {
-        console.log('개발 환경에서 API 요청 실패, 모의 응답 사용 시도');
+      // 특정 API 요청에 대한 모의 응답 처리
+      if (error.config.url) {
+        const url = error.config.url.replace(API_URL, '');
         
-        // 요청 URL에 따라 모의 응답 반환
-        const url = error.config.url;
-        if (url) {
-          // URL에서 baseURL 제거하여 경로만 추출
-          const path = url.replace(API_URL, '');
-          
-          // 로그인 요청 특별 처리
-          if (path.includes('/api/auth/login') && error.config.method === 'post') {
-            try {
-              const requestData = JSON.parse(error.config.data || '{}');
-              const { phone_number, password } = requestData;
-              
-              // 전화번호 형식 정리 (하이픈 제거)
-              const digits_only = phone_number ? phone_number.replace(/-/g, '') : '';
-              
-              // 테스트 계정 확인
-              const testAccounts = [
-                { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
-                { phone: '01022222222', password: 'test1234', id: 2, nickname: 'B - 이영희', gender: 'female' },
-                { phone: '01033333333', password: 'test1234', id: 3, nickname: 'C - 박지민', gender: 'male' },
-                { phone: '01044444444', password: 'test1234', id: 4, nickname: 'D - 최수진', gender: 'female' },
-                { phone: '01055555555', password: 'test1234', id: 5, nickname: 'E - 정민준', gender: 'male' }
-              ];
-              
-              const account = testAccounts.find(acc => acc.phone === digits_only && acc.password === password);
-              
-              if (account) {
-                console.log(`테스트 계정 로그인 성공: ${account.nickname}`);
-                return Promise.resolve({ 
-                  data: {
-                    message: '로그인에 성공했습니다.',
-                    token: `test_token_${account.id}_${Date.now()}`,
-                    user: {
-                      id: account.id,
-                      phone_number: account.phone,
-                      nickname: account.nickname,
-                      gender: account.gender,
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString()
-                    }
-                  },
-                  status: 200,
-                  statusText: 'OK (Mocked)',
-                  headers: {},
-                  config: error.config
-                });
-              }
-            } catch (e) {
-              console.error('모의 로그인 처리 오류:', e);
-            }
-          }
-          
-          if (path.includes('/api/conversations') && error.config.method === 'get') {
-            // 대화 목록 모의 응답
-            const mockConversations = mockResponses['/api/conversations'] || [];
-            return Promise.resolve({ 
-              data: mockConversations,
-              status: 200,
-              statusText: 'OK (Mocked)',
-              headers: {},
-              config: error.config
-            });
-          }
-          
-          // 다른 API 경로에 대한 모의 응답 처리
-          if (mockResponses[path]) {
-            console.log(`모의 응답 사용: ${path}`);
-            let mockData;
+        // 로그인 요청 특별 처리
+        if (url.includes('/api/auth/login') && error.config.method === 'post') {
+          try {
+            const requestData = JSON.parse(error.config.data || '{}');
+            const { phone_number, password } = requestData;
             
-            // 함수형 모의 응답 처리
-            if (typeof mockResponses[path] === 'function') {
-              try {
-                mockData = mockResponses[path](error.config);
-              } catch (mockError) {
-                console.log('모의 응답 함수 오류:', mockError);
-                return Promise.reject(mockError);
-              }
-            } else {
-              mockData = mockResponses[path];
-            }
+            // 테스트 계정 정보
+            const testAccounts = [
+              { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
+              { phone: '01022222222', password: 'test1234', id: 2, nickname: 'B - 이영희', gender: 'female' },
+              { phone: '01033333333', password: 'test1234', id: 3, nickname: 'C - 박지민', gender: 'male' },
+              { phone: '01044444444', password: 'test1234', id: 4, nickname: 'D - 최수진', gender: 'female' },
+              { phone: '01055555555', password: 'test1234', id: 5, nickname: 'E - 정민준', gender: 'male' }
+            ];
             
-            return Promise.resolve({ 
-              data: mockData,
+            // 테스트 계정 확인
+            const account = testAccounts.find(acc => acc.phone === phone_number && acc.password === password);
+            
+            if (account) {
+              console.log(`테스트 계정 로그인 성공: ${account.nickname}`);
+              return Promise.resolve({
+                status: 200,
+                data: {
+                  message: '로그인에 성공했습니다.',
+                  token: `test_token_${account.id}_${Date.now()}`,
+                  user: {
+                    id: account.id,
+                    phone_number: account.phone,
+                    nickname: account.nickname,
+                    gender: account.gender,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            console.error('로그인 모의 응답 처리 오류:', e);
+          }
+        }
+        
+        // 회원가입 요청 특별 처리
+        if (url.includes('/api/auth/register') && error.config.method === 'post') {
+          try {
+            const requestData = JSON.parse(error.config.data || '{}');
+            const { phone_number, password, nickname } = requestData;
+            
+            console.log(`테스트 회원가입 성공: ${nickname || '신규 사용자'}`);
+            return Promise.resolve({
               status: 200,
-              statusText: 'OK (Mocked)',
-              headers: {},
-              config: error.config
+              data: {
+                message: '회원가입에 성공했습니다.',
+                token: `test_token_${Date.now()}`,
+                user: {
+                  id: Math.floor(Math.random() * 1000) + 10,
+                  phone_number: phone_number,
+                  nickname: nickname || generateRandomNickname(),
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+              }
             });
+          } catch (e) {
+            console.error('회원가입 모의 응답 처리 오류:', e);
           }
         }
       }
     }
     
-    // 401 오류(인증 실패)인 경우 토큰 삭제 및 로그아웃 처리
+    // 개발 환경에서 오류 로깅
+    if (__DEV__) {
+      console.log('API 오류:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
+    
+    // 401 Unauthorized 오류 처리 (토큰 만료 등)
     if (error.response && error.response.status === 401) {
-      try {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
-        await AsyncStorage.removeItem('userToken');
-        // 여기서 로그아웃 이벤트를 발생시키거나 상태를 업데이트할 수 있음
-        // 예: EventEmitter.emit('logout') 또는 Redux 액션 디스패치
-      } catch (storageError) {
-        console.error('토큰 삭제 오류:', storageError);
-      }
+      // 로그인 페이지로 리다이렉트하는 로직 (필요시 구현)
     }
     
     return Promise.reject(error);
