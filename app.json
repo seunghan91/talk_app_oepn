@@ -35,7 +35,16 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "TALKK",
+      "build": {
+        "babel": {
+          "include": ["expo-router"]
+        }
+      },
+      "indexHtmlPath": "index.html",
+      "baseUrl": "./",
+      "publicPath": "/"
     },
     "assetBundlePatterns": [
       "**/*"
