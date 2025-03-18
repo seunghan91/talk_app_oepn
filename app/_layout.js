@@ -2,7 +2,7 @@
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, Redirect } from 'expo-router';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
@@ -50,6 +50,11 @@ export default function RootLayout() {
             headerBackTitle: '', // 뒤로가기 버튼 옆의 텍스트 제거
           }}
         >
+          {/* 루트 경로 리디렉션 설정 */}
+          <Stack.Screen name="index" options={{ 
+            headerShown: false,
+          }} />
+          
           {/* 첫 화면에 Tabs 라우트(폴더) 쓰고 싶다면 이렇게 */}
           <Stack.Screen name="(tabs)" options={{ 
             headerShown: false,

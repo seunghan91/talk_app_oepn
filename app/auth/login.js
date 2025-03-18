@@ -75,74 +75,15 @@ export default function LoginScreen() {
         password: password
       };
       
-      console.log('로그인 요청 데이터:', loginData);
-      
-      // 테스트 모드에서는 서버 요청을 시도하되, 실패하더라도 테스트 로그인 처리
-      let serverResponse = null;
-      let serverError = null;
+      console.log('[로그인] 요청 데이터:', loginData);
       
       try {
+        console.log('[로그인] API 서버에 로그인 요청 시도...');
         const res = await axiosInstance.post('/api/auth/login', loginData);
-        serverResponse = res.data;
-        console.log('로그인 성공, 서버 응답:', serverResponse);
-      } catch (err) {
-        serverError = err;
-        console.log('로그인 실패 (서버):', 
-          'Status:', err.response?.status, 
-          'Data:', err.response?.data, 
-          'Message:', err.message
-        );
+        console.log('[로그인] 서버 응답 성공:', res.data);
         
-        // 실제 서버 응답에서 오류 메시지 표시
-        if (err.response?.status === 401) {
-          Alert.alert('오류', '전화번호 또는 비밀번호가 올바르지 않습니다.');
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // 서버 응답이 없거나 실패한 경우 테스트 데이터 사용 (개발 환경에서만)
-      if (serverError && __DEV__) {
-        console.log('개발 환경에서 테스트 로그인 처리');
-        
-        // 테스트 환경에서는 특정 전화번호와 비밀번호 조합으로 로그인 허용
-        if (digitsOnly === '01012345678' && password === 'password') {
-          const userData = {
-            id: 1,
-            nickname: '테스트사용자',
-            phone_number: digitsOnly,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          const token = 'test_token_' + Math.random().toString(36).substring(2);
-          
-          // 로그인 처리
-          await login(token, userData);
-          
-          // 로그인 성공 메시지
-          Alert.alert(
-            '로그인 성공',
-            `${userData.nickname}님, 환영합니다!`,
-            [
-              { 
-                text: '홈으로 이동', 
-                onPress: () => router.replace('/') 
-              }
-            ]
-          );
-          
-          // 알림 후 자동으로 홈 화면으로 이동
-          setTimeout(() => {
-            router.replace('/');
-          }, 500);
-        } else {
-          Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
-        }
-      } else if (serverResponse) {
-        // 서버 응답이 있으면 그 데이터로 로그인 처리
-        const userData = serverResponse.user;
-        const token = serverResponse.token;
+        const userData = res.data.user;
+        const token = res.data.token;
         
         // 로그인 처리
         await login(token, userData);
@@ -163,13 +104,66 @@ export default function LoginScreen() {
         setTimeout(() => {
           router.replace('/');
         }, 500);
-      } else {
-        // 서버 응답도 없고 개발 환경도 아닌 경우
-        Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
+        
+      } catch (err) {
+        console.log('[로그인] API 서버 오류:', 
+          'Status:', err.response?.status, 
+          'Data:', err.response?.data, 
+          'Message:', err.message
+        );
+        
+        // API 서버 응답 확인
+        if (err.response?.status === 401) {
+          Alert.alert('오류', '전화번호 또는 비밀번호가 올바르지 않습니다.');
+        } else {
+          Alert.alert('오류', `서버 연결 오류: ${err.message}`);
+        }
+        
+        // 테스트 계정 로그인 시도 (개발 환경에서만)
+        if (__DEV__) {
+          console.log('[로그인] 개발 환경에서 테스트 계정 시도');
+          
+          // 테스트 환경에서는 특정 전화번호와 비밀번호 조합으로 로그인 허용
+          if (digitsOnly === '01012345678' && password === 'password') {
+            console.log('[로그인] 테스트 계정으로 로그인 성공');
+            
+            const userData = {
+              id: 1,
+              nickname: '테스트사용자',
+              phone_number: digitsOnly,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            const token = 'test_token_' + Math.random().toString(36).substring(2);
+            
+            // 로그인 처리
+            await login(token, userData);
+            
+            // 로그인 성공 메시지
+            Alert.alert(
+              '테스트 로그인 성공',
+              `${userData.nickname}님, 환영합니다! (테스트 모드)`,
+              [
+                { 
+                  text: '홈으로 이동', 
+                  onPress: () => router.replace('/') 
+                }
+              ]
+            );
+            
+            // 알림 후 자동으로 홈 화면으로 이동
+            setTimeout(() => {
+              router.replace('/');
+            }, 500);
+          } else {
+            console.log('[로그인] 테스트 계정 정보가 일치하지 않음');
+          }
+        }
       }
     } catch (err) {
-      console.error('예상치 못한 오류:', err);
-      Alert.alert('오류', '로그인에 실패했습니다. 다시 시도해주세요.');
+      console.error('[로그인] 예상치 못한 오류:', err);
+      Alert.alert('오류', '로그인 처리 중 문제가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -189,6 +183,43 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <ThemedView style={styles.container}>
             <ThemedView style={styles.formContainer}>
+              <ThemedText style={styles.title}>로그인</ThemedText>
+              
+              {/* 테스트 계정 정보 표시 */}
+              {__DEV__ && (
+                <ThemedView style={styles.testAccountsContainer}>
+                  <ThemedText style={styles.testAccountsTitle}>테스트 계정 정보 (베타 테스트용)</ThemedText>
+                  <TouchableOpacity 
+                    style={styles.testAccountButton}
+                    onPress={() => {
+                      setPhoneNumber('010-1111-1111');
+                      setPassword('test1234');
+                    }}
+                  >
+                    <ThemedText style={styles.testAccountInfo}>전화번호: 01011111111, 비밀번호: test1234</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.testAccountButton}
+                    onPress={() => {
+                      setPhoneNumber('010-2222-2222');
+                      setPassword('test1234');
+                    }}
+                  >
+                    <ThemedText style={styles.testAccountInfo}>전화번호: 01022222222, 비밀번호: test1234</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.testAccountButton}
+                    onPress={() => {
+                      setPhoneNumber('010-3333-3333');
+                      setPassword('test1234');
+                    }}
+                  >
+                    <ThemedText style={styles.testAccountInfo}>전화번호: 01033333333, 비밀번호: test1234</ThemedText>
+                  </TouchableOpacity>
+                  <ThemedText style={styles.testAccountDesc}>(클릭하면 자동 입력됩니다)</ThemedText>
+                </ThemedView>
+              )}
+              
               <ThemedText style={styles.label}>{t('auth.phoneNumber')}</ThemedText>
               <TextInput
                 placeholder={t('auth.enterPhoneNumber')}
@@ -255,6 +286,46 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
+  },
+  title: {
+    fontSize: 28,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  testAccountsContainer: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
+  },
+  testAccountsTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#0066CC',
+    textAlign: 'center',
+  },
+  testAccountButton: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.2)',
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  },
+  testAccountInfo: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  testAccountDesc: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   label: {
     marginBottom: 5,
