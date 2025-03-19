@@ -25,7 +25,7 @@ export default function RegisterScreen() {
   const [phoneNumberError, setPhoneNumberError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGenderSelection, setShowGenderSelection] = useState(false);
-  const [selectedGender, setSelectedGender] = useState('unspecified');
+  const [selectedGender, setSelectedGender] = useState('male');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -229,8 +229,8 @@ export default function RegisterScreen() {
       return;
     }
     
-    // 선택된 성별이 없으면 unspecified로 설정
-    const gender = selectedGender || 'unspecified';
+    // 선택된 성별이 없으면 male로 설정
+    const gender = selectedGender || 'male';
     console.log('회원가입 시 사용할 성별:', gender);
     
     setIsLoading(true);
@@ -467,7 +467,7 @@ export default function RegisterScreen() {
                   </TouchableOpacity>
                 </ThemedView>
                 <ThemedText style={styles.infoText}>
-                  성별을 선택하지 않으면 '선택 안함'으로 설정됩니다.
+                  성별을 선택하지 않으면 '남자'로 설정됩니다.
                 </ThemedText>
                 
                 <ThemedText style={styles.label}>{t('auth.password')}</ThemedText>
