@@ -77,3 +77,50 @@ Join our community of developers creating universal apps.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 # talkk-app
 # talk_app_oepn
+
+# 팀원과 Talkk 앱 공유하기
+
+## 터널 모드로 앱 공유하기
+
+Talkk 앱을 팀원들과 공유하여 외부에서 접근할 수 있게 하려면 다음 단계를 따르세요:
+
+### 방법 1: 배치 파일 사용 (Windows)
+
+1. 프로젝트 폴더의 `start-expo-tunnel.bat` 파일을 더블 클릭합니다.
+2. 터미널 창이 열리면서 Expo 서버가 시작됩니다.
+3. 터미널에 QR 코드가 표시됩니다. 이 QR 코드를 팀원들에게 공유하세요.
+4. 팀원들은 모바일 기기에서 Expo Go 앱을 설치한 후 QR 코드를 스캔하여 앱에 접속할 수 있습니다.
+5. 터미널에 표시되는 URL(예: `exp://ez-xyz.yourusername.talk_app_oepn.exp.direct:80`)도 공유할 수 있습니다.
+
+### 방법 2: 명령어 사용
+
+1. 프로젝트 폴더에서 터미널(PowerShell 또는 명령 프롬프트)을 엽니다.
+2. 다음 명령어를 실행합니다:
+   ```
+   npx expo start --tunnel
+   ```
+3. 터미널에 QR 코드가 표시됩니다. 이 QR 코드를 팀원들에게 공유하세요.
+4. 팀원들은 모바일 기기에서 Expo Go 앱을 설치한 후 QR 코드를 스캔하여 앱에 접속할 수 있습니다.
+
+### 방법 3: package.json 스크립트 사용
+
+1. 프로젝트 폴더에서 터미널을 엽니다.
+2. 다음 명령어를 실행합니다:
+   ```
+   npm run start-tunnel
+   ```
+3. 터미널에 QR 코드가 표시됩니다. 이 QR 코드를 팀원들에게 공유하세요.
+
+## 팀원들의 접속 방법
+
+1. iOS 기기: 카메라 앱으로 QR 코드를 스캔합니다.
+2. Android 기기: Expo Go 앱을 설치한 후 앱에서 QR 코드를 스캔합니다.
+3. URL을 통한 접속: Expo Go 앱에서 URL을 직접 입력하여 접속할 수도 있습니다.
+
+## 주의사항
+
+- 터널 모드는 인터넷 연결이 필요합니다.
+- 방화벽 설정에 따라 연결이 차단될 수 있습니다.
+- 앱 개발자(본인)의 컴퓨터가 켜져 있고 Expo 서버가 실행 중이어야 합니다.
+- 많은 사용자가 동시에 접속하면 성능이 저하될 수 있습니다.
+- 개발용으로만 사용하세요. 실제 배포에는 적합하지 않습니다.
