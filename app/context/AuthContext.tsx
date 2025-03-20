@@ -33,6 +33,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const router = useRouter();
 
   // 앱 시작 시 저장된 토큰으로 자동 로그인 시도
@@ -106,57 +107,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 로그아웃 함수
   const logout = async (): Promise<void> => {
     try {
-      console.log('로그아웃 시작...');
-      console.log('현재 사용자 상태:', user ? '로그인됨' : '로그인되지 않음');
-      console.log('현재 플랫폼:', Platform.OS);
+      console.log('[로그아웃] 시작...');
+      console.log('[로그아웃] 현재 사용자 상태:', user ? '로그인됨' : '로그인되지 않음');
+      console.log('[로그아웃] 현재 플랫폼:', Platform.OS);
       
       // 서버에 로그아웃 요청 (선택적)
       try {
         await axiosInstance.post('/api/auth/logout');
-        console.log('서버 로그아웃 요청 성공');
+        console.log('[로그아웃] 서버 로그아웃 요청 성공');
       } catch (error) {
-        console.warn('서버 로그아웃 실패:', error);
+        console.warn('[로그아웃] 서버 로그아웃 실패:', error);
         // 서버 로그아웃이 실패해도 로컬 로그아웃은 진행
       }
       
       // AsyncStorage에서 토큰과 사용자 데이터 제거
-      console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 시작');
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('userToken');
-      console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 완료');
+      console.log('[로그아웃] AsyncStorage에서 데이터 제거 시작');
       
-      // axios 헤더에서 토큰 제거
-      delete axiosInstance.defaults.headers.common['Authorization'];
-      console.log('axios 헤더에서 토큰 제거 완료');
+      // 여러 방법으로 시도
+      try {
+        await AsyncStorage.multiRemove(['token', 'user', 'userToken']);
+        console.log('[로그아웃] AsyncStorage.multiRemove 성공');
+      } catch (err) {
+        console.error('[로그아웃] multiRemove 실패, 개별 삭제 시도:', err);
+        
+        // 개별 삭제 시도
+        try { await AsyncStorage.removeItem('token'); } catch (e) { console.error('[로그아웃] token 삭제 실패:', e); }
+        try { await AsyncStorage.removeItem('user'); } catch (e) { console.error('[로그아웃] user 삭제 실패:', e); }
+        try { await AsyncStorage.removeItem('userToken'); } catch (e) { console.error('[로그아웃] userToken 삭제 실패:', e); }
+      }
       
-      // 웹 환경에서 추가 처리
+      // 웹 환경에서 localStorage에서도 제거
       if (Platform.OS === 'web') {
-        console.log('웹 환경에서 추가 로그아웃 처리');
-        // 웹 환경에서는 localStorage도 함께 정리
         try {
           if (typeof window !== 'undefined' && window.localStorage) {
-            window.localStorage.removeItem('token');
-            window.localStorage.removeItem('user');
-            window.localStorage.removeItem('userToken');
-            console.log('localStorage에서 토큰 및 사용자 데이터 제거 완료');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userToken');
+            console.log('[로그아웃] 웹 localStorage에서 데이터 제거 완료');
           }
-        } catch (webError) {
-          console.error('웹 로그아웃 추가 처리 중 오류:', webError);
+        } catch (err) {
+          console.error('[로그아웃] 웹 localStorage 삭제 실패:', err);
         }
       }
       
-      // 상태 업데이트
+      // axios 헤더에서 토큰 제거
+      delete axiosInstance.defaults.headers.common['Authorization'];
+      console.log('[로그아웃] axios 헤더에서 인증 토큰 제거됨');
+      
+      // 상태 초기화
       setUser(null);
-      setIsLoading(false);
+      setIsAuthenticated(false);
+      console.log('[로그아웃] 상태 초기화 완료');
       
-      console.log('로그아웃 성공');
+      // 로그인 페이지로 리디렉션
+      console.log('[로그아웃] 로그인 페이지로 리디렉션');
+      setTimeout(() => {
+        router.replace('/auth/login');
+      }, 100);
       
-      // 홈 화면으로 리다이렉트
-      console.log('홈 화면으로 리다이렉트');
-      router.replace('/');
+      return;
     } catch (error) {
-      console.error('로그아웃 중 오류 발생:', error);
+      console.error('[로그아웃] 오류 발생:', error);
+      // 오류가 발생해도 상태는 초기화
+      setUser(null);
+      setIsAuthenticated(false);
       throw error;
     }
   };
@@ -171,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
     login,
     logout,
     updateUser,
