@@ -114,6 +114,11 @@ export default function HomeScreen() {
     router.push('/auth' as any);
   };
 
+  // 지갑 화면으로 이동
+  const goToWalletScreen = () => {
+    router.push('/wallet' as any);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
@@ -121,7 +126,10 @@ export default function HomeScreen() {
         <ThemedView style={styles.header}>
           {/* 좌측: 캐시 금액 */}
           {isAuthenticated ? (
-            <TouchableOpacity style={styles.cashContainer}>
+            <TouchableOpacity 
+              style={styles.cashContainer} 
+              onPress={goToWalletScreen}
+            >
               <Ionicons name="wallet-outline" size={24} color="#007AFF" />
               <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()}원</ThemedText>
             </TouchableOpacity>

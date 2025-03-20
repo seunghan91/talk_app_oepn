@@ -47,7 +47,10 @@
       "publicPath": "/"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "assets/*",
+      "assets/fonts/*",
+      "assets/images/*"
     ],
     "plugins": [
       "expo-router",

@@ -1139,14 +1139,18 @@ const styles = StyleSheet.create({
   },
   timerContainer: {
     paddingVertical: 20,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+    marginTop: Platform.OS === 'ios' ? 10 : 0,
   },
   timerText: {
     fontSize: 40,
     fontWeight: 'bold',
     textAlign: 'center',
+    paddingTop: Platform.OS === 'ios' ? 10 : 0,
+    lineHeight: Platform.OS === 'ios' ? 48 : 40,
   },
   playbackTimerText: {
     fontSize: 18,

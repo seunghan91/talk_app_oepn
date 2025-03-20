@@ -126,6 +126,11 @@ export default function ProfileScreen() {
       
       if (response.data.nickname) {
         setRandomNickname(response.data.nickname);
+        // 생성된 닉네임을 사용자에게 보여주기 위한 토스트 메시지
+        Alert.alert(
+          t('common.notice') || '알림',
+          `${t('profile.randomNicknameGenerated').replace('%{nickname}', response.data.nickname) || `랜덤 닉네임이 생성되었습니다: ${response.data.nickname}`}`
+        );
       } else {
         // 개발 환경에서는 모의 데이터 사용
         generateRandomNicknameLocally();
@@ -160,7 +165,14 @@ export default function ProfileScreen() {
     const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
     const randomNum = Math.floor(Math.random() * 1000);
-    setRandomNickname(`${randomAdj}${randomNoun}${randomNum}`);
+    const newNickname = `${randomAdj}${randomNoun}${randomNum}`;
+    setRandomNickname(newNickname);
+    
+    // 생성된 닉네임을 사용자에게 보여주기 위한 토스트 메시지
+    Alert.alert(
+      t('common.notice') || '알림',
+      `${t('profile.randomNicknameGenerated').replace('%{nickname}', newNickname) || `랜덤 닉네임이 생성되었습니다: ${newNickname}`}`
+    );
   };
 
   // 프로필 정보 업데이트 (공통 함수)
@@ -378,6 +390,11 @@ export default function ProfileScreen() {
     router.replace('/');
   };
 
+  // 지갑 화면으로 이동
+  const goToWalletScreen = () => {
+    router.push('/wallet' as any);
+  };
+
   // 에러 메시지 렌더링
   const renderErrorMessage = () => {
     if (!errorType) return null;
@@ -487,16 +504,20 @@ export default function ProfileScreen() {
                   
                   {isChangingNickname ? (
                     <ThemedView style={styles.changeContainer}>
-                      <ThemedView style={styles.randomNicknameContainer}>
-                        <ThemedText style={styles.randomNickname}>
-                          {randomNickname || '랜덤 닉네임 생성 버튼을 눌러주세요'}
-                        </ThemedText>
+                      <ThemedView style={styles.nicknameContainer}>
+                        {randomNickname ? (
+                          <ThemedText style={styles.generatedNickname}>{randomNickname}</ThemedText>
+                        ) : (
+                          <ThemedText style={styles.nicknamePlaceholder}>
+                            {t('profile.generateRandomNickname') || '랜덤 닉네임 생성 버튼을 눌러주세요'}
+                          </ThemedText>
+                        )}
                         <TouchableOpacity 
-                          style={styles.refreshButton}
+                          style={styles.generateButton}
                           onPress={generateRandomNickname}
                           disabled={saving}
                           accessibilityLabel="랜덤 닉네임 생성"
-                          accessibilityHint="새로운 랜덤 닉네임을 생성합니다"
+                          accessibilityHint="랜덤으로 닉네임을 생성합니다"
                         >
                           <Ionicons name="refresh" size={20} color="#007AFF" />
                         </TouchableOpacity>
@@ -597,6 +618,30 @@ export default function ProfileScreen() {
                   )}
                 </ThemedView>
                 
+                {/* 지갑 섹션 */}
+                <ThemedView 
+                  style={styles.profileSection}
+                  accessibilityLabel="지갑 섹션"
+                >
+                  <ThemedText style={styles.sectionTitle}>지갑</ThemedText>
+                  
+                  <ThemedView style={styles.walletContainer}>
+                    <ThemedView style={styles.balanceContainer}>
+                      <Ionicons name="wallet-outline" size={24} color="#007AFF" />
+                      <ThemedText style={styles.balanceText}>5,000원</ThemedText>
+                    </ThemedView>
+                    
+                    <TouchableOpacity 
+                      style={styles.chargeButton}
+                      onPress={goToWalletScreen}
+                      accessibilityLabel="충전하기"
+                      accessibilityHint="지갑 충전 화면으로 이동합니다"
+                    >
+                      <ThemedText style={styles.chargeButtonText}>충전</ThemedText>
+                    </TouchableOpacity>
+                  </ThemedView>
+                </ThemedView>
+                
                 <ThemedView style={styles.infoTextContainer}>
                   <ThemedText style={styles.infoText}>
                     정식 서비스에서는 나이, 지역 등 다양한 옵션이 추가될 예정입니다!
@@ -604,7 +649,7 @@ export default function ProfileScreen() {
                 </ThemedView>
                 
                 <StylishButton
-                  title="로그아웃"
+                  title={t('profile.logout')}
                   onPress={handleLogout}
                   type="danger"
                   style={styles.logoutButton}
@@ -614,10 +659,10 @@ export default function ProfileScreen() {
             ) : (
               <ThemedView style={styles.loginContainer}>
                 <ThemedText style={styles.loginPrompt}>
-                  로그인하여 프로필을 관리하세요
+                  {t('profile.loginRequired')}
                 </ThemedText>
                 <StylishButton
-                  title="로그인"
+                  title={t('profile.login')}
                   onPress={goToLogin}
                   type="primary"
                   style={styles.loginButton}
@@ -734,7 +779,7 @@ const styles = StyleSheet.create({
   changeContainer: {
     marginTop: 8,
   },
-  randomNicknameContainer: {
+  nicknameContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -743,12 +788,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 12,
   },
-  randomNickname: {
+  generatedNickname: {
     flex: 1,
     fontSize: 16,
     color: '#333333',
   },
-  refreshButton: {
+  nicknamePlaceholder: {
+    flex: 1,
+    fontSize: 16,
+    color: '#777777',
+  },
+  generateButton: {
     padding: 8,
   },
   genderOptions: {
@@ -839,5 +889,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777777',
     textAlign: 'center',
+  },
+  walletContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 6,
+  },
+  balanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  chargeButton: {
+    padding: 12,
+    backgroundColor: '#E8F1FF',
+    borderRadius: 6,
+  },
+  chargeButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#007AFF',
   },
 }); 

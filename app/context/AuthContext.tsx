@@ -39,10 +39,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadToken = async () => {
       try {
+        // 테스트 모드 비활성화
+        await AsyncStorage.removeItem('testMode');
+        
         const token = await AsyncStorage.getItem('token');
         const userData = await AsyncStorage.getItem('user');
         
         if (token && userData) {
+          // 테스트 토큰 검사
+          if (token.includes('test_token')) {
+            console.log('테스트 토큰 발견, 삭제 중...');
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+            setIsLoading(false);
+            return;
+          }
+          
           // 토큰을 axios 인스턴스의 기본 헤더에 설정
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           setUser(JSON.parse(userData));
@@ -64,24 +76,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 로그인 함수
   const login = async (token: string, userData: User): Promise<void> => {
     try {
-      console.log('로그인 시작:', { token: token.substring(0, 10) + '...', userData });
+      // 테스트 토큰인지 확인하고 거부
+      if (token.includes('test_token')) {
+        console.log('테스트 토큰으로 로그인 시도, 거부됨');
+        Alert.alert('로그인 실패', '테스트 모드가 비활성화되었습니다. 실제 계정으로 로그인하세요.');
+        return;
+      }
       
-      // 토큰과 사용자 데이터를 AsyncStorage에 저장
+      // 토큰과 사용자 데이터 저장
       await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userToken', token); // 호환성을 위해 userToken도 저장
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       
-      // 토큰을 axios 인스턴스의 기본 헤더에 설정
+      // axios 인스턴스에 토큰 설정
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // 상태 업데이트
       setUser(userData);
-      setIsLoading(false);
-      
-      console.log('로그인 성공:', userData);
+      console.log('로그인 성공:', userData.nickname);
+
+      // 사용자 프로필 정보 요청
+      // 프로필 화면으로 이동하지 않고 대화 탭으로 이동
+      router.replace('/conversations/');
     } catch (error) {
-      console.error('로그인 중 오류 발생:', error);
-      throw error;
+      console.error('로그인 과정에서 오류 발생:', error);
+      Alert.alert('로그인 실패', '로그인 정보를 저장하는 동안 오류가 발생했습니다.');
     }
   };
 

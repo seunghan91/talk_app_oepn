@@ -22,6 +22,20 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumberError, setPhoneNumberError] = useState('');
 
+  // 테스트 계정 목록
+  const testAccounts = [
+    { phone: '01011111111', password: '123456', name: '김철수', role: 'user' },
+    { phone: '01022222222', password: '123456', name: '이영희', role: 'user' },
+    { phone: '01033333333', password: '123456', name: '박지민', role: 'user' },
+    { phone: '01099999999', password: 'admin123', name: '관리자', role: 'admin' }
+  ];
+  
+  // 테스트 계정 선택 처리
+  const selectTestAccount = (account) => {
+    setPhoneNumber(account.phone);
+    setPassword(account.password);
+  };
+
   // 이미 인증된 사용자는 홈으로 리다이렉트
   useEffect(() => {
     if (isAuthenticated) {
@@ -185,40 +199,48 @@ export default function LoginScreen() {
             <ThemedView style={styles.formContainer}>
               <ThemedText style={styles.title}>로그인</ThemedText>
               
-              {/* 테스트 계정 정보 표시 */}
-              {__DEV__ && (
-                <ThemedView style={styles.testAccountsContainer}>
-                  <ThemedText style={styles.testAccountsTitle}>테스트 계정 정보 (베타 테스트용)</ThemedText>
+              {/* 테스트 계정 목록 */}
+              <ThemedView style={styles.testAccountsContainer}>
+                <ThemedText style={styles.testAccountsTitle}>
+                  테스트 계정 목록
+                </ThemedText>
+                
+                <ThemedText style={styles.testAccountSubtitle}>
+                  일반 사용자 계정
+                </ThemedText>
+                
+                {testAccounts.filter(account => account.role === 'user').map((account, index) => (
                   <TouchableOpacity 
+                    key={index} 
                     style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-1111-1111');
-                      setPassword('test1234');
-                    }}
+                    onPress={() => selectTestAccount(account)}
                   >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01011111111, 비밀번호: test1234</ThemedText>
+                    <ThemedText style={styles.testAccountName}>{account.name}</ThemedText>
+                    <ThemedText style={styles.testAccountInfo}>전화번호: {account.phone}</ThemedText>
+                    <ThemedText style={styles.testAccountInfo}>비밀번호: {account.password}</ThemedText>
                   </TouchableOpacity>
+                ))}
+                
+                <ThemedText style={styles.testAccountSubtitle}>
+                  관리자 계정
+                </ThemedText>
+                
+                {testAccounts.filter(account => account.role === 'admin').map((account, index) => (
                   <TouchableOpacity 
-                    style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-2222-2222');
-                      setPassword('test1234');
-                    }}
+                    key={index} 
+                    style={[styles.testAccountButton, styles.betaAccountButton]}
+                    onPress={() => selectTestAccount(account)}
                   >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01022222222, 비밀번호: test1234</ThemedText>
+                    <ThemedText style={styles.testAccountName}>{account.name}</ThemedText>
+                    <ThemedText style={styles.testAccountInfo}>전화번호: {account.phone}</ThemedText>
+                    <ThemedText style={styles.testAccountInfo}>비밀번호: {account.password}</ThemedText>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-3333-3333');
-                      setPassword('test1234');
-                    }}
-                  >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01033333333, 비밀번호: test1234</ThemedText>
-                  </TouchableOpacity>
-                  <ThemedText style={styles.testAccountDesc}>(클릭하면 자동 입력됩니다)</ThemedText>
-                </ThemedView>
-              )}
+                ))}
+                
+                <ThemedText style={styles.testAccountDesc}>
+                  계정을 클릭하면 자동으로 정보가 입력됩니다
+                </ThemedText>
+              </ThemedView>
               
               <ThemedText style={styles.label}>{t('auth.phoneNumber')}</ThemedText>
               <TextInput
@@ -294,38 +316,59 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   testAccountsContainer: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    padding: 15,
+    backgroundColor: '#F0F8FF',
     borderRadius: 8,
+    padding: 15,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
+    borderColor: '#E0E0E0',
   },
   testAccountsTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#0066CC',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#333',
+  },
+  testAccountSubtitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+    color: '#555',
+    backgroundColor: '#E6E6E6',
+    padding: 5,
+    borderRadius: 4,
     textAlign: 'center',
   },
   testAccountButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
     padding: 10,
+    marginVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderColor: '#E0E0E0',
+  },
+  betaAccountButton: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFD54F',
+  },
+  testAccountName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
   },
   testAccountInfo: {
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
+    fontSize: 13,
+    color: '#666',
   },
   testAccountDesc: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
+    color: '#888',
     fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
   },
   label: {
     marginBottom: 5,

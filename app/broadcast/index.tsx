@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, FlatList, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axiosInstance from '../lib/axios';
+import axiosInstance, { setTestMode } from '../lib/axios';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
@@ -54,6 +54,11 @@ export default function BroadcastScreen() {
 
   // 브로드캐스트 목록 불러오기
   useEffect(() => {
+    // 테스트 모드 활성화 (개발 중 실제 API 서버 연결에 문제가 있을 때만 사용)
+    // 실제 서버와의 연결이 필요한 경우 false로 설정
+    setTestMode(false);
+    console.log('[브로드캐스트] 테스트 모드 비활성화');
+    
     loadBroadcasts();
     
     // 화면 언마운트 시 오디오 정리

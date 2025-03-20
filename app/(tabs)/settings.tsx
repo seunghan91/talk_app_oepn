@@ -302,7 +302,6 @@ export default function SettingsTab() {
                 </View>
                 <View style={styles.profileTextContainer}>
                   <ThemedText style={styles.profileName}>{user?.nickname || '사용자'}</ThemedText>
-                  <ThemedText style={styles.profileSubtext}>{t('settings.viewProfile') || '프로필 보기'}</ThemedText>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#CCCCCC" />
