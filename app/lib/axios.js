@@ -56,15 +56,12 @@ const checkServerConnection = async () => {
   }
 };
 
-// 앱 시작 시 서버 연결 테스트 실행 코드 주석 처리
-// let serverConnected = false;
-// checkServerConnection().then(isConnected => {
-//   serverConnected = isConnected;
-//   console.log(`[API 연결 상태] ${isConnected ? '연결됨' : '연결 실패'}`);
-// });
-
-// 테스트용 서버 연결 상태 변수 설정
+// 앱 시작 시 서버 연결 테스트 실행
 let serverConnected = false;
+checkServerConnection().then(isConnected => {
+  serverConnected = isConnected;
+  console.log(`[API 연결 상태] ${isConnected ? '연결됨' : '연결 실패'}`);
+});
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -263,8 +260,8 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     console.log(`[API 요청] ${config.method?.toUpperCase()} ${config.url}`);
     
-    // 베타 테스트 중이므로 테스트 모드 활성화
-    const useMockResponses = true;
+    // 테스트 모드 설정 (개발 환경에서만 활성화)
+    const useMockResponses = isDev;
     
     try {
       // 토큰이 있으면 헤더에 추가
