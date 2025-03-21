@@ -1,0 +1,155 @@
+.
+├── App_old.js
+├── README.md
+├── app
+│   ├── (tabs)
+│   │   ├── _layout.js
+│   │   ├── feedback.tsx
+│   │   ├── index.tsx
+│   │   ├── messages.tsx
+│   │   ├── settings.tsx
+│   │   └── settings.tsx.bak
+│   ├── +not-found.tsx
+│   ├── _layout.js
+│   ├── admin
+│   │   ├── _layout.js
+│   │   ├── index.js
+│   │   └── settings.js
+│   ├── auth
+│   │   ├── _layout.js
+│   │   ├── index.js
+│   │   ├── login.js
+│   │   └── register.js
+│   ├── broadcast
+│   │   ├── [id].js
+│   │   ├── _layout.js
+│   │   ├── index.tsx
+│   │   └── record.tsx
+│   ├── context
+│   │   └── AuthContext.tsx
+│   ├── conversations
+│   │   ├── [id].js
+│   │   └── index.js
+│   ├── i18n
+│   │   ├── index.js
+│   │   └── locales
+│   │       ├── en.json
+│   │       └── ko.json
+│   ├── index.j.txt
+│   ├── index.js
+│   ├── lib
+│   │   └── axios.js
+│   ├── notifications.tsx
+│   ├── profile
+│   │   ├── _layout.js
+│   │   └── index.tsx
+│   ├── settings
+│   │   ├── account.tsx
+│   │   ├── index.tsx
+│   │   └── notifications.tsx
+│   ├── utils
+│   │   ├── _pushNotificationHelper.util.js
+│   │   └── axios-config.js
+│   └── wallet
+│       └── index.tsx
+├── app.config.js
+├── app.json
+├── assets
+│   ├── fonts
+│   │   └── SpaceMono-Regular.ttf
+│   └── images
+│       ├── adaptive-icon.png
+│       ├── favicon.png
+│       ├── icon.png
+│       ├── partial-react-logo.png
+│       ├── react-logo.png
+│       ├── react-logo@2x.png
+│       ├── react-logo@3x.png
+│       └── splash-icon.png
+├── babel.config.js
+├── components
+│   ├── Collapsible.tsx
+│   ├── ExternalLink.tsx
+│   ├── HapticTab.tsx
+│   ├── HelloWave.tsx
+│   ├── LanguageSelector.js
+│   ├── LanguageSelector.tsx
+│   ├── NicknameEditor.js
+│   ├── NicknameEditor.tsx
+│   ├── ParallaxScrollView.tsx
+│   ├── StylishButton.tsx
+│   ├── ThemedText.tsx
+│   ├── ThemedView.tsx
+│   ├── VoicePlayer.js
+│   ├── VoiceRecorder.js
+│   ├── __tests__
+│   │   ├── ThemedText-test.tsx
+│   │   └── __snapshots__
+│   │       └── ThemedText-test.tsx.snap
+│   └── ui
+│       ├── IconSymbol.ios.tsx
+│       ├── IconSymbol.tsx
+│       ├── TabBarBackground.ios.tsx
+│       └── TabBarBackground.tsx
+├── constants
+│   └── Colors.ts
+├── eas.json
+├── hooks
+│   ├── useColorScheme.ts
+│   ├── useColorScheme.web.ts
+│   └── useThemeColor.ts
+├── ios
+│   ├── Podfile
+│   ├── Podfile.lock
+│   ├── Podfile.properties.json
+│   ├── talkkapp
+│   │   ├── AppDelegate.h
+│   │   ├── AppDelegate.mm
+│   │   ├── Images.xcassets
+│   │   │   ├── AppIcon.appiconset
+│   │   │   │   ├── App-Icon-1024x1024@1x.png
+│   │   │   │   └── Contents.json
+│   │   │   ├── Contents.json
+│   │   │   ├── SplashScreenBackground.colorset
+│   │   │   │   └── Contents.json
+│   │   │   └── SplashScreenLogo.imageset
+│   │   │       ├── Contents.json
+│   │   │       ├── image.png
+│   │   │       ├── image@2x.png
+│   │   │       └── image@3x.png
+│   │   ├── Info.plist
+│   │   ├── PrivacyInfo.xcprivacy
+│   │   ├── SplashScreen.storyboard
+│   │   ├── Supporting
+│   │   │   └── Expo.plist
+│   │   ├── main.m
+│   │   ├── noop-file.swift
+│   │   ├── talkkapp-Bridging-Header.h
+│   │   └── talkkapp.entitlements
+│   ├── talkkapp.xcodeproj
+│   │   ├── project.pbxproj
+│   │   └── xcshareddata
+│   │       └── xcschemes
+│   │           └── talkkapp.xcscheme
+│   └── talkkapp.xcworkspace
+│       └── contents.xcworkspacedata
+├── metro.config.js
+├── package-lock.json
+├── package.json
+├── scripts
+│   ├── create_test_accounts.js
+│   └── reset-project.js
+├── src
+│   └── screens
+│       └── AuthScreen.js
+├── start-expo-tunnel.bat
+├── start-expo.bat
+├── start-local.ps1
+├── start-tunnel.bat
+├── start-tunnel.ps1
+├── structure.txt
+├── tsconfig.json
+└── utils
+    └── phoneUtils.js
+
+39 directories, 114 files

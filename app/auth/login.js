@@ -186,39 +186,60 @@ export default function LoginScreen() {
               <ThemedText style={styles.title}>로그인</ThemedText>
               
               {/* 테스트 계정 정보 표시 */}
-              {__DEV__ && (
-                <ThemedView style={styles.testAccountsContainer}>
-                  <ThemedText style={styles.testAccountsTitle}>테스트 계정 정보 (베타 테스트용)</ThemedText>
-                  <TouchableOpacity 
-                    style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-1111-1111');
-                      setPassword('test1234');
-                    }}
-                  >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01011111111, 비밀번호: test1234</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-2222-2222');
-                      setPassword('test1234');
-                    }}
-                  >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01022222222, 비밀번호: test1234</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.testAccountButton}
-                    onPress={() => {
-                      setPhoneNumber('010-3333-3333');
-                      setPassword('test1234');
-                    }}
-                  >
-                    <ThemedText style={styles.testAccountInfo}>전화번호: 01033333333, 비밀번호: test1234</ThemedText>
-                  </TouchableOpacity>
-                  <ThemedText style={styles.testAccountDesc}>(클릭하면 자동 입력됩니다)</ThemedText>
-                </ThemedView>
-              )}
+              <ThemedView style={styles.testAccountsContainer}>
+                <ThemedText style={styles.testAccountsTitle}>베타 테스트 계정</ThemedText>
+                <ThemedText style={styles.testAccountDesc}>아래 버튼을 클릭하면 자동으로 정보가 입력됩니다</ThemedText>
+                
+                <TouchableOpacity 
+                  style={styles.testAccountButton}
+                  onPress={() => {
+                    setPhoneNumber('010-1111-1111');
+                    setPassword('test1234');
+                  }}
+                >
+                  <ThemedText style={styles.testAccountButtonText}>사용자 A (김철수)</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.testAccountButton}
+                  onPress={() => {
+                    setPhoneNumber('010-2222-2222');
+                    setPassword('test1234');
+                  }}
+                >
+                  <ThemedText style={styles.testAccountButtonText}>사용자 B (이영희)</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.testAccountButton}
+                  onPress={() => {
+                    setPhoneNumber('010-3333-3333');
+                    setPassword('test1234');
+                  }}
+                >
+                  <ThemedText style={styles.testAccountButtonText}>사용자 C (박지민)</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.testAccountButton}
+                  onPress={() => {
+                    setPhoneNumber('010-4444-4444');
+                    setPassword('test1234');
+                  }}
+                >
+                  <ThemedText style={styles.testAccountButtonText}>사용자 D (최수진)</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.testAccountButton}
+                  onPress={() => {
+                    setPhoneNumber('010-5555-5555');
+                    setPassword('test1234');
+                  }}
+                >
+                  <ThemedText style={styles.testAccountButtonText}>사용자 E (정민준)</ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
               
               <ThemedText style={styles.label}>{t('auth.phoneNumber')}</ThemedText>
               <TextInput
@@ -294,38 +315,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   testAccountsContainer: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    padding: 15,
-    borderRadius: 8,
     marginBottom: 20,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
+    borderColor: '#ddd',
   },
   testAccountsTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#0066CC',
     textAlign: 'center',
-  },
-  testAccountButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-  },
-  testAccountInfo: {
-    fontSize: 14,
     color: '#333',
-    textAlign: 'center',
   },
   testAccountDesc: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 14,
+    marginBottom: 15,
     textAlign: 'center',
-    marginTop: 4,
-    fontStyle: 'italic',
+    color: '#666',
+  },
+  testAccountButton: {
+    padding: 12,
+    backgroundColor: '#E8F4FF',
+    borderRadius: 8,
+    marginBottom: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#BDE0FE',
+  },
+  testAccountButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0070C0',
   },
   label: {
     marginBottom: 5,
