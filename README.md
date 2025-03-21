@@ -52,6 +52,68 @@ You can start developing by editing the files inside the **app** directory. This
 3. 계정 B에서 A에게 답장 녹음 및 전송
 4. 계정 A로 다시 로그인하여 수신된 메시지 확인
 
+## 서버 연결 및 문제 해결
+
+### API 서버 정보
+- API 서버 URL: https://talkk-api.onrender.com
+- 상태 확인 엔드포인트: https://talkk-api.onrender.com/api/health_check
+- 서버 관련 코드: `app/lib/axios.js`
+
+### 일반적인 오류 해결 방법
+
+#### Expo 앱이 '다운로드 중 100%'에서 멈추는 경우:
+1. Metro 번들러 버전 확인:
+   ```bash
+   npm list metro metro-resolver metro-config
+   ```
+   패키지 버전이 일치하지 않는 경우, `package.json`의 dependencies에서 버전을 0.81.0으로 통일
+
+2. 서버 연결 테스트 사용:
+   - 개발 환경에서는 테스트 모드가 자동으로 활성화되어 실제 서버 연결 없이도 작동
+   - 프로덕션 환경에서는 실제 서버에 연결 시도
+
+3. 터널 모드로 실행:
+   ```bash
+   npx expo start --tunnel --no-dev
+   ```
+   이 명령어는 개발 도구 없이 더 안정적인 환경으로 실행
+
+#### 'Invalid URL' 또는 네트워크 오류가 발생하는 경우:
+1. @expo/ngrok 패키지 설치 확인:
+   ```bash
+   npm install @expo/ngrok@4.1.3 --save
+   ```
+
+2. 캐시 초기화 후 재시작:
+   ```bash
+   npx expo start --clear
+   ```
+
+3. 모든 의존성 패키지 재설치:
+   ```bash
+   rm -rf node_modules && npm install
+   ```
+
+### 안정적인 버전 사용
+현재 레포지토리는 안정적인 버전을 'stable_version' 브랜치에 저장하고 있습니다.
+새로운 개발을 시작할 때는 이 브랜치에서 분기하여 작업하는 것을 권장합니다:
+
+```bash
+git checkout stable_version
+git switch -c 새로운_브랜치명
+```
+
+### 개발/테스트 환경 설정
+앱은 개발 환경과 프로덕션 환경에서 다르게 동작합니다:
+- 개발 환경: 테스트 모드 활성화, 모의 응답 사용
+- 프로덕션 환경: 실제 API 서버 연결, 모의 응답 사용 안 함
+
+개발 환경에서 실제 서버 테스트를 위해 `app/lib/axios.js`에서 테스트 모드 설정 변경 가능:
+```javascript
+// 테스트 모드 설정 (개발 환경에서만 활성화)
+const useMockResponses = false; // isDev에서 false로 변경
+```
+
 ## Get a fresh project
 
 When you're ready, run:
