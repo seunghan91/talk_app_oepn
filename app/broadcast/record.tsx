@@ -933,35 +933,12 @@ export default function RecordScreen() {
       console.error('브로드캐스트 전송 실패:', error);
       setUploading(false);
       
-      // 개발 환경에서는 모의 성공 처리
-      if (__DEV__) {
-        // 모의 수신자 정보 생성
-        const recipientCount = Math.floor(Math.random() * 10) + 1;
-        const mockRecipients = [
-          '김철수', '이영희', '박지민', '최수진', '정민준',
-          '강지훈', '윤서연', '임준호', '한미영', '송태민'
-        ].slice(0, recipientCount);
-        
-        // 수신자 정보 포함한 성공 메시지 표시
-        Alert.alert(
-          t('common.success'),
-          `방송이 ${recipientCount}명에게 전송되었습니다\n수신자: ${mockRecipients.join(', ')}\n\n${t('broadcast.broadcastExpiry')}`,
-          [
-            {
-              text: t('common.ok'),
-              onPress: () => {
-                // 녹음 상태 초기화
-                setRecordingUri(null);
-                setRecordingDuration(0);
-                router.back();
-              }
-            }
-          ]
-        );
-        return;
-      }
-      
-      Alert.alert(t('common.error'), t('broadcast.sendError'));
+      // 실패 메시지 표시
+      Alert.alert(
+        t('common.error'),
+        t('broadcast.sendError'),
+        [{ text: t('common.ok') }]
+      );
     }
   };
 

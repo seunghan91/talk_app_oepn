@@ -56,8 +56,10 @@ const checkServerConnection = async () => {
   }
 };
 
-// 앱 시작 시 서버 연결 테스트 실행
+// 테스트용 서버 연결 상태 변수 설정
 let serverConnected = false;
+
+// 앱 시작 시 서버 연결 테스트 실행
 checkServerConnection().then(isConnected => {
   serverConnected = isConnected;
   console.log(`[API 연결 상태] ${isConnected ? '연결됨' : '연결 실패'}`);
@@ -260,8 +262,8 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     console.log(`[API 요청] ${config.method?.toUpperCase()} ${config.url}`);
     
-    // 테스트 모드 설정 (개발 환경에서만 활성화)
-    const useMockResponses = isDev;
+    // 테스트 모드 설정 (서버 연결이 안 될 때만 활성화)
+    const useMockResponses = !serverConnected;
     
     try {
       // 토큰이 있으면 헤더에 추가
@@ -271,8 +273,8 @@ axiosInstance.interceptors.request.use(
         console.log('[API 요청] 토큰 설정됨');
       }
       
-      // 베타 테스트 모드: API 서버가 연결되지 않거나 테스트 모드가 활성화된 경우 모의 응답 사용
-      if (useMockResponses && (!serverConnected || config.url.includes('/api/auth/'))) {
+      // 테스트 모드: API 서버가 연결되지 않은 경우에만 모의 응답 사용
+      if (useMockResponses) {
         console.log('[테스트 모드] 활성화됨, 테스트 응답 사용');
         config._useTestMode = true;
       }

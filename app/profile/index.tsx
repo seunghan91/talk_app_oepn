@@ -100,10 +100,10 @@ export default function ProfileScreen() {
         setErrorType('unknown');
       }
       
-      // 개발 환경에서는 모의 데이터 사용
-      if (__DEV__) {
-        setNickname(user?.nickname || '사용자');
-        setGender('남성');
+      // 유저 정보가 있으면 그것을 사용
+      if (user?.nickname) {
+        setNickname(user.nickname);
+        setGender(serverValueToGender(user.gender || ''));
       }
       
       setLoading(false);
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
       if (response.data.nickname) {
         setRandomNickname(response.data.nickname);
       } else {
-        // 개발 환경에서는 모의 데이터 사용
+        // 서버 응답에 닉네임이 없는 경우 로컬에서 생성
         generateRandomNicknameLocally();
       }
       
@@ -144,10 +144,8 @@ export default function ProfileScreen() {
         setErrorType('unknown');
       }
       
-      // 개발 환경에서는 모의 데이터 사용
-      if (__DEV__) {
-        generateRandomNicknameLocally();
-      }
+      // 에러 발생 시 로컬에서 생성
+      generateRandomNicknameLocally();
       
       setSaving(false);
     }
@@ -181,7 +179,7 @@ export default function ProfileScreen() {
       const response = await axiosInstance.post(endpoint, requestBody);
       
       // 성공 시 사용자 정보 업데이트
-      if (response.data.success || __DEV__) {
+      if (response.data.success) {
         // Auth 컨텍스트의 사용자 정보 업데이트
         if (updateUser) {
           updateUser({
@@ -234,52 +232,20 @@ export default function ProfileScreen() {
         setErrorType('unknown');
       }
       
-      // 개발 환경에서는 모의 응답 처리
-      if (__DEV__) {
-        // Auth 컨텍스트의 사용자 정보 업데이트
-        if (updateUser) {
-          updateUser({
-            [field]: value
-          });
-        }
-        
-        // 상태 업데이트
-        if (field === 'nickname') {
-          setNickname(value);
-          setRandomNickname('');
-          setIsChangingNickname(false);
-        } else if (field === 'gender') {
-          setGender(value as Gender);
-          setIsChangingGender(false);
-        }
-        
-        // 성공 메시지 표시
-        Alert.alert(
-          t('common.success') || '성공', 
-          successMessage,
-          [
-            {
-              text: '확인',
-              onPress: refreshProfile // 확인 버튼 클릭 시 프로필 새로고침
-            }
-          ]
-        );
-      } else {
-        // 에러 메시지 표시
-        const errorTitle = t('common.error') || '오류';
-        let errorMsg = errorMessage;
-        
-        // 에러 타입에 따른 메시지 추가
-        if (errorType === 'network') {
-          errorMsg += '\n네트워크 연결을 확인해주세요.';
-        } else if (errorType === 'server') {
-          errorMsg += '\n서버에 문제가 발생했습니다.';
-        } else if (errorType === 'auth') {
-          errorMsg += '\n로그인이 필요합니다.';
-        }
-        
-        Alert.alert(errorTitle, errorMsg);
+      // 에러 메시지 표시
+      const errorTitle = t('common.error') || '오류';
+      let errorMsg = errorMessage;
+      
+      // 에러 타입에 따른 메시지 추가
+      if (errorType === 'network') {
+        errorMsg += '\n네트워크 연결을 확인해주세요.';
+      } else if (errorType === 'server') {
+        errorMsg += '\n서버에 문제가 발생했습니다.';
+      } else if (errorType === 'auth') {
+        errorMsg += '\n로그인이 필요합니다.';
       }
+      
+      Alert.alert(errorTitle, errorMsg);
       
       setSaving(false);
     }
