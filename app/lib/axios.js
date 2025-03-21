@@ -56,12 +56,15 @@ const checkServerConnection = async () => {
   }
 };
 
-// 앱 시작 시 서버 연결 테스트 실행
+// 앱 시작 시 서버 연결 테스트 실행 코드 주석 처리
+// let serverConnected = false;
+// checkServerConnection().then(isConnected => {
+//   serverConnected = isConnected;
+//   console.log(`[API 연결 상태] ${isConnected ? '연결됨' : '연결 실패'}`);
+// });
+
+// 테스트용 서버 연결 상태 변수 설정
 let serverConnected = false;
-checkServerConnection().then(isConnected => {
-  serverConnected = isConnected;
-  console.log(`[API 연결 상태] ${isConnected ? '연결됨' : '연결 실패'}`);
-});
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
