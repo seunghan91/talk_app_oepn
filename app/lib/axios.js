@@ -336,8 +336,8 @@ export const getUserNotificationSettings = async (userId) => {
       }
     }
     
-    // 사용자 ID가 포함된 경로로 요청
-    const response = await axiosInstance.get(`/api/v1/users/${userId}/notification_settings`);
+    // API 엔드포인트 변경: v1 네임스페이스 대신 루트 API 사용
+    const response = await axiosInstance.get(`/api/users/notification_settings`);
     return response.data;
   } catch (error) {
     console.error('알림 설정 가져오기 실패:', error);
@@ -358,8 +358,8 @@ export const updateUserNotificationSettings = async (userId, settings) => {
       }
     }
     
-    // 사용자 ID가 포함된 경로로 요청
-    const response = await axiosInstance.patch(`/api/v1/users/${userId}/notification_settings`, settings);
+    // API 엔드포인트 변경: v1 네임스페이스 대신 루트 API 사용
+    const response = await axiosInstance.patch(`/api/users/notification_settings`, settings);
     return response.data;
   } catch (error) {
     console.error('알림 설정 업데이트 실패:', error);
