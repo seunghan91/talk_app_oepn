@@ -125,16 +125,16 @@ export default function ConversationDetail() {
       
       // 폼데이터 생성
       const formData = new FormData();
-      formData.append('voice_file', {
-        uri: uri,
+      formData.append('voice_recording', {
+        uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
         name: `recording_${Date.now()}.${fileExtension}`,
         type: mimeType,
       });
       
       console.log('메시지 전송 시도:', uri);
       
-      // 실제 API 호출
-      const response = await axiosInstance.post(`/api/conversations/${id}/send_message`, formData, {
+      // API 엔드포인트 변경: 브로드캐스트 대신 직접 메시지 전송
+      const response = await axiosInstance.post(`/api/v1/conversations/${id}/send_message`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

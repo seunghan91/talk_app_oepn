@@ -84,19 +84,28 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
         return;
       }
       
-      // 오디오 모드 설정
+      console.log('오디오 모드 설정 시작...');
+      
+      // 오디오 모드 설정 - 올바른 iOS 인터럽션 모드 사용
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
         interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
         interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
+      
+      console.log('오디오 모드 설정 완료');
+      console.log('녹음 객체 생성 중...');
       
       // 녹음 객체 생성
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
+      
+      console.log('녹음 객체 생성 완료');
       
       setRecording(recording);
       setRecordingStatus('recording');
@@ -125,7 +134,7 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
       }, maxRecordingDuration * 1000);
       
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error('녹음 시작 실패:', error);
       Alert.alert(t('common.error'), t('broadcast.recordingFailed'));
     }
   };
