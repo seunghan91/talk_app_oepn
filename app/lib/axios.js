@@ -323,6 +323,50 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// 사용자 알림 설정 가져오기 함수
+export const getUserNotificationSettings = async (userId) => {
+  try {
+    // userId가 없으면 현재 로그인된 사용자 ID를 가져옴
+    if (!userId) {
+      const user = await AsyncStorage.getItem('user');
+      if (user) {
+        userId = JSON.parse(user).id;
+      } else {
+        throw new Error('사용자 ID가 필요합니다');
+      }
+    }
+    
+    // 사용자 ID가 포함된 경로로 요청
+    const response = await axiosInstance.get(`/api/v1/users/${userId}/notification_settings`);
+    return response.data;
+  } catch (error) {
+    console.error('알림 설정 가져오기 실패:', error);
+    throw error;
+  }
+};
+
+// 사용자 알림 설정 업데이트 함수
+export const updateUserNotificationSettings = async (userId, settings) => {
+  try {
+    // userId가 없으면 현재 로그인된 사용자 ID를 가져옴
+    if (!userId) {
+      const user = await AsyncStorage.getItem('user');
+      if (user) {
+        userId = JSON.parse(user).id;
+      } else {
+        throw new Error('사용자 ID가 필요합니다');
+      }
+    }
+    
+    // 사용자 ID가 포함된 경로로 요청
+    const response = await axiosInstance.patch(`/api/v1/users/${userId}/notification_settings`, settings);
+    return response.data;
+  } catch (error) {
+    console.error('알림 설정 업데이트 실패:', error);
+    throw error;
+  }
+};
+
 /*
 참고: Rails API 서버에서 CORS 설정이 필요합니다.
 

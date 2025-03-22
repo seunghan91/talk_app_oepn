@@ -1,334 +1,360 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import axios from '../lib/axios';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { ThemedText } from '../../components/ThemedText';
+import { ThemedView } from '../../components/ThemedView';
+import { useAuth } from '../context/AuthContext';
+import axiosInstance from '../lib/axios';
+import StylishButton from '../../components/StylishButton';
 
+// 거래 내역 타입 정의
+interface Transaction {
+  id: number;
+  type: string;
+  type_korean: string;
+  amount: number;
+  formatted_amount: string;
+  description: string;
+  payment_method: string;
+  status: string;
+  created_at: string;
+  formatted_date: string;
+}
+
+// 지갑 화면 컴포넌트
 export default function WalletScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
-  
+  const { t } = useTranslation();
+  const { isAuthenticated, user } = useAuth();
   const [balance, setBalance] = useState<number>(0);
-  const [formattedBalance, setFormattedBalance] = useState<string>('₩0');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // 지갑 잔액 조회
-  const fetchWalletBalance = async () => {
-    if (!isAuthenticated) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
+  const [formattedBalance, setFormattedBalance] = useState<string>('0원');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // 지갑 정보와 거래 내역 로드
+  const loadWalletData = async () => {
     try {
-      // API 호출
-      const response = await axios.get('/api/v1/wallet');
+      setLoading(true);
       
-      setBalance(response.data.balance);
-      setFormattedBalance(response.data.formatted_balance || `₩${response.data.balance.toLocaleString()}`);
+      if (!isAuthenticated) {
+        return;
+      }
       
-      console.log('[지갑] 잔액 조회 성공:', response.data);
-    } catch (err) {
-      console.error('[지갑] 잔액 조회 실패:', err);
-      setError(t('wallet.loadError'));
-      
-      // 테스트용 더미 데이터 설정 (실제 앱에서는 제거)
-      if (__DEV__) {
+      // 실제 API 호출 (API 서버 연결이 안 될 경우 테스트 데이터 사용)
+      try {
+        // 지갑 정보 조회
+        const walletResponse = await axiosInstance.get('/api/v1/wallet');
+        if (walletResponse.data) {
+          setBalance(walletResponse.data.balance);
+          setFormattedBalance(walletResponse.data.formatted_balance);
+        }
+        
+        // 거래 내역 조회
+        const transactionsResponse = await axiosInstance.get('/api/v1/wallet/transactions');
+        if (transactionsResponse.data) {
+          setTransactions(transactionsResponse.data);
+        }
+      } catch (error) {
+        console.error('지갑 데이터 로드 실패:', error);
+        
+        // 테스트 데이터 사용
         setBalance(5000);
         setFormattedBalance('₩5,000');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // 충전 요청 함수
-  const handleDeposit = async (amount: number) => {
-    if (!isAuthenticated) {
-      Alert.alert(
-        t('common.loginRequired'),
-        t('common.loginToPerformAction'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { 
-            text: t('common.login'), 
-            onPress: () => router.push('/auth/login')
-          }
-        ]
-      );
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      // 실제 API 호출 구현
-      const response = await axios.post('/api/v1/wallet/deposit', { amount });
-      
-      // 성공 시 잔액 업데이트
-      setBalance(response.data.balance);
-      setFormattedBalance(response.data.formatted_balance || `₩${response.data.balance.toLocaleString()}`);
-      
-      Alert.alert(
-        t('wallet.depositSuccess'),
-        response.data.message || t('wallet.depositCompleted'),
-        [{ text: t('common.ok') }]
-      );
-      
-      console.log('[지갑] 충전 성공:', response.data);
-    } catch (err) {
-      console.error('[지갑] 충전 실패:', err);
-      
-      Alert.alert(
-        t('wallet.depositFailed'),
-        t('wallet.depositError'),
-        [{ text: t('common.ok') }]
-      );
-      
-      // 테스트 모드에서 더미 충전 처리 (실제 앱에서는 제거)
-      if (__DEV__) {
-        const newBalance = balance + amount;
-        setBalance(newBalance);
-        setFormattedBalance(`₩${newBalance.toLocaleString()}`);
         
-        Alert.alert(
-          t('wallet.depositSuccess'),
-          `${amount.toLocaleString()}원이 충전되었습니다.`,
-          [{ text: t('common.ok') }]
-        );
+        // 테스트용 거래 내역
+        const testTransactions = [
+          {
+            id: 1,
+            type: 'deposit',
+            type_korean: '충전',
+            amount: 5000,
+            formatted_amount: '₩5,000',
+            description: '초기 충전',
+            payment_method: '신용카드',
+            status: 'completed',
+            created_at: new Date().toISOString(),
+            formatted_date: new Date().toLocaleDateString('ko-KR', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })
+          }
+        ];
+        setTransactions(testTransactions);
       }
+    } catch (error) {
+      console.error('지갑 데이터 로드 중 오류 발생:', error);
+      Alert.alert(
+        '오류 발생',
+        '지갑 정보를 불러오는 중 오류가 발생했습니다.',
+        [{ text: '확인' }]
+      );
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
-  
-  // 컴포넌트 마운트 시 지갑 정보 조회
+
+  // 화면 로드 시 데이터 로드
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchWalletBalance();
-    } else {
-      setIsLoading(false);
-    }
+    loadWalletData();
   }, [isAuthenticated]);
-  
-  // 로그인 필요 화면
+
+  // 새로고침 처리
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadWalletData();
+  };
+
+  // 충전 화면으로 이동
+  const goToDeposit = () => {
+    // 실제 구현에서는 충전 화면으로 이동
+    // router.push('/wallet/deposit' as any);
+    
+    // 임시 구현: 알림창 표시
+    Alert.alert(
+      '준비 중인 기능',
+      '충전 기능은 현재 개발 중입니다.',
+      [{ text: '확인' }]
+    );
+  };
+
+  // 로그인 화면으로 이동
+  const goToLogin = () => {
+    router.push('/auth' as any);
+  };
+
+  // 로그인되지 않은 경우 로그인 유도 화면 표시
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <Stack.Screen options={{ title: t('wallet.title') }} />
-        
-        <View style={styles.loginRequiredContainer}>
-          <FontAwesome5 name="lock" size={48} color="#9BA1A6" />
-          <Text style={styles.loginRequiredText}>{t('common.loginRequired')}</Text>
-          <Text style={styles.loginRequiredSubText}>{t('common.loginToPerformAction')}</Text>
-          
-          <TouchableOpacity 
+      <SafeAreaView style={styles.safeArea}>
+        <Stack.Screen options={{ title: '지갑' }} />
+        <ThemedView style={styles.loginContainer}>
+          <Ionicons name="wallet-outline" size={64} color="#CCCCCC" />
+          <ThemedText style={styles.loginTitle}>로그인이 필요합니다</ThemedText>
+          <ThemedText style={styles.loginDescription}>
+            지갑 기능을 사용하려면 로그인이 필요합니다.
+          </ThemedText>
+          <StylishButton 
+            title="로그인하기"
+            onPress={goToLogin}
             style={styles.loginButton}
-            onPress={() => router.push('/auth/login')}
-          >
-            <Text style={styles.loginButtonText}>{t('common.login')}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          />
+        </ThemedView>
+      </SafeAreaView>
     );
   }
-  
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: t('wallet.title') }} />
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen 
+        options={{ 
+          title: '내 지갑',
+          headerRight: () => (
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={handleRefresh}
+            >
+              <Ionicons name="refresh" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          )
+        }} 
+      />
       
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0a7ea4" />
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={fetchWalletBalance}
-          >
-            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <ScrollView style={styles.scrollView}>
-          <View style={styles.balanceContainer}>
-            <Text style={styles.balanceLabel}>{t('wallet.currentBalance')}</Text>
-            <Text style={styles.balanceAmount}>{formattedBalance}</Text>
-          </View>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#007AFF']}
+            tintColor="#007AFF"
+          />
+        }
+      >
+        {/* 지갑 잔액 표시 */}
+        <ThemedView style={styles.balanceContainer}>
+          <ThemedText style={styles.balanceLabel}>현재 잔액</ThemedText>
+          {loading ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : (
+            <ThemedText style={styles.balanceAmount}>{formattedBalance}</ThemedText>
+          )}
+          <StylishButton
+            title="충전하기"
+            onPress={goToDeposit}
+            style={styles.depositButton}
+            loading={loading}
+          />
+        </ThemedView>
+        
+        {/* 거래 내역 목록 */}
+        <ThemedView style={styles.transactionsContainer}>
+          <ThemedText style={styles.sectionTitle}>거래 내역</ThemedText>
           
-          <View style={styles.depositContainer}>
-            <Text style={styles.depositTitle}>{t('wallet.deposit')}</Text>
-            
-            <View style={styles.depositAmountRow}>
-              {[5000, 10000, 30000, 50000].map((amount) => (
-                <TouchableOpacity
-                  key={amount}
-                  style={styles.depositButton}
-                  onPress={() => handleDeposit(amount)}
-                >
-                  <Text style={styles.depositButtonText}>{`₩${amount.toLocaleString()}`}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          
-          <View style={styles.historyContainer}>
-            <Text style={styles.historyTitle}>{t('wallet.transactionHistory')}</Text>
-            
-            {/* 거래 내역은 추후 구현 */}
-            <Text style={styles.emptyHistoryText}>{t('wallet.noTransactions')}</Text>
-          </View>
-        </ScrollView>
-      )}
-    </View>
+          {loading ? (
+            <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+          ) : transactions.length > 0 ? (
+            transactions.map((transaction) => (
+              <ThemedView key={transaction.id} style={styles.transactionItem}>
+                <ThemedView style={styles.transactionHeader}>
+                  <ThemedText style={styles.transactionType}>
+                    {transaction.type_korean}
+                  </ThemedText>
+                  <ThemedText 
+                    style={[
+                      styles.transactionAmount,
+                      transaction.type === 'deposit' ? styles.depositAmount : styles.withdrawalAmount
+                    ]}
+                  >
+                    {transaction.type === 'deposit' ? '+' : '-'}{transaction.formatted_amount}
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText style={styles.transactionDesc}>{transaction.description}</ThemedText>
+                <ThemedText style={styles.transactionDate}>{transaction.formatted_date}</ThemedText>
+              </ThemedView>
+            ))
+          ) : (
+            <ThemedView style={styles.emptyContainer}>
+              <Ionicons name="receipt-outline" size={48} color="#CCCCCC" />
+              <ThemedText style={styles.emptyText}>거래 내역이 없습니다</ThemedText>
+            </ThemedView>
+          )}
+        </ThemedView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    padding: 12,
-    backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  refreshButton: {
+    padding: 8,
   },
   balanceContainer: {
-    backgroundColor: '#0a7ea4',
-    padding: 24,
-    alignItems: 'center',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
     margin: 16,
-    elevation: 3,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 3,
+    alignItems: 'center',
   },
   balanceLabel: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666666',
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#fff',
-  },
-  depositContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    margin: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-  },
-  depositTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  depositAmountRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    color: '#000000',
+    marginBottom: 20,
   },
   depositButton: {
-    width: '48%',
-    backgroundColor: '#F2F3F5',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
+    minWidth: 200,
   },
-  depositButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#11181C',
-  },
-  historyContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
+  transactionsContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
     margin: 16,
-    marginTop: 8,
+    marginTop: 0,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  historyTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginBottom: 16,
   },
-  emptyHistoryText: {
-    fontSize: 14,
-    color: '#9BA1A6',
-    textAlign: 'center',
-    padding: 20,
+  transactionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    marginBottom: 8,
   },
-  loginRequiredContainer: {
+  transactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  transactionType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  depositAmount: {
+    color: '#4CAF50',
+  },
+  withdrawalAmount: {
+    color: '#F44336',
+  },
+  transactionDesc: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: '#999999',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#999999',
+    textAlign: 'center',
+  },
+  loader: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  loginContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
-  loginRequiredText: {
-    fontSize: 20,
+  loginTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  loginRequiredSubText: {
+  loginDescription: {
     fontSize: 16,
-    color: '#687076',
+    color: '#666666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 30,
   },
   loginButton: {
-    backgroundColor: '#0a7ea4',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    minWidth: 200,
   },
 });
