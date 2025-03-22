@@ -133,8 +133,8 @@ export default function ConversationDetail() {
       
       console.log('메시지 전송 시도:', uri);
       
-      // API 엔드포인트 변경: 브로드캐스트 대신 직접 메시지 전송
-      const response = await axiosInstance.post(`/api/v1/conversations/${id}/send_message`, formData, {
+      // API 엔드포인트 호출: conversations/:id/send_message
+      const response = await axiosInstance.post(`/api/conversations/${id}/send_message`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
