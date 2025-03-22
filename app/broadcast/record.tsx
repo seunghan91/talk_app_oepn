@@ -865,12 +865,18 @@ export default function RecordScreen() {
       // 파일명 설정
       const fileName = `recording_${Date.now()}.m4a`;
       
-      // 파일 추가 - 키 이름을 'broadcast[voice_file]'에서 'voice_file'로 변경
-      formData.append('voice_file', {
+      // broadcast 객체 안에 audio 파라미터로 파일 추가
+      formData.append('broadcast[audio]', {
         uri: recordingUri,
         name: fileName,
         type: fileType
       } as any);
+      
+      // 선택적으로 텍스트 필드 추가
+      formData.append('broadcast[text]', '음성 메시지');
+      
+      // 수신자 수 지정 (선택 사항)
+      formData.append('broadcast[recipient_count]', '5');
       
       // API 요청 로깅
       console.log('API 요청:', {
