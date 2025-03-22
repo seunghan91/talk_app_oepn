@@ -29,7 +29,8 @@
     "networkError": "네트워크 오류",
     "serverNotResponding": "서버가 응답하지 않습니다. 나중에 다시 시도해 주세요",
     "unexpectedError": "예상치 못한 오류가 발생했습니다",
-    "tryAgainLater": "나중에 다시 시도해 주세요"
+    "tryAgainLater": "나중에 다시 시도해 주세요",
+    "quickLinks": "바로가기 메뉴"
   },
   "home": {
     "welcome": "환영합니다",
@@ -342,5 +343,33 @@
     "submitSuccess": "제안이 성공적으로 제출되었습니다. 소중한 의견 감사합니다.",
     "submitError": "제안 제출에 실패했습니다. 다시 시도해주세요.",
     "note": "* 답변이 필요한 경우, 고객센터로 문의해주세요."
+  },
+  "wallet": {
+    "title": "지갑",
+    "currentBalance": "현재 잔액",
+    "deposit": "충전하기",
+    "withdrawal": "출금하기",
+    "transactionHistory": "거래 내역",
+    "noTransactions": "거래 내역이 없습니다",
+    "depositSuccess": "충전 성공",
+    "depositCompleted": "충전이 완료되었습니다",
+    "depositFailed": "충전 실패",
+    "depositError": "충전 중 오류가 발생했습니다",
+    "loadError": "지갑 정보를 불러오는 중 오류가 발생했습니다",
+    "amountToDeposit": "충전할 금액",
+    "amountToWithdraw": "출금할 금액",
+    "payment": "결제",
+    "paymentMethod": "결제 수단",
+    "creditCard": "신용카드",
+    "bankTransfer": "계좌이체",
+    "paymentSuccess": "결제가 완료되었습니다",
+    "paymentFailed": "결제에 실패했습니다",
+    "insufficientBalance": "잔액이 부족합니다",
+    "transactionDetail": "거래 상세",
+    "transactionType": "거래 유형",
+    "transactionAmount": "거래 금액",
+    "transactionDate": "거래 일시",
+    "transactionDescription": "설명",
+    "walletIsEmpty": "지갑이 비어있습니다"
   }
 } 
