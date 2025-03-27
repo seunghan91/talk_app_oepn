@@ -8,7 +8,6 @@
     "scheme": "talkk",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "privacy": "unlisted",
     "description": "음성 메시지를 통해 새로운 인연을 만나는 소셜 네트워킹 앱",
     "primaryColor": "#ff5a60",
     "splash": {
