@@ -17,7 +17,7 @@
       "channel": "production",
       "android": {
         "credentialsSource": "remote",
-        "gradleCommand": ":app:bundlePlayRelease"
+        "gradleCommand": ":app:bundleRelease"
       }
     }
   },

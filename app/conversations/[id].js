@@ -258,7 +258,17 @@ export default function ConversationDetail() {
             <Text style={styles.senderName}>
               {isMyMessage ? '나' : otherUser?.nickname || '상대방'}
             </Text>
-            <Text style={styles.messageTime}>{formattedTime}</Text>
+            <View style={styles.messageStatusContainer}>
+              <Text style={styles.messageTime}>{formattedTime}</Text>
+              {isMyMessage && (
+                <Text style={[
+                  styles.readStatus, 
+                  item.is_read ? styles.readStatusRead : styles.readStatusUnread
+                ]}>
+                  {item.is_read ? '읽음' : '안읽음'}
+                </Text>
+              )}
+            </View>
           </View>
           
           <View style={[
@@ -483,9 +493,9 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   messageTime: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#999999',
-    marginLeft: 8,
+    marginLeft: 4,
   },
   voicePlayerContainer: {
     borderRadius: 12,
@@ -576,5 +586,19 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#666666',
     fontSize: 14,
+  },
+  messageStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  readStatus: {
+    fontSize: 10,
+    marginLeft: 4,
+  },
+  readStatusRead: {
+    color: '#4CAF50',
+  },
+  readStatusUnread: {
+    color: '#FF5722',
   },
 });
