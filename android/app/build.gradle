@@ -102,15 +102,6 @@ android {
         }
     }
     
-    // React Native iap 모듈의 flavor 강제 지정
-    configurations.all {
-        resolutionStrategy {
-            dependencySubstitution {
-                substitute project(':react-native-iap') with project(':react-native-iap').variant('playRelease')
-            }
-        }
-    }
-    
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
