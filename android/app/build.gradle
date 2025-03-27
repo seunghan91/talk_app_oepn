@@ -93,12 +93,14 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        missingDimensionStrategy 'store', 'play'
     }
     
     flavorDimensions "store"
     productFlavors {
         play {
             dimension "store"
+            matchingFallbacks = ["play", "default"]
         }
     }
     
@@ -122,6 +124,7 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
+            matchingFallbacks = ['release', 'debug']
         }
     }
     packagingOptions {
