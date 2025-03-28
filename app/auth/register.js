@@ -126,7 +126,9 @@ export default function RegisterScreen() {
       
       try {
         const res = await axiosInstance.post('/api/auth/request_code', {
-          phone_number: digitsOnly,
+          user: {
+            phone_number: digitsOnly,
+          }
         });
         serverResponse = res.data;
         console.log('인증코드 요청 성공:', serverResponse);
@@ -202,8 +204,10 @@ export default function RegisterScreen() {
       let serverResponse = null;
       try {
         const res = await axiosInstance.post('/api/auth/verify_code', {
-          phone_number: digitsOnly,
-          code,
+          user: {
+            phone_number: digitsOnly,
+            code,
+          }
         });
         serverResponse = res.data;
         console.log('인증 완료, 서버 응답:', res.data);
@@ -272,12 +276,14 @@ export default function RegisterScreen() {
     setIsLoading(true);
     
     try {
-      // 수정: user 객체로 감싸지 않고 파라미터를 루트 레벨에 포함
+      // 수정: 서버가 params.require(:user)를 사용하므로 user 객체로 다시 감싸기
       const registerData = {
-        ...userData, // phone_number 포함
-        gender: gender,
-        password,
-        password_confirmation: confirmPassword
+        user: {
+          ...userData, // phone_number 포함
+          gender: gender,
+          password,
+          password_confirmation: confirmPassword
+        }
       };
       
       console.log('회원가입 요청 데이터:', registerData);
