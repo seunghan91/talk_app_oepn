@@ -69,12 +69,10 @@ export default function LoginScreen() {
       // 하이픈 제거한 숫자만 서버로 전송
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       
-      // 로그인 요청 데이터
+      // 로그인 요청 데이터 (서버 기대 형식으로 수정)
       const loginData = {
-        user: {
-          phone_number: digitsOnly,
-          password: password
-        }
+        phone_number: digitsOnly,
+        password: password
       };
       
       console.log('[로그인] 요청 데이터:', loginData);
