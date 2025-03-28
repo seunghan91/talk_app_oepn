@@ -194,7 +194,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-1111-1111');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 A (김철수)</ThemedText>
@@ -204,7 +204,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-2222-2222');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 B (이영희)</ThemedText>
@@ -214,7 +214,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-3333-3333');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 C (박지민)</ThemedText>
@@ -224,7 +224,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-4444-4444');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 D (최수진)</ThemedText>
@@ -234,7 +234,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-5555-5555');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 E (정민준)</ThemedText>
