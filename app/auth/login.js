@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 
 import axiosInstance from '../lib/axios';
 import { formatKoreanPhoneNumber, isValidKoreanPhoneNumber } from '../../utils/phoneUtils';
@@ -83,6 +84,20 @@ export default function LoginScreen() {
         console.log('[로그인] API 서버에 로그인 요청 시도...');
         console.log('[로그인] 요청 URL:', axiosInstance.defaults.baseURL + '/api/auth/login');
         
+        // 요청 직전에 세부 정보 로깅
+        console.log('===== 로그인 요청 전체 정보 =====');
+        console.log('1. 요청 URL:', axiosInstance.defaults.baseURL + '/api/auth/login');
+        console.log('2. 요청 헤더:', JSON.stringify({
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }, null, 2));
+        console.log('3. 요청 데이터 JSON 문자열:', JSON.stringify(loginData));
+        console.log('4. __DEV__ 모드:', __DEV__ ? '활성화' : '비활성화');
+        console.log('5. 플랫폼:', Platform.OS);
+        console.log('6. 앱 버전:', Constants.expoConfig?.version || '알 수 없음');
+        console.log('7. 환경:', __DEV__ ? '개발' : '프로덕션');
+        console.log('==============================');
+        
         const res = await axiosInstance.post('/api/auth/login', loginData, {
           headers: {
             'Content-Type': 'application/json',
@@ -126,13 +141,42 @@ export default function LoginScreen() {
         if (err.response) {
           console.log('헤더:', JSON.stringify(err.response.headers, null, 2));
           console.log('요청 구성:', JSON.stringify(err.config, null, 2));
+          
+          // 원시 응답 데이터 확인 시도
+          try {
+            console.log('===== 원시 응답 데이터 분석 =====');
+            if (err.response.request?._response) {
+              console.log('원시 응답 문자열:', err.response.request._response);
+              try {
+                const parsed = JSON.parse(err.response.request._response);
+                console.log('원시 응답 파싱 성공:', JSON.stringify(parsed, null, 2));
+              } catch (e) {
+                console.log('원시 응답 JSON 파싱 실패, HTML일 가능성 있음');
+              }
+            } else {
+              console.log('원시 응답 데이터 없음');
+            }
+            console.log('==============================');
+          } catch (parseError) {
+            console.log('원시 응답 확인 중 오류:', parseError);
+          }
         }
         
         // API 서버 응답 확인
         if (err.response?.status === 401) {
           Alert.alert('오류', '전화번호 또는 비밀번호가 올바르지 않습니다.');
         } else if (err.response?.status === 400) {
-          Alert.alert('오류', '요청 형식이 잘못되었습니다. 개발자에게 문의하세요.');
+          // 서버 오류 메시지 확인
+          let errorMessage = '요청 형식이 잘못되었습니다. 개발자에게 문의하세요.';
+          if (err.response?.data?.error) {
+            errorMessage = `오류: ${err.response.data.error}`;
+          } else if (err.response?.data?.errors) {
+            const errors = err.response.data.errors;
+            errorMessage = Object.keys(errors)
+              .map(key => `${key}: ${errors[key].join(', ')}`)
+              .join('\n');
+          }
+          Alert.alert('요청 오류', errorMessage);
         } else {
           Alert.alert('오류', `서버 연결 오류: ${err.message}`);
         }
@@ -230,7 +274,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-1111-1111');
-                    setPassword('password');
+                    setPassword('test1234');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 A (김철수)</ThemedText>
@@ -240,7 +284,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-2222-2222');
-                    setPassword('password');
+                    setPassword('test1234');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 B (이영희)</ThemedText>
@@ -250,7 +294,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-3333-3333');
-                    setPassword('password');
+                    setPassword('test1234');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 C (박지민)</ThemedText>
@@ -260,7 +304,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-4444-4444');
-                    setPassword('password');
+                    setPassword('test1234');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 D (최수진)</ThemedText>
@@ -270,7 +314,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-5555-5555');
-                    setPassword('password');
+                    setPassword('test1234');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 E (정민준)</ThemedText>

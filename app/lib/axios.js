@@ -312,7 +312,7 @@ axiosInstance.interceptors.response.use(
   (response) => {
     // 응답 성공 로깅
     if (__DEV__) {
-      console.log(`[API 응답] ${response.config.method.toUpperCase()} ${response.config.url}`, 
+      console.log(`[API 응답] ${response.config.method?.toUpperCase() || 'UNKNOWN'} ${response.config.url}`, 
         `\n상태: ${response.status}`, 
         response.data ? `\n데이터: ${JSON.stringify(response.data)}` : ''
       );
@@ -324,13 +324,28 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const { status, data, config } = error.response;
       
-      if (__DEV__) {
-        console.error(`[API 오류] ${config.method.toUpperCase()} ${config.url}`, 
-          `\n상태: ${status}`, 
-          data ? `\n데이터: ${JSON.stringify(data)}` : '',
-          `\n메시지: ${error.message}`
-        );
+      // 오류 상세 내용 로깅
+      console.error(`[API 오류] ${config.method?.toUpperCase() || 'UNKNOWN'} ${config.url}`);
+      console.error(`상태: ${status}`);
+      console.error(`오류 데이터:`, data);
+      console.error(`오류 메시지: ${error.message}`);
+      
+      // 요청 내용 로깅
+      console.error(`요청 URL: ${config.baseURL}${config.url}`);
+      console.error(`요청 메서드: ${config.method?.toUpperCase() || 'UNKNOWN'}`);
+      console.error(`요청 헤더:`, config.headers);
+      
+      if (config.data) {
+        try {
+          const requestData = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+          console.error(`요청 데이터:`, requestData);
+        } catch (e) {
+          console.error(`요청 데이터 (원본):`, config.data);
+        }
       }
+      
+      // 응답 헤더 로깅
+      console.error(`응답 헤더:`, error.response.headers);
       
       // 401 Unauthorized (토큰 만료 등)
       if (status === 401) {
@@ -347,12 +362,18 @@ axiosInstance.interceptors.response.use(
           console.error('[토큰 삭제 오류]', e);
         }
       }
+      // 400 Bad Request (잘못된 요청 형식)
+      else if (status === 400) {
+        console.error('[400 오류] 잘못된 요청 형식');
+        console.error('응답 데이터:', JSON.stringify(data, null, 2));
+      }
     }
     // 네트워크 오류 (서버 연결 실패 등)
     else if (error.request) {
-      if (__DEV__) {
-        console.error('[네트워크 오류] 서버 응답 없음', error.request._url || error.config?.url, error.message);
-      }
+      console.error('[네트워크 오류] 서버 응답 없음');
+      console.error('요청 URL:', error.request._url || error.config?.url);
+      console.error('오류 메시지:', error.message);
+      console.error('요청 내용:', error.config);
       
       // 테스트 모드에서 모의 응답 반환 (서버 연결 실패 시)
       if (__DEV__ && !serverConnected) {
@@ -373,8 +394,9 @@ axiosInstance.interceptors.response.use(
     }
     // 그 외 오류 (요청 설정 오류 등)
     else {
-      if (__DEV__) {
-        console.error('[API 기타 오류]', error.message);
+      console.error('[API 기타 오류]', error.message);
+      if (error.config) {
+        console.error('요청 구성:', error.config);
       }
     }
     
