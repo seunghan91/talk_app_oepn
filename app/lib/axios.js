@@ -258,31 +258,25 @@ const handleMockResponse = (config) => {
   return null;
 };
 
-// 인터셉터 설정
+// 요청 인터셉터
 axiosInstance.interceptors.request.use(
   async (config) => {
-    console.log(`[API 요청] ${config.method?.toUpperCase()} ${config.url}`);
+    // 요청 시작 로깅
+    if (__DEV__) {
+      console.log(`[API 요청] ${config.method.toUpperCase()} ${config.url}`, 
+        config.params ? `\n파라미터: ${JSON.stringify(config.params)}` : '', 
+        config.data ? `\n데이터: ${typeof config.data === 'string' ? config.data : JSON.stringify(config.data)}` : ''
+      );
+    }
     
-    // 테스트 모드 설정 (서버 연결이 안 될 때만 활성화)
-    const useMockResponses = !serverConnected;
-    
+    // JWT 토큰 자동 추가
     try {
-      // 토큰이 있으면 헤더에 추가
       const token = await AsyncStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('[API 요청] 토큰 설정됨');
-      }
-      
-      // 테스트 모드: API 서버가 연결되지 않은 경우에만 모의 응답 사용
-      if (useMockResponses) {
-        console.log('[테스트 모드] 활성화됨, 테스트 응답 사용');
-        config._useTestMode = true;
-      } else {
-        console.log('[실제 모드] 활성화됨, 실제 API 서버 사용');
       }
     } catch (error) {
-      console.error('[API 요청] 토큰 설정 오류:', error);
+      console.error('[토큰 설정 오류]', error);
     }
     
     return config;
@@ -296,26 +290,71 @@ axiosInstance.interceptors.request.use(
 // 응답 인터셉터
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log(`[API 응답] ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    // 응답 성공 로깅
+    if (__DEV__) {
+      console.log(`[API 응답] ${response.config.method.toUpperCase()} ${response.config.url}`, 
+        `\n상태: ${response.status}`, 
+        response.data ? `\n데이터: ${JSON.stringify(response.data)}` : ''
+      );
+    }
     return response;
   },
   async (error) => {
-    console.error(`[API 오류] ${error.response?.status || 'NETWORK ERROR'} ${error.config?.method?.toUpperCase() || 'UNKNOWN'} ${error.config?.url || 'UNKNOWN'}`);
-    console.error('[API 오류 상세]', error.response?.data || error.message);
-    
-    // 테스트 모드가 활성화된 경우 모의 응답 시도
-    if (error.config && error.config._useTestMode) {
-      console.log('[테스트 모드] API 오류 발생, 테스트 응답으로 대체 시도');
+    // 서버 응답이 있는 오류 (400, 401, 500 등)
+    if (error.response) {
+      const { status, data, config } = error.response;
       
-      try {
-        const mockResponse = handleMockResponse(error.config);
-        if (mockResponse) {
-          const [status, data] = mockResponse;
-          console.log(`[테스트 모드] 모의 응답 반환 (${error.config.url})`);
-          return Promise.resolve({ status, data });
+      if (__DEV__) {
+        console.error(`[API 오류] ${config.method.toUpperCase()} ${config.url}`, 
+          `\n상태: ${status}`, 
+          data ? `\n데이터: ${JSON.stringify(data)}` : '',
+          `\n메시지: ${error.message}`
+        );
+      }
+      
+      // 401 Unauthorized (토큰 만료 등)
+      if (status === 401) {
+        try {
+          // 토큰 삭제 (로그아웃 처리)
+          await AsyncStorage.removeItem('token');
+          
+          // 개발 환경에서는 알림
+          if (__DEV__) {
+            // Alert.alert('세션 만료', '다시 로그인해주세요.');
+            console.warn('[인증 오류] 토큰이 만료되었거나 유효하지 않습니다. 로그인 페이지로 이동이 필요합니다.');
+          }
+        } catch (e) {
+          console.error('[토큰 삭제 오류]', e);
         }
-      } catch (mockError) {
-        console.error('[테스트 모드] 모의 응답 처리 오류:', mockError);
+      }
+    }
+    // 네트워크 오류 (서버 연결 실패 등)
+    else if (error.request) {
+      if (__DEV__) {
+        console.error('[네트워크 오류] 서버 응답 없음', error.request._url || error.config?.url, error.message);
+      }
+      
+      // 테스트 모드에서 모의 응답 반환 (서버 연결 실패 시)
+      if (__DEV__ && !serverConnected) {
+        // 요청 URL 가져오기 (baseURL 제외)
+        const url = error.config.url.replace(/^\/api\//, '/api/');
+        
+        try {
+          const mockResponse = await handleMockResponse(error.config);
+          
+          if (mockResponse) {
+            console.log(`[테스트 모드] 모의 응답 사용: ${url}`);
+            return { data: mockResponse, status: 200, statusText: 'OK (Mocked)', headers: {}, config: error.config };
+          }
+        } catch (mockError) {
+          console.error('[테스트 모드] 모의 응답 생성 오류:', mockError);
+        }
+      }
+    }
+    // 그 외 오류 (요청 설정 오류 등)
+    else {
+      if (__DEV__) {
+        console.error('[API 기타 오류]', error.message);
       }
     }
     
