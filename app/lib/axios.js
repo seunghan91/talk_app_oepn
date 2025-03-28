@@ -144,11 +144,11 @@ const mockResponses = {
     
     // 테스트 계정 정보
     const testAccounts = [
-      { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
-      { phone: '01022222222', password: 'test1234', id: 2, nickname: 'B - 이영희', gender: 'female' },
-      { phone: '01033333333', password: 'test1234', id: 3, nickname: 'C - 박지민', gender: 'male' },
-      { phone: '01044444444', password: 'test1234', id: 4, nickname: 'D - 최수진', gender: 'female' },
-      { phone: '01055555555', password: 'test1234', id: 5, nickname: 'E - 정민준', gender: 'male' }
+      { phone: '01011111111', password: 'password', id: 1, nickname: 'A - 김철수', gender: 'male' },
+      { phone: '01022222222', password: 'password', id: 2, nickname: 'B - 이영희', gender: 'female' },
+      { phone: '01033333333', password: 'password', id: 3, nickname: 'C - 박지민', gender: 'male' },
+      { phone: '01044444444', password: 'password', id: 4, nickname: 'D - 최수진', gender: 'female' },
+      { phone: '01055555555', password: 'password', id: 5, nickname: 'E - 정민준', gender: 'male' }
     ];
     
     // 테스트 계정 확인

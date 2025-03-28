@@ -70,7 +70,7 @@ export default function LoginScreen() {
       // 하이픈 제거한 숫자만 서버로 전송
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       
-      // 로그인 요청 데이터
+      // 로그인 요청 데이터 - 서버 기대 형식: {"user":{"phone_number":"01011111111","password":"password"}}
       const loginData = {
         user: {
           phone_number: digitsOnly,
@@ -92,12 +92,17 @@ export default function LoginScreen() {
           'Accept': 'application/json'
         }, null, 2));
         console.log('3. 요청 데이터 JSON 문자열:', JSON.stringify(loginData));
-        console.log('4. __DEV__ 모드:', __DEV__ ? '활성화' : '비활성화');
-        console.log('5. 플랫폼:', Platform.OS);
-        console.log('6. 앱 버전:', Constants.expoConfig?.version || '알 수 없음');
-        console.log('7. 환경:', __DEV__ ? '개발' : '프로덕션');
+        console.log('4. 요청 데이터 구조 확인:');
+        console.log('   - user 객체 포함 여부:', loginData.hasOwnProperty('user'));
+        console.log('   - user.phone_number 값:', loginData.user?.phone_number);
+        console.log('   - user.password 값:', loginData.user?.password ? '[비밀번호 입력됨]' : '[비밀번호 없음]');
+        console.log('5. __DEV__ 모드:', __DEV__ ? '활성화' : '비활성화');
+        console.log('6. 플랫폼:', Platform.OS);
+        console.log('7. 앱 버전:', Constants.expoConfig?.version || '알 수 없음');
+        console.log('8. 환경:', __DEV__ ? '개발' : '프로덕션');
         console.log('==============================');
         
+        // HTTP 요청 시 명시적으로 content-type 헤더 설정
         const res = await axiosInstance.post('/api/auth/login', loginData, {
           headers: {
             'Content-Type': 'application/json',
@@ -186,11 +191,11 @@ export default function LoginScreen() {
           console.log('[로그인] 개발 환경에서 테스트 계정 시도');
           
           // 테스트 환경에서는 특정 전화번호와 비밀번호 조합으로 로그인 허용
-          if ((digitsOnly === '01011111111' && password === 'test1234') || 
-              (digitsOnly === '01022222222' && password === 'test1234') ||
-              (digitsOnly === '01033333333' && password === 'test1234') ||
-              (digitsOnly === '01044444444' && password === 'test1234') ||
-              (digitsOnly === '01055555555' && password === 'test1234')) {
+          if ((digitsOnly === '01011111111' && password === 'password') || 
+              (digitsOnly === '01022222222' && password === 'password') ||
+              (digitsOnly === '01033333333' && password === 'password') ||
+              (digitsOnly === '01044444444' && password === 'password') ||
+              (digitsOnly === '01055555555' && password === 'password')) {
               
             console.log('[로그인] 테스트 계정으로 로그인 성공');
             
@@ -274,7 +279,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-1111-1111');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 A (김철수)</ThemedText>
@@ -284,7 +289,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-2222-2222');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 B (이영희)</ThemedText>
@@ -294,7 +299,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-3333-3333');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 C (박지민)</ThemedText>
@@ -304,7 +309,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-4444-4444');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 D (최수진)</ThemedText>
@@ -314,7 +319,7 @@ export default function LoginScreen() {
                   style={styles.testAccountButton}
                   onPress={() => {
                     setPhoneNumber('010-5555-5555');
-                    setPassword('test1234');
+                    setPassword('password');
                   }}
                 >
                   <ThemedText style={styles.testAccountButtonText}>사용자 E (정민준)</ThemedText>
