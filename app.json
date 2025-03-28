@@ -22,14 +22,14 @@
     "runtimeVersion": "1.0.0",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.talkkapp.talkk"
+      "bundleIdentifier": "com.talkapp.talkk"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.talkkapp.talkk"
+      "package": "com.talkapp.talkk"
     },
     "web": {
       "bundler": "metro",
