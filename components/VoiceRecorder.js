@@ -440,6 +440,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+    width: 100,
+    textAlign: 'center',
   },
   controlButton: {
     padding: 8,
