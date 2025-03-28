@@ -139,6 +139,9 @@ const mockResponses = {
     const user = requestData.user || {};
     const { phone_number, password } = user;
     
+    // 요청 데이터 로깅
+    console.log('[테스트] 로그인 요청 데이터:', JSON.stringify(requestData, null, 2));
+    
     // 테스트 계정 정보
     const testAccounts = [
       { phone: '01011111111', password: 'test1234', id: 1, nickname: 'A - 김철수', gender: 'male' },
@@ -166,6 +169,10 @@ const mockResponses = {
         }
       };
     } else {
+      console.log('[테스트] 계정 로그인 실패: 일치하는 계정 정보 없음');
+      console.log('요청된 전화번호:', phone_number);
+      console.log('요청된 비밀번호:', password ? '[비밀번호 입력됨]' : '[비밀번호 없음]');
+      
       // 로그인 실패 시 오류 응답
       throw {
         response: {
@@ -243,19 +250,30 @@ const mockResponses = {
 const handleMockResponse = (config) => {
   const url = config.url.replace(/^\/api\//, '/api/');
   
+  console.log(`[테스트] 모의 응답 처리 시도: ${url}`);
+  console.log(`요청 메서드: ${config.method}`);
+  console.log(`요청 데이터: ${config.data || '없음'}`);
+  
   // 모의 응답 데이터 확인
   let mockData = mockResponses[url];
   
   // 함수 형태의 모의 응답 처리
   if (typeof mockData === 'function') {
-    mockData = mockData(config);
+    try {
+      mockData = mockData(config);
+      console.log(`[테스트] 모의 응답 생성 성공: ${url}`);
+    } catch (error) {
+      console.error(`[테스트] 모의 응답 생성 오류: ${url}`, error);
+      return null;
+    }
   }
   
   if (mockData) {
-    console.log(`[테스트] 모의 응답 사용: ${url}`, mockData);
+    console.log(`[테스트] 모의 응답 사용: ${url}`, JSON.stringify(mockData, null, 2));
     return [200, mockData];
   }
   
+  console.log(`[테스트] 일치하는 모의 응답 없음: ${url}`);
   return null;
 };
 
@@ -264,10 +282,11 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     // 요청 시작 로깅
     if (__DEV__) {
-      console.log(`[API 요청] ${config.method.toUpperCase()} ${config.url}`, 
+      console.log(`[API 요청] ${config.method?.toUpperCase() || 'UNKNOWN'} ${config.url}`, 
         config.params ? `\n파라미터: ${JSON.stringify(config.params)}` : '', 
         config.data ? `\n데이터: ${typeof config.data === 'string' ? config.data : JSON.stringify(config.data)}` : ''
       );
+      console.log('헤더:', JSON.stringify(config.headers, null, 2));
     }
     
     // JWT 토큰 자동 추가

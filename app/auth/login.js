@@ -69,7 +69,7 @@ export default function LoginScreen() {
       // 하이픈 제거한 숫자만 서버로 전송
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       
-      // 로그인 요청 데이터 (서버 기대 형식으로 수정)
+      // 로그인 요청 데이터
       const loginData = {
         user: {
           phone_number: digitsOnly,
@@ -77,12 +77,21 @@ export default function LoginScreen() {
         }
       };
       
-      console.log('[로그인] 요청 데이터:', loginData);
+      console.log('[로그인] 요청 데이터:', JSON.stringify(loginData));
       
       try {
         console.log('[로그인] API 서버에 로그인 요청 시도...');
-        const res = await axiosInstance.post('/api/auth/login', loginData);
-        console.log('[로그인] 서버 응답 성공:', res.data);
+        console.log('[로그인] 요청 URL:', axiosInstance.defaults.baseURL + '/api/auth/login');
+        
+        const res = await axiosInstance.post('/api/auth/login', loginData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log('[로그인] 서버 응답 성공, 상태:', res.status);
+        console.log('[로그인] 서버 응답 데이터:', JSON.stringify(res.data, null, 2));
         
         const userData = res.data.user;
         const token = res.data.token;
@@ -108,20 +117,22 @@ export default function LoginScreen() {
         }, 500);
         
       } catch (err) {
-        console.log('[로그인] API 서버 오류:', 
-          'Status:', err.response?.status, 
-          'Data:', err.response?.data, 
-          'Message:', err.message
-        );
+        console.log('[로그인] API 서버 오류 발생');
+        console.log('상태 코드:', err.response?.status);
+        console.log('오류 응답:', JSON.stringify(err.response?.data, null, 2));
+        console.log('오류 메시지:', err.message);
         
-        // 자세한 오류 메시지 출력
-        if (err.response?.data) {
-          console.log('서버 오류 메시지:', JSON.stringify(err.response.data, null, 2));
+        // 상세 오류 정보 로깅
+        if (err.response) {
+          console.log('헤더:', JSON.stringify(err.response.headers, null, 2));
+          console.log('요청 구성:', JSON.stringify(err.config, null, 2));
         }
         
         // API 서버 응답 확인
         if (err.response?.status === 401) {
           Alert.alert('오류', '전화번호 또는 비밀번호가 올바르지 않습니다.');
+        } else if (err.response?.status === 400) {
+          Alert.alert('오류', '요청 형식이 잘못되었습니다. 개발자에게 문의하세요.');
         } else {
           Alert.alert('오류', `서버 연결 오류: ${err.message}`);
         }
@@ -131,12 +142,29 @@ export default function LoginScreen() {
           console.log('[로그인] 개발 환경에서 테스트 계정 시도');
           
           // 테스트 환경에서는 특정 전화번호와 비밀번호 조합으로 로그인 허용
-          if (digitsOnly === '01012345678' && password === 'password') {
+          if ((digitsOnly === '01011111111' && password === 'test1234') || 
+              (digitsOnly === '01022222222' && password === 'test1234') ||
+              (digitsOnly === '01033333333' && password === 'test1234') ||
+              (digitsOnly === '01044444444' && password === 'test1234') ||
+              (digitsOnly === '01055555555' && password === 'test1234')) {
+              
             console.log('[로그인] 테스트 계정으로 로그인 성공');
             
+            // 테스트 계정 정보 매핑
+            const testAccounts = {
+              '01011111111': { id: 1, nickname: 'A - 김철수', gender: 'male' },
+              '01022222222': { id: 2, nickname: 'B - 이영희', gender: 'female' },
+              '01033333333': { id: 3, nickname: 'C - 박지민', gender: 'male' },
+              '01044444444': { id: 4, nickname: 'D - 최수진', gender: 'female' },
+              '01055555555': { id: 5, nickname: 'E - 정민준', gender: 'male' }
+            };
+            
+            const accountInfo = testAccounts[digitsOnly];
+            
             const userData = {
-              id: 1,
-              nickname: '테스트사용자',
+              id: accountInfo.id,
+              nickname: accountInfo.nickname,
+              gender: accountInfo.gender,
               phone_number: digitsOnly,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -165,6 +193,7 @@ export default function LoginScreen() {
             }, 500);
           } else {
             console.log('[로그인] 테스트 계정 정보가 일치하지 않음');
+            Alert.alert('테스트 계정 오류', '테스트 계정 정보가 일치하지 않습니다. 제공된 테스트 계정 정보를 사용해주세요.');
           }
         }
       }
