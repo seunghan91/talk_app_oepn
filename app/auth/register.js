@@ -272,13 +272,12 @@ export default function RegisterScreen() {
     setIsLoading(true);
     
     try {
+      // 수정: user 객체로 감싸지 않고 파라미터를 루트 레벨에 포함
       const registerData = {
-        user: {
-          ...userData,
-          gender: gender,
-          password,
-          password_confirmation: confirmPassword
-        }
+        ...userData, // phone_number 포함
+        gender: gender,
+        password,
+        password_confirmation: confirmPassword
       };
       
       console.log('회원가입 요청 데이터:', registerData);
