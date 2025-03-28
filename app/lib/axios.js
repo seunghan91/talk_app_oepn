@@ -136,7 +136,8 @@ const mockResponses = {
   '/api/auth/login': (config) => {
     // 요청 데이터 파싱
     const requestData = JSON.parse(config.data || '{}');
-    const { phone_number, password } = requestData;
+    const user = requestData.user || {};
+    const { phone_number, password } = user;
     
     // 테스트 계정 정보
     const testAccounts = [

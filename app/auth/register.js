@@ -301,71 +301,71 @@ export default function RegisterScreen() {
     }
   };
 
-  // 3) 회원가입 처리 (POST /auth/register)
-  const handleRegister = async () => {
+  // 4) 회원가입 완료 (POST /auth/register)
+  const completeRegistration = async () => {
+    // 비밀번호 유효성 검사
     if (!validatePassword()) {
       return;
     }
     
-    // 선택된 성별이 없으면 unspecified로 설정
-    const gender = selectedGender || 'unspecified';
-    console.log('회원가입 시 사용할 성별:', gender);
-    
     setIsLoading(true);
     
     try {
-      // 서버 기대 형식에 맞게 수정
+      // 하이픈 제거한 숫자만 서버로 전송
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      
+      // 회원가입 요청 데이터 (서버 기대 형식으로 수정)
       const registerData = {
-        phone_number: userData.phone_number,
-        nickname: userData.nickname,
-        gender: gender,
-        password: password,
-        password_confirmation: confirmPassword
+        user: {
+          phone_number: digitsOnly,
+          password: password,
+          gender: selectedGender,
+          nickname: randomNickname
+        }
       };
       
-      console.log('회원가입 요청 데이터:', registerData);
+      console.log('[회원가입] 요청 데이터:', registerData);
+      
+      // 테스트 모드에서는 서버 요청을 시도하되, 실패하더라도 테스트 응답 생성
+      let serverResponse = null;
+      let serverError = null;
       
       try {
         const res = await axiosInstance.post('/api/auth/register', registerData);
-        const serverResponse = res.data;
-        console.log('회원가입 성공, 서버 응답:', serverResponse);
-        
-        // 서버 응답이 있는 경우에만 로그인 처리
-        if (serverResponse && serverResponse.token && serverResponse.user) {
-          // 로그인 처리
-          await login(serverResponse.token, serverResponse.user);
-          
-          // 회원가입 성공 메시지
-          Alert.alert(
-            t('auth.registerSuccess'),
-            t('auth.welcome') + ', ' + serverResponse.user.nickname + '님!',
-            [
-              { 
-                text: t('auth.goToHome'), 
-                onPress: () => router.replace('/') 
-              }
-            ]
-          );
-        } else {
-          throw new Error('서버 응답이 올바르지 않습니다.');
-        }
+        serverResponse = res.data;
+        console.log('[회원가입] 서버 응답 성공:', serverResponse);
       } catch (err) {
-        console.log('회원가입 실패 (서버):', 
+        serverError = err;
+        console.log('[회원가입] 서버 오류:', 
           'Status:', err.response?.status, 
           'Data:', err.response?.data, 
           'Message:', err.message
         );
         
-        // 서버 오류 메시지 표시
+        // 자세한 오류 메시지 출력
+        if (err.response?.data) {
+          console.log('서버 오류 메시지:', JSON.stringify(err.response.data, null, 2));
+        }
+      }
+      
+      // 서버 응답이 있는 경우에만 로그인 처리
+      if (serverResponse && serverResponse.token && serverResponse.user) {
+        // 로그인 처리
+        await login(serverResponse.token, serverResponse.user);
+        
+        // 회원가입 성공 메시지
         Alert.alert(
-          t('common.error'),
-          err.response?.data?.error || t('auth.registerFailed'),
+          t('auth.registerSuccess'),
+          t('auth.welcome') + ', ' + serverResponse.user.nickname + '님!',
           [
             { 
-              text: t('common.ok')
+              text: t('auth.goToHome'), 
+              onPress: () => router.replace('/') 
             }
           ]
         );
+      } else {
+        throw new Error('서버 응답이 올바르지 않습니다.');
       }
     } catch (err) {
       console.error('예상치 못한 오류:', err);
@@ -571,7 +571,7 @@ export default function RegisterScreen() {
                 
                 <StylishButton
                   title={isLoading ? t('auth.processing') : t('auth.completeRegistration')}
-                  onPress={handleRegister}
+                  onPress={completeRegistration}
                   disabled={isLoading || !password || !confirmPassword} 
                   type="primary"
                   size="medium"

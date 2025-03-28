@@ -71,8 +71,10 @@ export default function LoginScreen() {
       
       // 로그인 요청 데이터 (서버 기대 형식으로 수정)
       const loginData = {
-        phone_number: digitsOnly,
-        password: password
+        user: {
+          phone_number: digitsOnly,
+          password: password
+        }
       };
       
       console.log('[로그인] 요청 데이터:', loginData);
@@ -111,6 +113,11 @@ export default function LoginScreen() {
           'Data:', err.response?.data, 
           'Message:', err.message
         );
+        
+        // 자세한 오류 메시지 출력
+        if (err.response?.data) {
+          console.log('서버 오류 메시지:', JSON.stringify(err.response.data, null, 2));
+        }
         
         // API 서버 응답 확인
         if (err.response?.status === 401) {
