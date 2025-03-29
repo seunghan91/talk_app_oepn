@@ -448,6 +448,91 @@ export const updateUserNotificationSettings = async (userId, settings) => {
   }
 };
 
+// Reusable API Request 함수
+export const apiRequest = async (url, method, data, config = {}) => {
+  try {
+    const requestConfig = {
+      method,
+      url,
+      ...config,
+    };
+    
+    // 데이터가 있을 경우 요청에 포함
+    if (data) {
+      requestConfig.data = data;
+    }
+    
+    // 요청 디버깅 (개발 모드)
+    if (__DEV__) {
+      console.log(`[API 요청] ${method.toUpperCase()} ${url}`);
+      console.log('요청 데이터:', JSON.stringify(data, null, 2));
+    }
+    
+    const response = await axiosInstance(requestConfig);
+    
+    // 응답 디버깅 (개발 모드)
+    if (__DEV__) {
+      console.log(`[API 응답] ${method.toUpperCase()} ${url} - 상태: ${response.status}`);
+      console.log('응답 데이터:', JSON.stringify(response.data, null, 2));
+    }
+    
+    return { 
+      success: true, 
+      data: response.data, 
+      status: response.status,
+      headers: response.headers
+    };
+  } catch (error) {
+    // 오류 디버깅
+    console.error(`[API 오류] ${method.toUpperCase()} ${url} - ${error.message}`);
+    
+    // 서버 응답이 있는 경우
+    if (error.response) {
+      console.error(`상태 코드: ${error.response.status}`);
+      console.error('응답 데이터:', JSON.stringify(error.response.data, null, 2));
+      
+      // 특정 오류 타입 처리
+      const errorData = error.response.data;
+      let errorMessage = errorData?.error || '서버 오류가 발생했습니다.';
+      
+      // 서버 오류 유형에 따른 특별 처리
+      if (error.response.status === 500 && errorMessage.includes('User has already been taken')) {
+        errorMessage = '이미 등록된 전화번호입니다.';
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage, 
+        status: error.response.status,
+        data: error.response.data
+      };
+    }
+    
+    // 서버 응답이 없는 네트워크 오류
+    return { 
+      success: false,
+      error: error.message || '네트워크 오류가 발생했습니다.',
+      isNetworkError: true
+    };
+  }
+};
+
+// 일반적인 API 요청 헬퍼 함수들
+export const apiGet = (url, config) => apiRequest(url, 'get', null, config);
+export const apiPost = (url, data, config) => apiRequest(url, 'post', data, config);
+export const apiPut = (url, data, config) => apiRequest(url, 'put', data, config);
+export const apiDelete = (url, config) => apiRequest(url, 'delete', null, config);
+
+// 사용 예시:
+// const login = async (credentials) => {
+//   const result = await apiPost('/api/auth/login', { user: credentials });
+//   if (result.success) {
+//     return result.data;
+//   } else {
+//     throw new Error(result.error);
+//   }
+// };
+
 /*
 참고: Rails API 서버에서 CORS 설정이 필요합니다.
 

@@ -180,8 +180,10 @@ export default function RegisterScreen() {
       // 서버 검증 먼저 시도
       try {
         const res = await axiosInstance.post('/api/auth/verify_code', {
-          phone_number: digitsOnly,
-          code: '111111',
+          user: {
+            phone_number: digitsOnly,
+            code: '111111',
+          }
         });
         
         console.log('인증 완료, 서버 응답:', res.data);
@@ -261,7 +263,8 @@ export default function RegisterScreen() {
           console.log('서버 인증 실패 (개발 모드), 다음 단계 진행');
           serverResponse = null;
         } else {
-          Alert.alert(t('common.error'), t('auth.verificationFailed'));
+          const errorMessage = err.response?.data?.error || t('auth.verificationFailed');
+          Alert.alert(t('common.error'), errorMessage);
           setIsLoading(false);
           return;
         }
@@ -345,6 +348,20 @@ export default function RegisterScreen() {
         // 자세한 오류 메시지 출력
         if (err.response?.data) {
           console.log('서버 오류 메시지:', JSON.stringify(err.response.data, null, 2));
+          
+          // 이미 등록된.사용자 오류 처리 (500 Internal Server Error)
+          if (err.response.status === 500 && 
+              err.response.data.error && 
+              err.response.data.error.includes('User has already been taken')) {
+            Alert.alert(
+              '계정 중복',
+              '이미 등록된 전화번호입니다. 다른 번호를 사용하거나 로그인해 주세요.',
+              [
+                { text: '확인', onPress: () => setIsLoading(false) }
+              ]
+            );
+            return;
+          }
         }
       }
       
