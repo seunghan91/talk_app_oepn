@@ -9,7 +9,7 @@ import axiosInstance from '../lib/axios';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
@@ -956,165 +956,161 @@ export default function RecordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
-      <ThemedView style={styles.container}>
-        {/* 상단 영역: 녹음 상태 표시 */}
-        <ThemedView style={styles.headerContainer}>
-          {isRecording ? (
-            <ThemedView style={styles.recordingIndicator}>
-              <Ionicons name="radio" size={24} color="#FF3B30" />
-              <ThemedText style={styles.recordingText}>
-                {t('broadcast.recording')}
-              </ThemedText>
-            </ThemedView>
-          ) : recordingUri ? (
-            <ThemedView style={styles.recordingIndicator}>
-              <Ionicons name="checkmark-circle" size={24} color="#34C759" />
-            </ThemedView>
-          ) : (
-            <ThemedText style={styles.instructionText}>
-              {t('broadcast.recordingInstructions')}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+        >
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
+        
+        <ThemedText style={styles.headerTitle}>
+          {isRecording ? t('broadcast.recording') : 
+           recordingUri ? t('broadcast.preview') : 
+           t('broadcast.ready')}
+        </ThemedText>
+        
+        {isRecording && (
+          <ThemedText style={styles.timer}>
+            {formatTime(recordingDuration)}
+          </ThemedText>
+        )}
+      </View>
+      
+      <ThemedView style={styles.mainContentContainer}>
+        {/* 타이머 영역 */}
+        <ThemedView style={styles.timerContainer}>
+          {isRecording && (
+            <ThemedText style={styles.timerText}>
+              {Math.floor(recordingDuration / 60).toString().padStart(2, '0')}:
+              {(recordingDuration % 60).toString().padStart(2, '0')}
+            </ThemedText>
+          )}
+          
+          {isPlaying && recordingUri && (
+            <ThemedText style={styles.playbackTimerText}>
+              {formatTime(playbackTime.current)} / {formatTime(playbackTime.total)}
             </ThemedText>
           )}
         </ThemedView>
         
-        {/* 중앙 영역: 시간 표시 - 파형 위로 이동 */}
-        <ThemedView style={styles.mainContentContainer}>
-          {/* 타이머 영역 */}
-          <ThemedView style={styles.timerContainer}>
-            {isRecording && (
-              <ThemedText style={styles.timerText}>
-                {Math.floor(recordingDuration / 60).toString().padStart(2, '0')}:
-                {(recordingDuration % 60).toString().padStart(2, '0')}
-              </ThemedText>
-            )}
-            
-            {isPlaying && recordingUri && (
-              <ThemedText style={styles.playbackTimerText}>
-                {formatTime(playbackTime.current)} / {formatTime(playbackTime.total)}
-              </ThemedText>
-            )}
-          </ThemedView>
-          
-          {/* 파형 영역 */}
-          <ThemedView style={styles.waveformContainer}>
-            {waveformAnimations.current.map((anim, index) => (
-              <Animated.View
-                key={`waveform-${index}`}
-                style={[
-                  styles.waveformBar,
-                  {
-                    height: anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [5, 100],
-                    }),
-                  },
-                ]}
-              />
-            ))}
-          </ThemedView>
+        {/* 파형 영역 */}
+        <ThemedView style={styles.waveformContainer}>
+          {waveformAnimations.current.map((anim, index) => (
+            <Animated.View
+              key={`waveform-${index}`}
+              style={[
+                styles.waveformBar,
+                {
+                  height: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [5, 100],
+                  }),
+                },
+              ]}
+            />
+          ))}
         </ThemedView>
-        
-        {/* 하단 영역: 컨트롤 */}
-        <ThemedView style={styles.controlsContainer}>
-          {!recordingUri ? (
+      </ThemedView>
+      
+      <ThemedView style={styles.controlsContainer}>
+        {!recordingUri ? (
+          <TouchableOpacity
+            style={[styles.recordButton, isRecording && styles.stopButton]}
+            onPress={isRecording ? stopRecording : startRecording}
+            disabled={uploading}
+          >
+            <Ionicons
+              name={isRecording ? 'square' : 'mic'}
+              size={32}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+        ) : (
+          <ThemedView style={styles.playbackControls}>
             <TouchableOpacity
-              style={[styles.recordButton, isRecording && styles.stopButton]}
-              onPress={isRecording ? stopRecording : startRecording}
+              style={styles.deleteButton}
+              onPress={cancelRecording}
+              disabled={uploading}
+            >
+              <Ionicons name="trash" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.playButton}
+              onPress={playRecording}
               disabled={uploading}
             >
               <Ionicons
-                name={isRecording ? 'square' : 'mic'}
-                size={32}
+                name={isPlaying ? 'pause' : 'play'}
+                size={24}
                 color="#FFFFFF"
               />
             </TouchableOpacity>
-          ) : (
-            <ThemedView style={styles.playbackControls}>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={cancelRecording}
-                disabled={uploading}
-              >
-                <Ionicons name="trash" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={playRecording}
-                disabled={uploading}
-              >
-                <Ionicons
-                  name={isPlaying ? 'pause' : 'play'}
-                  size={24}
-                  color="#FFFFFF"
-                />
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.sendButton}
-                onPress={sendBroadcast}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Ionicons name="send" size={24} color="#FFFFFF" />
-                )}
-              </TouchableOpacity>
-            </ThemedView>
-          )}
-        </ThemedView>
-        
-        {/* 권한 없음 메시지 */}
-        {hasPermission === false && (
-          <ThemedView style={styles.permissionContainer}>
-            <ThemedText style={styles.permissionText}>
-              {t('broadcast.permissionRequired')}
-            </ThemedText>
-            <StylishButton
-              title={t('broadcast.goToSettings')}
-              onPress={() => Linking.openSettings()}
-              type="primary"
-              size="small"
-            />
+            
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={sendBroadcast}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Ionicons name="send" size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
           </ThemedView>
         )}
       </ThemedView>
+      
+      {/* 권한 없음 메시지 */}
+      {hasPermission === false && (
+        <ThemedView style={styles.permissionContainer}>
+          <ThemedText style={styles.permissionText}>
+            {t('broadcast.permissionRequired')}
+          </ThemedText>
+          <StylishButton
+            title={t('broadcast.goToSettings')}
+            onPress={() => Linking.openSettings()}
+            type="primary"
+            size="small"
+          />
+        </ThemedView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: 'white',
   },
-  headerContainer: {
-    paddingTop: Platform.OS === 'ios' ? 30 : 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  recordingIndicator: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 12,
+    position: 'relative',
   },
-  recordingText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    color: '#FF3B30',
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 10,
   },
-  instructionText: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  timer: {
+    position: 'absolute',
+    right: 16,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FF5A60',
   },
   mainContentContainer: {
     flex: 1,
