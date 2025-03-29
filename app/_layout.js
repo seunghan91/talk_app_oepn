@@ -8,18 +8,12 @@ import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import LogRocket from 'logrocket';
 
 // i18n 설정 import
 import './i18n';
 
 // AuthProvider import
 import { AuthProvider } from './context/AuthContext';
-
-// LogRocket 초기화
-if (!__DEV__) { // 개발 모드가 아닐 때만 LogRocket 초기화
-  LogRocket.init('8dwgka/talkk');
-}
 
 // SplashScreen이 자동으로 사라지지 않도록 설정
 SplashScreen.preventAutoHideAsync();
