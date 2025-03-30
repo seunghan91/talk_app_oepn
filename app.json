@@ -20,7 +20,7 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/3cd35644-e5e7-4288-b9ff-be27477bbf47"
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "appVersion",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.talkapp.talkk"
