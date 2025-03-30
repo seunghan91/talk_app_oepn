@@ -92,7 +92,7 @@ function loadFontsAsync() {
 
 // 사용자 인증 상태에 따른 라우팅 처리
 function InitialLayout() {
-  const { authState, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -101,15 +101,14 @@ function InitialLayout() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'auth';
-    const isLoggedIn = authState?.authenticated;
-
+    
     // 리디렉션 로직
-    if (!isLoggedIn && !inAuthGroup) {
-      router.replace('/auth/');
-    } else if (isLoggedIn && inAuthGroup) {
-      router.replace('/(tabs)/');
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/auth');
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)');
     }
-  }, [authState, segments, isLoading]);
+  }, [isAuthenticated, segments, isLoading, router]);
 
   return <Slot />;
 }
