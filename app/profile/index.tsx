@@ -121,30 +121,17 @@ export default function ProfileScreen() {
       setSaving(true);
       setErrorType(null);
       
-      // 실제 API 호출
-      const response = await axiosInstance.get('/api/users/random_nickname');
-      
-      if (response.data.nickname) {
-        setRandomNickname(response.data.nickname);
-      } else {
-        // 서버 응답에 닉네임이 없는 경우 로컬에서 생성
-        generateRandomNicknameLocally();
-      }
+      // API 사용 없이 로컬에서 바로 생성
+      generateRandomNicknameLocally();
       
       setSaving(false);
     } catch (error: any) {
       console.error('랜덤 닉네임 생성 실패:', error);
       
       // 에러 타입 설정
-      if (error.response) {
-        setErrorType('server');
-      } else if (error.request) {
-        setErrorType('network');
-      } else {
-        setErrorType('unknown');
-      }
+      setErrorType('unknown');
       
-      // 에러 발생 시 로컬에서 생성
+      // 다시 시도
       generateRandomNicknameLocally();
       
       setSaving(false);
@@ -266,7 +253,27 @@ export default function ProfileScreen() {
       value: randomNickname,
       endpoint: '/api/users/change_nickname',
       successMessage: t('profile.nicknameUpdated') || '닉네임이 업데이트되었습니다',
-      errorMessage: t('profile.nicknameUpdateError') || '닉네임 업데이트 중 오류가 발생했습니다'
+      errorMessage: t('profile.nicknameUpdateError') || '닉네임 업데이트 중 오류가 발생했습니다',
+      onSuccess: async () => {
+        // 프로필 데이터를 다시 가져와서 정확한 닉네임으로 업데이트
+        try {
+          const response = await axiosInstance.get('/api/users/profile');
+          if (response.data.nickname) {
+            // 사용자 정보를 AsyncStorage에도 업데이트
+            const userData = await AsyncStorage.getItem('user');
+            if (userData) {
+              const parsedUser = JSON.parse(userData);
+              parsedUser.nickname = response.data.nickname;
+              await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
+              // AuthContext 업데이트
+              updateUser({ nickname: response.data.nickname });
+              console.log('닉네임 변경 후 저장된 사용자 정보:', response.data.nickname);
+            }
+          }
+        } catch (error) {
+          console.error('프로필 정보 업데이트 실패:', error);
+        }
+      }
     });
   };
 

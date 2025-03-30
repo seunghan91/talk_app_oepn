@@ -40,19 +40,9 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       setIsLoading(true);
       setError(null);
       
-      let newNickname = '';
-      
-      try {
-        // 서버에서 랜덤 닉네임 가져오기 시도
-        const res = await axiosInstance.get<{ nickname: string }>('/api/users/random_nickname');
-        newNickname = res.data.nickname;
-        console.log('서버에서 랜덤 닉네임 생성됨:', newNickname);
-      } catch (error) {
-        // 서버 요청 실패 시 로컬에서 생성
-        console.log('서버 요청 실패, 로컬에서 랜덤 닉네임 생성');
-        newNickname = generateNickname();
-        console.log('로컬에서 랜덤 닉네임 생성됨:', newNickname);
-      }
+      // 항상 로컬에서 생성 (서버 API 호출 제거)
+      const newNickname = generateNickname();
+      console.log('로컬에서 랜덤 닉네임 생성됨:', newNickname);
       
       // 랜덤 닉네임 설정 및 상태 업데이트
       setNickname(newNickname);
@@ -70,7 +60,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
         [{ text: t('common.ok') }]
       );
     } catch (err: any) {
-      console.log('랜덤 닉네임 생성 실패:', err.response?.data);
+      console.log('랜덤 닉네임 생성 실패:', err);
       setError(t('profile.generateNicknameError'));
     } finally {
       setIsLoading(false);
@@ -121,6 +111,27 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
         } catch (rootApiError) {
           // 서버 요청 실패 시 로컬에서만 처리
           console.log('모든 API 요청 실패, 로컬에서만 닉네임 변경');
+        }
+      }
+      
+      if (serverSuccess) {
+        // 서버에서 응답을 받은 후 프로필 정보 동기화
+        try {
+          const profileResponse = await axiosInstance.get('/api/users/profile');
+          if (profileResponse.data.nickname) {
+            savedNickname = profileResponse.data.nickname;
+            
+            // AsyncStorage에서 유저 데이터를 가져와 업데이트
+            const userDataString = await AsyncStorage.getItem('user');
+            if (userDataString) {
+              const userData = JSON.parse(userDataString);
+              userData.nickname = savedNickname;
+              await AsyncStorage.setItem('user', JSON.stringify(userData));
+              console.log('AsyncStorage 닉네임 업데이트 성공:', savedNickname);
+            }
+          }
+        } catch (syncError) {
+          console.error('프로필 동기화 실패:', syncError);
         }
       }
       

@@ -144,9 +144,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 사용자 정보 업데이트
-  const updateUser = (userData: Partial<User>): void => {
+  const updateUser = async (userData: Partial<User>): Promise<void> => {
     if (user) {
-      setUser({ ...user, ...userData });
+      // 메모리의 사용자 상태 업데이트
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      
+      // AsyncStorage에도 업데이트
+      try {
+        const userDataString = await AsyncStorage.getItem('user');
+        if (userDataString) {
+          const currentUserData = JSON.parse(userDataString);
+          const mergedUserData = { ...currentUserData, ...userData };
+          await AsyncStorage.setItem('user', JSON.stringify(mergedUserData));
+          console.log('사용자 정보 업데이트 및 저장 완료:', userData);
+        }
+      } catch (error) {
+        console.error('AsyncStorage 사용자 정보 업데이트 실패:', error);
+      }
     }
   };
 
