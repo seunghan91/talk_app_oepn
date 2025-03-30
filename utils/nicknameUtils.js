@@ -4,9 +4,14 @@
 
 /**
  * Generates a random nickname using adjective + noun + number format
+ * @param {Object} options 
+ * @param {boolean} options.useApi - Whether to try using API (deprecated)
  * @returns {string} A randomly generated nickname
  */
-export const generateRandomNickname = () => {
+export const generateRandomNickname = (options = { useApi: false }) => {
+  // API 호출을 시도하지 않고 항상 로컬에서 생성
+  // 서버 API 호출 실패 방지 (404 /api/users/random_nickname 방지)
+  
   const adjectives = [
     '행복한', '즐거운', '신나는', '멋진', '귀여운', '용감한', '똑똑한', '친절한', '재미있는', '활발한',
     '다정한', '유쾌한', '엉뚱한', '낙천적인', '예리한', '명랑한', '따뜻한', '깔끔한', '차분한', '온화한',
