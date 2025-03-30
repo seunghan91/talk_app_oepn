@@ -980,12 +980,11 @@ export default function RecordScreen() {
       </View>
       
       <ThemedView style={styles.mainContentContainer}>
-        {/* 타이머 영역 */}
+        {/* 타이머 영역 - 상단으로 이동 */}
         <ThemedView style={styles.timerContainer}>
           {isRecording && (
             <ThemedText style={styles.timerText}>
-              {Math.floor(recordingDuration / 60).toString().padStart(2, '0')}:
-              {(recordingDuration % 60).toString().padStart(2, '0')}
+              {formatTime(recordingDuration)}
             </ThemedText>
           )}
           
@@ -1015,54 +1014,76 @@ export default function RecordScreen() {
         </ThemedView>
       </ThemedView>
       
-      <ThemedView style={styles.controlsContainer}>
-        {!recordingUri ? (
-          <TouchableOpacity
-            style={[styles.recordButton, isRecording && styles.stopButton]}
-            onPress={isRecording ? stopRecording : startRecording}
-            disabled={uploading}
-          >
-            <Ionicons
-              name={isRecording ? 'square' : 'mic'}
-              size={32}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-        ) : (
-          <ThemedView style={styles.playbackControls}>
+      {/* 하단 컨트롤 영역 */}
+      <ThemedView style={styles.bottomNavContainer}>
+        <ThemedView style={styles.controlsContainer}>
+          {!recordingUri ? (
             <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={cancelRecording}
-              disabled={uploading}
-            >
-              <Ionicons name="trash" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.playButton}
-              onPress={playRecording}
+              style={[styles.recordButton, isRecording && styles.stopButton]}
+              onPress={isRecording ? stopRecording : startRecording}
               disabled={uploading}
             >
               <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
-                size={24}
+                name={isRecording ? 'square' : 'mic'}
+                size={32}
                 color="#FFFFFF"
               />
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.sendButton}
-              onPress={sendBroadcast}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Ionicons name="send" size={24} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          </ThemedView>
-        )}
+          ) : (
+            <ThemedView style={styles.playbackControls}>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={cancelRecording}
+                disabled={uploading}
+              >
+                <Ionicons name="trash" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={playRecording}
+                disabled={uploading}
+              >
+                <Ionicons
+                  name={isPlaying ? 'pause' : 'play'}
+                  size={24}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={sendBroadcast}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Ionicons name="send" size={24} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+        </ThemedView>
+        
+        {/* 하단 네비게이션 바 */}
+        <ThemedView style={styles.navBar}>
+          <TouchableOpacity style={styles.navBarItem}>
+            <Ionicons name="home-outline" size={24} color="#555" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBarItem}>
+            <Ionicons name="search-outline" size={24} color="#555" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navBarItem, styles.activeNavItem]}>
+            <Ionicons name="mic" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBarItem}>
+            <Ionicons name="notifications-outline" size={24} color="#555" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBarItem}>
+            <Ionicons name="person-outline" size={24} color="#555" />
+          </TouchableOpacity>
+        </ThemedView>
       </ThemedView>
       
       {/* 권한 없음 메시지 */}
@@ -1116,18 +1137,20 @@ const styles = StyleSheet.create({
   mainContentContainer: {
     flex: 1,
     justifyContent: 'center',
-    marginTop: -30,
+    paddingHorizontal: 20,
+    marginTop: -40,
   },
   timerContainer: {
-    paddingVertical: 20,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   timerText: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: '#000',
   },
   playbackTimerText: {
     fontSize: 18,
@@ -1141,19 +1164,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 20,
+    marginTop: 20,
   },
   waveformBar: {
     width: 6,
     backgroundColor: '#007AFF',
     borderRadius: 4,
   },
+  bottomNavContainer: {
+    width: '100%',
+  },
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: Platform.OS === 'ios' ? 20 : 0,
+    paddingVertical: 15,
   },
   recordButton: {
     width: 80,
@@ -1167,6 +1192,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+    // iOS 그림자 경고 해결을 위한 배경색 추가
   },
   stopButton: {
     backgroundColor: '#FF3B30',
@@ -1184,6 +1210,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
+    // iOS 그림자 경고 해결을 위한 스타일 추가
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
   deleteButton: {
     width: 50,
@@ -1193,6 +1224,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
+    // iOS 그림자 경고 해결을 위한 스타일 추가
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
   sendButton: {
     width: 50,
@@ -1202,6 +1238,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
+    // iOS 그림자 경고 해결을 위한 스타일 추가
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#ECECEC',
+  },
+  navBarItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  activeNavItem: {
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    padding: 8,
   },
   permissionContainer: {
     position: 'absolute',
