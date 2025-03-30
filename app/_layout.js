@@ -2,102 +2,162 @@
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, Redirect } from 'expo-router';
-import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Stack, Redirect, Slot, useRouter, useSegments } from 'expo-router';
+import { useEffect, useMemo } from 'react';
+import { useColorScheme, useTheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { ExpoSymbols, SymbolVariant } from 'expo-symbols';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n/i18n';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Asset } from 'expo-asset';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { TabLoader } from '../components/TabLoader';
 
 // i18n 설정 import
 import './i18n';
 
-// AuthProvider import
-import { AuthProvider } from './context/AuthContext';
-
 // SplashScreen이 자동으로 사라지지 않도록 설정
 SplashScreen.preventAutoHideAsync();
 
-// 앱 전체 레이아웃 정의
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from 'expo-router';
+
+export const unstable_settings = {
+  // Ensure that reloading on `/modal` keeps a back button present.
+  initialRouteName: '(tabs)',
+  
+  // 모든 라우터 경로 명시적 정의
+  routes: {
+    // 기본 탭 경로
+    '(tabs)': {
+      initialRouteName: 'index',
+      screens: {
+        index: 'home',
+        explore: 'explore',
+        record: 'record',
+        notifications: 'notifications',
+        settings: 'settings',
+      }
+    },
+    // 인증 관련 경로
+    'auth': {
+      initialRouteName: 'index',
+      screens: {
+        index: 'auth',
+        login: 'login',
+        register: 'register',
+      }
+    },
+    // 설정 관련 경로
+    'settings': {
+      screens: {
+        index: 'settings',
+        account: 'account',
+        notifications: 'notifications',
+      }
+    },
+    // 방송 관련 경로
+    'broadcast': {
+      screens: {
+        index: 'broadcast',
+        record: 'record',
+        view: 'view',
+      }
+    },
+    // 프로필 관련 경로
+    'profile': {
+      screens: {
+        index: 'profile',
+        edit: 'edit',
+      }
+    },
+    // 알림 없음 경로
+    '+not-found': {
+      name: 'Not Found',
+    }
+  },
+};
+
+// 폰트 및 아이콘 로드
+function loadFontsAsync() {
+  return useFonts({
+    ...FontAwesome.font,
+    'Space-Mono': require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'Pretendard-Bold': require('../assets/fonts/Pretendard-Bold.otf'),
+    'Pretendard-SemiBold': require('../assets/fonts/Pretendard-SemiBold.otf'),
+    'Pretendard-Medium': require('../assets/fonts/Pretendard-Medium.otf'),
+    'Pretendard-Regular': require('../assets/fonts/Pretendard-Regular.otf'),
+    'Pretendard-Light': require('../assets/fonts/Pretendard-Light.otf'),
+  });
+}
+
+// 사용자 인증 상태에 따른 라우팅 처리
+function InitialLayout() {
+  const { authState, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  // 세그먼트 분석 및 리디렉션
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+    const isLoggedIn = authState?.authenticated;
+
+    // 리디렉션 로직
+    if (!isLoggedIn && !inAuthGroup) {
+      router.replace('/auth/');
+    } else if (isLoggedIn && inAuthGroup) {
+      router.replace('/(tabs)/');
+    }
+  }, [authState, segments, isLoading]);
+
+  return <Slot />;
+}
+
+// 루트 레이아웃 컴포넌트
 export default function RootLayout() {
   const colorScheme = useColorScheme();
- 
-  // 폰트 로딩 - 폰트 파일이 없으면 주석 처리
-  const [loaded] = useFonts({
-    // SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const [loaded] = loadFontsAsync();
 
-  // 폰트·리소스가 로딩된 후 SplashScreen.hideAsync() 호출
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+  // 앱 로딩 완료 처리
+  const onLayoutRootView = useMemo(() => {
+    return async () => {
+      if (loaded) {
+        await SplashScreen.hideAsync();
+      }
+    };
   }, [loaded]);
 
   if (!loaded) {
-    // 폰트 로딩이 완료되지 않았다면, 일단 null 반환(스플래시 유지)
-    return null;
+    return <TabLoader />;
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: '#fff' },
-            headerTintColor: '#333',
-            headerShown: true,
-            headerBackTitle: '', // 뒤로가기 버튼 옆의 텍스트 제거
-          }}
-        >
-          {/* 루트 경로 리디렉션 설정 */}
-          <Stack.Screen name="index" options={{ 
-            headerShown: false,
-          }} />
-          
-          {/* 첫 화면에 Tabs 라우트(폴더) 쓰고 싶다면 이렇게 */}
-          <Stack.Screen name="(tabs)" options={{ 
-            headerShown: false,
-            title: '' // 빈 문자열로 설정하여 타이틀 숨기기
-          }} />
-          {/* 기타 화면 */}
-          <Stack.Screen name="+not-found" />
-          {/* 방송 화면 */}
-          <Stack.Screen name="broadcast" options={{ 
-            headerShown: false, // 헤더 완전히 숨기기
-            title: "" 
-          }} />
-          {/* 프로필 화면 */}
-          <Stack.Screen name="profile" options={{ 
-            headerShown: false, // 헤더 완전히 숨기기
-            title: "프로필" 
-          }} />
-          {/* 관리자 화면 */}
-          <Stack.Screen name="admin" options={{ title: "관리자" }} />
-          {/* auth 디렉토리에 _layout.js가 있어 여기서는 정의하지 않습니다 */}
-          <Stack.Screen name="conversations/[id]" options={{ 
-            title: "대화",
-            headerBackTitle: ""
-          }} />
-          <Stack.Screen name="notifications" options={{ 
-            title: "알림",
-            headerBackTitle: ""
-          }} />
-          <Stack.Screen name="settings" options={{ 
-            title: "설정",
-            headerBackTitle: ""
-          }} />
-          <Stack.Screen name="account" options={{ 
-            title: "계정",
-            headerBackTitle: ""
-          }} />
-          <Stack.Screen name="feedback" options={{ 
-            title: "피드백",
-            headerBackTitle: ""
-          }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider value={colorScheme}>
+          <AuthProvider>
+            <InitialLayout />
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nextProvider>
+    </GestureHandlerRootView>
   );
+}
+
+// 오류 경계 처리
+export function ErrorBoundary(props) {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="error" options={{ title: 'Oops!' }} />
+    </Stack>
+  );
+}
 }
