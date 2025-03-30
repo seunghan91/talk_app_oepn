@@ -146,8 +146,8 @@ export default function RootLayout() {
   );
 }
 
-// 오류 경계 처리
-export function ErrorBoundary(props) {
+// 커스텀 오류 경계 처리
+export function CustomErrorBoundary(props) {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="error" options={{ title: 'Oops!' }} />
