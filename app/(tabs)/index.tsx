@@ -13,11 +13,12 @@ import { registerForPushNotificationsAsync, sendTestNotification, configurePushN
 import Constants from 'expo-constants';
 import { SafeAreaView, Platform } from 'react-native';
 import StylishButton from '../../components/StylishButton';
+import axiosInstance from '../lib/axios';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, updateUser } = useAuth();
   const [cashAmount, setCashAmount] = useState<number>(0);
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
 
@@ -50,7 +51,22 @@ export default function HomeScreen() {
     const loadUserInfo = async () => {
       try {
         if (isAuthenticated && user) {
-          // 실제 API에서 사용자 정보 로드
+          // 서버에서 프로필 정보 새로고침
+          const refreshUser = async () => {
+            try {
+              if (!user) return;
+              
+              const response = await axiosInstance.get('/api/users/profile');
+              if (response.data.nickname !== user.nickname) {
+                updateUser({ nickname: response.data.nickname });
+              }
+            } catch (error) {
+              console.error('프로필 새로고침 실패:', error);
+            }
+          };
+          
+          refreshUser();
+          
           // 테스트용 임시 데이터
           setCashAmount(5000);
           setUnreadMessages(3);
@@ -73,7 +89,7 @@ export default function HomeScreen() {
         subscription.remove();
       }
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, updateUser]);
 
   // 녹음 화면으로 이동
   const goToRecordScreen = () => {
