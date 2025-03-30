@@ -1,4 +1,4 @@
-package com.talkkapp.talkk
+package com.talkapp.talkk
 
 import android.app.Application
 import android.content.res.Configuration
