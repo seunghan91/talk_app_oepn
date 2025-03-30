@@ -969,7 +969,7 @@ export default function RecordScreen() {
         <ThemedText style={styles.headerTitle}>
           {isRecording ? t('broadcast.recording') : 
            recordingUri ? t('broadcast.preview') : 
-           t('broadcast.ready')}
+           ''}
         </ThemedText>
         
         {isRecording && (
@@ -1092,8 +1092,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
     position: 'relative',
+    marginTop: -10,
   },
   backButton: {
     position: 'absolute',
@@ -1115,6 +1116,7 @@ const styles = StyleSheet.create({
   mainContentContainer: {
     flex: 1,
     justifyContent: 'center',
+    marginTop: -30,
   },
   timerContainer: {
     paddingVertical: 20,
@@ -1225,5 +1227,5 @@ const styles = StyleSheet.create({
   webNoticeText: {
     textAlign: 'center',
     fontWeight: 'bold',
-  },
+  }
 });
