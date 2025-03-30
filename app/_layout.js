@@ -4,21 +4,19 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { useColorScheme, useTheme } from 'react-native';
+import { useColorScheme, Platform, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { ExpoSymbols, SymbolVariant } from 'expo-symbols';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { I18nextProvider } from 'react-i18next';
-import i18n from './i18n/i18n';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Asset } from 'expo-asset';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { TabLoader } from '../components/TabLoader';
 
 // i18n 설정 import
 import './i18n';
+import i18n from './i18n';
 
 // SplashScreen이 자동으로 사라지지 않도록 설정
 SplashScreen.preventAutoHideAsync();
@@ -86,14 +84,9 @@ export const unstable_settings = {
 
 // 폰트 및 아이콘 로드
 function loadFontsAsync() {
+  // 폰트가 없으면 빈 객체 반환
   return useFonts({
     ...FontAwesome.font,
-    'Space-Mono': require('../assets/fonts/SpaceMono-Regular.ttf'),
-    'Pretendard-Bold': require('../assets/fonts/Pretendard-Bold.otf'),
-    'Pretendard-SemiBold': require('../assets/fonts/Pretendard-SemiBold.otf'),
-    'Pretendard-Medium': require('../assets/fonts/Pretendard-Medium.otf'),
-    'Pretendard-Regular': require('../assets/fonts/Pretendard-Regular.otf'),
-    'Pretendard-Light': require('../assets/fonts/Pretendard-Light.otf'),
   });
 }
 
@@ -136,13 +129,14 @@ export default function RootLayout() {
   }, [loaded]);
 
   if (!loaded) {
-    return <TabLoader />;
+    // 로딩 중 화면
+    return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <I18nextProvider i18n={i18n}>
-        <ThemeProvider value={colorScheme}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AuthProvider>
             <InitialLayout />
           </AuthProvider>
@@ -159,5 +153,4 @@ export function ErrorBoundary(props) {
       <Stack.Screen name="error" options={{ title: 'Oops!' }} />
     </Stack>
   );
-}
 }

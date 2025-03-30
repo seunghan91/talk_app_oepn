@@ -5,6 +5,7 @@ import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import axiosInstance from '../app/lib/axios';
 import { Ionicons } from '@expo/vector-icons';
+import { generateRandomNickname as generateNickname, validateNickname } from '../utils/nicknameUtils';
 
 interface NicknameEditorProps {
   initialNickname?: string;
@@ -30,35 +31,26 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [randomNicknameGenerated, setRandomNicknameGenerated] = useState<boolean>(false);
   const inputRef = useRef<TextInput>(null);
-
-  // 랜덤 닉네임 생성 함수
-  const generateRandomNicknameLocally = (): string => {
-    const adjectives = ['행복한', '즐거운', '신나는', '멋진', '귀여운', '용감한', '똑똑한', '친절한', '재미있는', '활발한'];
-    const nouns = ['고양이', '강아지', '토끼', '여우', '사자', '호랑이', '판다', '코끼리', '기린', '원숭이'];
-    const randomNum = Math.floor(Math.random() * 1000);
-    
-    const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    
-    return `${randomAdj}${randomNoun}${randomNum}`;
-  };
+  const [saveAttempted, setSaveAttempted] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 랜덤 닉네임 생성
   const generateRandomNickname = async (): Promise<void> => {
     try {
       setIsLoading(true);
+      setError(null);
       
       let newNickname = '';
       
       try {
         // 서버에서 랜덤 닉네임 가져오기 시도
-        const res = await axiosInstance.get<{ nickname: string }>('/api/generate_random_nickname');
+        const res = await axiosInstance.get<{ nickname: string }>('/api/users/random_nickname');
         newNickname = res.data.nickname;
         console.log('서버에서 랜덤 닉네임 생성됨:', newNickname);
       } catch (error) {
         // 서버 요청 실패 시 로컬에서 생성
         console.log('서버 요청 실패, 로컬에서 랜덤 닉네임 생성');
-        newNickname = generateRandomNicknameLocally();
+        newNickname = generateNickname();
         console.log('로컬에서 랜덤 닉네임 생성됨:', newNickname);
       }
       
@@ -79,7 +71,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       );
     } catch (err: any) {
       console.log('랜덤 닉네임 생성 실패:', err.response?.data);
-      Alert.alert(t('common.error'), t('profile.generateNicknameError'));
+      setError(t('profile.generateNicknameError'));
     } finally {
       setIsLoading(false);
     }
@@ -87,35 +79,57 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
 
   // 닉네임 변경
   const handleSave = async (): Promise<void> => {
-    if (!nickname.trim()) {
-      Alert.alert(t('common.error'), t('profile.nicknameRequired'));
+    setSaveAttempted(true);
+    
+    // 닉네임 유효성 검증
+    const validation = validateNickname(nickname);
+    if (!validation.isValid) {
+      setError(validation.message);
+      Alert.alert(t('common.error'), validation.message);
       return;
     }
+    
+    setError(null);
 
     try {
       setIsLoading(true);
       console.log('닉네임 변경 요청:', nickname);
       
       let savedNickname = nickname;
+      let serverSuccess = false;
       
       try {
-        // 서버에 닉네임 변경 요청
-        const res = await axiosInstance.post<ApiResponse>('/api/change_nickname', {
+        // v1 API 엔드포인트로 먼저 시도
+        const res = await axiosInstance.post<ApiResponse>('/api/v1/users/change_nickname', {
           nickname
         });
         
         // 서버에서 반환된 닉네임 (서버에서 변경된 경우를 대비)
         savedNickname = res.data.user.nickname;
-        console.log('닉네임 변경 성공 (서버):', savedNickname);
+        serverSuccess = true;
+        console.log('닉네임 변경 성공 (v1 API):', savedNickname);
       } catch (error) {
-        // 서버 요청 실패 시 로컬에서만 처리
-        console.log('서버 요청 실패, 로컬에서만 닉네임 변경');
+        // v1 API 실패 시 루트 API 시도
+        try {
+          console.log('v1 API 실패, 루트 API 시도');
+          const res = await axiosInstance.post<ApiResponse>('/api/users/change_nickname', {
+            nickname
+          });
+          savedNickname = res.data.user.nickname;
+          serverSuccess = true;
+          console.log('닉네임 변경 성공 (루트 API):', savedNickname);
+        } catch (rootApiError) {
+          // 서버 요청 실패 시 로컬에서만 처리
+          console.log('모든 API 요청 실패, 로컬에서만 닉네임 변경');
+        }
       }
       
       // 성공 메시지와 함께 변경된 닉네임 표시
       Alert.alert(
         t('common.success'), 
-        t('profile.nicknameChangedTo').replace('%{nickname}', savedNickname),
+        serverSuccess 
+          ? t('profile.nicknameChangedTo').replace('%{nickname}', savedNickname)
+          : t('profile.nicknameChangedLocallyTo').replace('%{nickname}', savedNickname),
         [{ 
           text: t('common.ok'),
           onPress: () => {
@@ -126,6 +140,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       );
     } catch (err: any) {
       console.log('닉네임 변경 실패:', err.response?.data);
+      setError(t('profile.changeNicknameError'));
       Alert.alert(t('common.error'), t('profile.changeNicknameError'));
     } finally {
       setIsLoading(false);

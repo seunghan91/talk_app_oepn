@@ -25,9 +25,9 @@ const AUDIO_LEVEL_INTERVAL = 100;
 
 // Screen 설정을 위한 export
 export const unstable_settings = {
-  // 헤더와 탭바를 보이도록 설정
-  headerShown: true,
-  tabBarVisible: true,
+  // 헤더 숨기고 탭바 보이도록 설정
+  headerShown: false,
+  tabBarVisible: true, // Keep tab bar visible
 };
 
 export default function RecordScreen() {
@@ -1062,31 +1062,13 @@ export default function RecordScreen() {
           )}
         </ThemedView>
         
-        {/* 하단 네비게이션 바 */}
-        <ThemedView style={styles.navBar}>
-          <TouchableOpacity 
-            style={styles.navBarItem}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#555" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navBarItem, styles.activeNavItem]}
-          >
-            <Ionicons name="mic" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navBarItem}
-            onPress={sendBroadcast}
-            disabled={!recordingUri || uploading}
-          >
-            <Ionicons 
-              name="send" 
-              size={24} 
-              color={!recordingUri || uploading ? "#999" : "#555"} 
-            />
-          </TouchableOpacity>
-        </ThemedView>
+        {/* Back button at the top left */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={28} color="#555" />
+        </TouchableOpacity>
       </ThemedView>
       
       {/* 타이머 오버레이 - 파형 위에 표시, 더 크게 만들기 */}
@@ -1120,6 +1102,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 40, 
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+    zIndex: 10,
   },
   headerTimer: {
     fontSize: 16,
@@ -1254,26 +1253,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#ECECEC',
-  },
-  navBarItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  activeNavItem: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    padding: 8,
-  },
+  // Navigation styles removed as we're now using the global tab bar
   permissionContainer: {
     position: 'absolute',
     bottom: 100,
