@@ -989,20 +989,7 @@ export default function RecordScreen() {
       <StatusBar barStyle="dark-content" />
       
       <ThemedView style={styles.mainContentContainer}>
-        {/* 타이머 영역 - 상단으로 이동 및 항상 표시 */}
-        <ThemedView style={styles.timerContainer}>
-          {isRecording && (
-            <ThemedText style={styles.timerText}>
-              {formatTime(recordingDuration)}
-            </ThemedText>
-          )}
-          
-          {isPlaying && recordingUri && (
-            <ThemedText style={styles.playbackTimerText}>
-              {formatTime(playbackTime.current)} / {formatTime(playbackTime.total)}
-            </ThemedText>
-          )}
-        </ThemedView>
+        {/* 타이머 영역 - 제거 */}
         
         {/* 파형 영역 */}
         <ThemedView style={styles.waveformContainer}>
@@ -1102,9 +1089,9 @@ export default function RecordScreen() {
         </ThemedView>
       </ThemedView>
       
-      {/* 타이머 오버레이 - 파형 위에 표시 */}
+      {/* 타이머 오버레이 - 파형 위에 표시, 더 크게 만들기 */}
       {isRecording && (
-        <View style={[styles.timerOverlay, { top: insets.top + 50 }]}>
+        <View style={[styles.timerOverlay, { top: insets.top + 30 }]}>
           <ThemedText style={styles.timerOverlayText}>
             {formatTime(recordingDuration)}
           </ThemedText>
@@ -1150,6 +1137,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
+    display: 'none', // 중앙 타이머 감추기
   },
   timerText: {
     fontSize: 32,
@@ -1160,21 +1148,15 @@ const styles = StyleSheet.create({
   timerOverlay: {
     position: 'absolute',
     right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // 더 진한 배경
+    paddingHorizontal: 14, // 더 넓게
+    paddingVertical: 8, // 더 높게
+    borderRadius: 20, // 더 둥글게
   },
   timerOverlayText: {
-    fontSize: 14,
+    fontSize: 18, // 더 큰 글씨
     fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  playbackTimerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    textAlign: 'center',
   },
   waveformContainer: {
     height: 120,
@@ -1199,17 +1181,24 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   recordButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    marginHorizontal: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   stopButton: {
     backgroundColor: '#FF3B30',
@@ -1253,10 +1242,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   navBar: {
     flexDirection: 'row',
