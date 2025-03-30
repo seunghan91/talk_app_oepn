@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "talkk",
+    "schemes": ["talkk", "com.talkapp.talkk"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "음성 메시지를 통해 새로운 인연을 만나는 소셜 네트워킹 앱",
