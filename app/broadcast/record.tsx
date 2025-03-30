@@ -9,7 +9,7 @@ import axiosInstance from '../lib/axios';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
@@ -23,12 +23,20 @@ const WAVEFORM_BARS = 30;
 // 오디오 레벨 측정 간격 (밀리초)
 const AUDIO_LEVEL_INTERVAL = 100;
 
+// Screen 설정을 위한 export
+export const unstable_settings = {
+  // 헤더와 탭바를 보이도록 설정
+  headerShown: true,
+  tabBarVisible: true,
+};
+
 export default function RecordScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [isWeb, setIsWeb] = useState<boolean>(Platform.OS === 'web');
   const [mockRecordingActive, setMockRecordingActive] = useState<boolean>(false);
+  const insets = useSafeAreaInsets(); // 안전 영역 insets 가져오기
   
   // Stack 헤더 설정 - 타입 에러 수정
   useEffect(() => {
@@ -955,32 +963,33 @@ export default function RecordScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Stack 헤더 설정
+  useEffect(() => {
+    // 헤더에 타이머 표시
+    if (isRecording) {
+      router.setParams({
+        title: t('broadcast.recording'),
+        headerRight: formatTime(recordingDuration)
+      });
+    } else if (recordingUri) {
+      router.setParams({
+        title: t('broadcast.preview'),
+        headerRight: null
+      });
+    } else {
+      router.setParams({
+        title: '',  // 빈 제목
+        headerRight: null
+      });
+    }
+  }, [isRecording, recordingDuration, recordingUri, t]);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="#000" />
-        </TouchableOpacity>
-        
-        <ThemedText style={styles.headerTitle}>
-          {isRecording ? t('broadcast.recording') : 
-           recordingUri ? t('broadcast.preview') : 
-           ''}
-        </ThemedText>
-        
-        {isRecording && (
-          <ThemedText style={styles.timer}>
-            {formatTime(recordingDuration)}
-          </ThemedText>
-        )}
-      </View>
       
       <ThemedView style={styles.mainContentContainer}>
-        {/* 타이머 영역 - 상단으로 이동 */}
+        {/* 타이머 영역 - 상단으로 이동 및 항상 표시 */}
         <ThemedView style={styles.timerContainer}>
           {isRecording && (
             <ThemedText style={styles.timerText}>
@@ -1068,23 +1077,39 @@ export default function RecordScreen() {
         
         {/* 하단 네비게이션 바 */}
         <ThemedView style={styles.navBar}>
-          <TouchableOpacity style={styles.navBarItem}>
-            <Ionicons name="home-outline" size={24} color="#555" />
+          <TouchableOpacity 
+            style={styles.navBarItem}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#555" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navBarItem}>
-            <Ionicons name="search-outline" size={24} color="#555" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.navBarItem, styles.activeNavItem]}>
+          <TouchableOpacity 
+            style={[styles.navBarItem, styles.activeNavItem]}
+          >
             <Ionicons name="mic" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navBarItem}>
-            <Ionicons name="notifications-outline" size={24} color="#555" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navBarItem}>
-            <Ionicons name="person-outline" size={24} color="#555" />
+          <TouchableOpacity 
+            style={styles.navBarItem}
+            onPress={sendBroadcast}
+            disabled={!recordingUri || uploading}
+          >
+            <Ionicons 
+              name="send" 
+              size={24} 
+              color={!recordingUri || uploading ? "#999" : "#555"} 
+            />
           </TouchableOpacity>
         </ThemedView>
       </ThemedView>
+      
+      {/* 타이머 오버레이 - 파형 위에 표시 */}
+      {isRecording && (
+        <View style={[styles.timerOverlay, { top: insets.top + 50 }]}>
+          <ThemedText style={styles.timerOverlayText}>
+            {formatTime(recordingDuration)}
+          </ThemedText>
+        </View>
+      )}
       
       {/* 권한 없음 메시지 */}
       {hasPermission === false && (
@@ -1109,36 +1134,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    position: 'relative',
-    marginTop: -10,
-  },
-  backButton: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 10,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  timer: {
-    position: 'absolute',
-    right: 16,
+  headerTimer: {
     fontSize: 16,
     fontWeight: '500',
     color: '#FF5A60',
+    marginRight: 16,
   },
   mainContentContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginTop: -40,
   },
   timerContainer: {
     paddingVertical: 10,
@@ -1151,6 +1156,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#000',
+  },
+  timerOverlay: {
+    position: 'absolute',
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  timerOverlayText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   playbackTimerText: {
     fontSize: 18,
@@ -1192,7 +1210,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
-    // iOS 그림자 경고 해결을 위한 배경색 추가
   },
   stopButton: {
     backgroundColor: '#FF3B30',
@@ -1210,7 +1227,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
-    // iOS 그림자 경고 해결을 위한 스타일 추가
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -1224,7 +1240,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
-    // iOS 그림자 경고 해결을 위한 스타일 추가
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -1238,7 +1253,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
-    // iOS 그림자 경고 해결을 위한 스타일 추가
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
