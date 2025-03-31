@@ -13,24 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axiosInstance from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
-
-// 공지사항 인터페이스
-interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  category_id: number;
-  category: {
-    id: number;
-    name: string;
-  };
-  is_important: boolean;
-  is_published: boolean;
-  is_hidden: boolean;
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-}
+import { Announcement } from '../types';
 
 export default function AnnouncementDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -42,17 +25,11 @@ export default function AnnouncementDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // 관리자 권한 확인
+  // 관리자 권한 확인 (UI 표시용만)
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      // 실제 구현에서는 서버에서 확인하거나 사용자 정보에 role 필드를 확인해야 함
-      // 현재는 테스트를 위해 user_id가 1인 경우 관리자 권한 부여
-      if (isAuthenticated && user && user.id === 1) {
-        setIsAdmin(true);
-      }
-    };
-    
-    checkAdminStatus();
+    if (isAuthenticated && user && user.id === 1) {
+      setIsAdmin(true);
+    }
   }, [isAuthenticated, user]);
   
   // 공지사항 상세 정보 불러오기
@@ -65,15 +42,7 @@ export default function AnnouncementDetailScreen() {
         const response = await axiosInstance.get(`/api/v1/announcements/${id}`);
         
         if (response.data) {
-          // 숨김 처리된 게시글은 관리자만 볼 수 있음
-          const announcementData = response.data;
-          if (announcementData.is_hidden && !isAdmin) {
-            setError('접근할 수 없는 공지사항입니다.');
-          } else if (!announcementData.is_published && !isAdmin) {
-            setError('아직 게시되지 않은 공지사항입니다.');
-          } else {
-            setAnnouncement(announcementData);
-          }
+          setAnnouncement(response.data);
         } else {
           setError('공지사항 정보를 불러올 수 없습니다.');
         }
@@ -88,7 +57,7 @@ export default function AnnouncementDetailScreen() {
     if (id) {
       fetchAnnouncementDetail();
     }
-  }, [id, isAdmin]);
+  }, [id]);
   
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string): string => {

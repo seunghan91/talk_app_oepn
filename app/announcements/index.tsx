@@ -15,30 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import axiosInstance from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
-
-// 공지사항 인터페이스
-interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  category_id: number;
-  category: {
-    id: number;
-    name: string;
-  };
-  is_important: boolean;
-  is_published: boolean;
-  is_hidden: boolean;
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  description?: string;
-}
+import { Announcement, AnnouncementCategory } from '../types';
 
 export default function AnnouncementsScreen() {
   const router = useRouter();
@@ -46,23 +23,17 @@ export default function AnnouncementsScreen() {
   const { user, isAuthenticated } = useAuth();
   
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<AnnouncementCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // 관리자 권한 확인
+  // 관리자 권한 확인 (UI 표시용만)
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      // 실제 구현에서는 서버에서 확인하거나 사용자 정보에 role 필드를 확인해야 함
-      // 현재는 테스트를 위해 user_id가 1인 경우 관리자 권한 부여
-      if (isAuthenticated && user && user.id === 1) {
-        setIsAdmin(true);
-      }
-    };
-    
-    checkAdminStatus();
+    if (isAuthenticated && user && user.id === 1) {
+      setIsAdmin(true);
+    }
   }, [isAuthenticated, user]);
   
   // 공지사항 카테고리 목록 불러오기
@@ -90,15 +61,8 @@ export default function AnnouncementsScreen() {
       const response = await axiosInstance.get(url);
       
       if (response.data && Array.isArray(response.data.announcements)) {
-        // 관리자는 모든 공지사항 볼 수 있음
-        // 일반 사용자는 숨김 처리되지 않은 공지사항만 볼 수 있음
-        const filteredAnnouncements = isAdmin 
-          ? response.data.announcements 
-          : response.data.announcements.filter((announcement: Announcement) => 
-              announcement.is_published && !announcement.is_hidden
-            );
-        
-        setAnnouncements(filteredAnnouncements);
+        // API에서 사용자 권한에 맞는 공지사항만 전달받음
+        setAnnouncements(response.data.announcements);
       } else {
         setAnnouncements([]);
       }
@@ -110,7 +74,7 @@ export default function AnnouncementsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedCategory, isAdmin]);
+  }, [selectedCategory]);
   
   // 초기 데이터 로드
   useEffect(() => {
@@ -167,7 +131,7 @@ export default function AnnouncementsScreen() {
   };
   
   // 카테고리 필터 버튼 렌더링
-  const renderCategoryButton = (category: Category | null) => {
+  const renderCategoryButton = (category: AnnouncementCategory | null) => {
     const isSelected = category === null 
       ? selectedCategory === null 
       : selectedCategory === category.id;
