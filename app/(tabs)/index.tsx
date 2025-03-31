@@ -50,9 +50,9 @@ export default function HomeScreen() {
         
         // 읽지 않은 메시지 수 가져오기
         try {
-          const notificationsResponse = await axiosInstance.get('/api/notifications/unread_count');
-          if (notificationsResponse.data && notificationsResponse.data.count !== undefined) {
-            setUnreadMessages(notificationsResponse.data.count);
+          const notificationsResponse = await axiosInstance.get('/api/v1/notifications');
+          if (notificationsResponse.data && notificationsResponse.data.unread_count !== undefined) {
+            setUnreadMessages(notificationsResponse.data.unread_count);
           } else {
             setUnreadMessages(3); // 기본값
           }
