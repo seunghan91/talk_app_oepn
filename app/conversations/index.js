@@ -19,12 +19,14 @@ export default function ConversationListScreen() {
   const fetchConversations = useCallback(async () => {
     setLoading(true);
     try {
-      // GET /api/conversations
+      // GET /api/conversations - 현재 사용자에게 보이는 대화방만 반환
       const response = await axiosInstance.get('/api/conversations');
       
       // Check if the response contains conversations array in the expected format
       if (response.data && response.data.conversations) {
         console.log(`Loaded ${response.data.conversations.length} conversations`);
+        
+        // 대화방 상태 및 가시성에 따른 필터링은 서버에서 이미 처리됨
         setConversations(response.data.conversations);
       } else {
         console.log('Unexpected response structure:', response.data);
@@ -73,17 +75,26 @@ export default function ConversationListScreen() {
   };
 
   const renderItem = ({ item }) => {
-    // Ensure with_user and last_message objects exist
-    const withUser = item.with_user || { nickname: '알 수 없음' };
+    // 현재 사용자 기준으로 상대방 정보 추출
+    const currentUserId = user ? user.id : null;
+    const isUserA = currentUserId === item.user_a_id;
+    const withUser = isUserA ? item.user_b : item.user_a;
     const lastMessage = item.last_message || { content: '', created_at: '' };
+    
+    // 대화방 상태에 따른 스타일 및 표시 설정
+    const isClosedConversation = item.status && item.status.startsWith('closed');
     
     return (
       <TouchableOpacity
-        style={styles.conversationItem}
+        style={[
+          styles.conversationItem,
+          isClosedConversation && styles.closedConversationItem
+        ]}
         onPress={() => navigateToConversation(item.id)}
+        disabled={isClosedConversation} // 종료된 대화방은 탭 불가능
       >
         <View style={styles.avatarContainer}>
-          <Ionicons name="person-circle" size={50} color="#007AFF" />
+          <Ionicons name="person-circle" size={50} color={isClosedConversation ? "#CCCCCC" : "#007AFF"} />
         </View>
         <View style={styles.conversationDetails}>
           <View style={styles.conversationHeader}>
@@ -91,12 +102,29 @@ export default function ConversationListScreen() {
             <ThemedText style={styles.timestamp}>{formatTimestamp(lastMessage.created_at)}</ThemedText>
           </View>
           <ThemedText 
-            style={styles.messagePreview}
+            style={[
+              styles.messagePreview,
+              isClosedConversation && styles.closedMessagePreview
+            ]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {lastMessage.content || '새로운 대화'}
+            {isClosedConversation 
+              ? '대화가 종료되었습니다' 
+              : (lastMessage.content || (lastMessage.type === 'voice' ? '음성 메시지' : '새로운 대화'))}
           </ThemedText>
+          
+          {isClosedConversation && (
+            <View style={styles.closedBadge}>
+              <Text style={styles.closedBadgeText}>종료됨</Text>
+            </View>
+          )}
+          
+          {!isClosedConversation && item.unread_count > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -256,6 +284,44 @@ const styles = StyleSheet.create({
   },
   newBroadcastText: {
     color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  closedConversationItem: {
+    opacity: 0.7,
+    backgroundColor: '#F5F5F5',
+  },
+  closedMessagePreview: {
+    fontStyle: 'italic',
+    color: '#999999',
+  },
+  closedBadge: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    backgroundColor: '#999999',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  closedBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    backgroundColor: '#FF3B30',
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });

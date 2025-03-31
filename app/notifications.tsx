@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, Alert, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,7 @@ import StylishButton from '../components/StylishButton';
 // 알림 타입 정의
 interface Notification {
   id: number;
-  type: 'message' | 'broadcast' | 'system';
+  type: 'message' | 'broadcast' | 'system' | 'broadcast_reply' | 'new_message' | 'conversation_closed';
   title: string;
   body: string;
   read: boolean;
@@ -20,6 +20,7 @@ interface Notification {
     broadcast_id?: number;
     [key: string]: any;
   };
+  related_id?: number;
 }
 
 export default function NotificationsScreen() {
@@ -116,6 +117,15 @@ export default function NotificationsScreen() {
       case 'system':
         // 시스템 알림은 특별한 처리 없음
         break;
+      case 'broadcast_reply':
+      case 'new_message':
+        if (notification.related_id) {
+          router.push(`/conversations/${notification.related_id}`);
+        }
+        break;
+      case 'conversation_closed':
+        // 대화방 종료는 특별한 처리 없음
+        break;
     }
   };
 
@@ -136,20 +146,47 @@ export default function NotificationsScreen() {
   };
 
   // 알림 아이템 렌더링
-  const renderNotificationItem = ({ item }: { item: Notification }) => {
-    // 알림 타입에 따른 아이콘 설정
-    let icon;
+  const renderNotificationItem = ({ item }) => {
+    // 알림 종류에 따른 아이콘 및 색상 결정
+    let iconName: string = 'notifications-outline';
+    let iconColor = '#007AFF';
+    
     switch (item.type) {
-      case 'message':
-        icon = <Ionicons name="chatbubble" size={24} color="#007AFF" />;
+      case 'broadcast_reply':
+        iconName = 'chatbubble-outline';
+        iconColor = '#4CAF50';
         break;
-      case 'broadcast':
-        icon = <Ionicons name="radio" size={24} color="#FF9500" />;
+      case 'new_message':
+        iconName = 'mail-outline';
+        iconColor = '#FF9500';
         break;
-      case 'system':
-        icon = <Ionicons name="information-circle" size={24} color="#34C759" />;
+      case 'conversation_closed':
+        iconName = 'close-circle-outline';
+        iconColor = '#FF3B30';
         break;
+      default:
+        iconName = 'notifications-outline';
+        iconColor = '#007AFF';
     }
+    
+    // 알림 클릭 핸들러
+    const handleNotificationPress = () => {
+      // 알림 타입에 따라 다른 화면으로 이동
+      if (item.type === 'broadcast_reply' || item.type === 'new_message') {
+        // 대화방으로 이동
+        if (item.related_id) {
+          router.push(`/conversations/${item.related_id}`);
+        }
+      } else if (item.type === 'system') {
+        // 시스템 알림은 특별한 처리 없음
+      } else {
+        // 기본적으로 홈으로 이동
+        router.push('/');
+      }
+      
+      // 알림 읽음 처리
+      markAsRead(item);
+    };
     
     return (
       <TouchableOpacity 
@@ -157,22 +194,22 @@ export default function NotificationsScreen() {
           styles.notificationItem,
           !item.read && styles.unreadNotification
         ]}
-        onPress={() => handleNotificationPress(item)}
+        onPress={handleNotificationPress}
       >
-        <ThemedView style={styles.notificationIcon}>
-          {icon}
-        </ThemedView>
+        <View style={[styles.notificationIcon, { backgroundColor: `${iconColor}20` }]}>
+          <Ionicons name={iconName as any} size={24} color={iconColor} />
+        </View>
         
-        <ThemedView style={styles.notificationContent}>
+        <View style={styles.notificationContent}>
           <ThemedText style={styles.notificationTitle}>{item.title}</ThemedText>
           <ThemedText style={styles.notificationBody}>{item.body}</ThemedText>
           <ThemedText style={styles.notificationTime}>
             {new Date(item.created_at).toLocaleString()}
           </ThemedText>
-        </ThemedView>
+        </View>
         
         {!item.read && (
-          <ThemedView style={styles.unreadIndicator} />
+          <View style={styles.unreadIndicator} />
         )}
       </TouchableOpacity>
     );

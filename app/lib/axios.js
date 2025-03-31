@@ -208,38 +208,234 @@ const mockResponses = {
       ]
     };
   },
-  '/api/conversations': [
-    {
-      id: 1,
-      user: {
-        id: 101,
-        nickname: '김철수',
-        profile_image: 'https://randomuser.me/api/portraits/men/32.jpg',
-      },
-      last_message: {
-        content: '안녕하세요, 오늘 방송 잘 들었습니다!',
-        created_at: '2023-03-15T14:30:00Z',
-        is_read: false,
-      },
-      is_favorite: true,
-      unread_count: 3,
-    },
-    {
-      id: 2,
-      user: {
-        id: 102,
-        nickname: '이영희',
-        profile_image: 'https://randomuser.me/api/portraits/women/44.jpg',
-      },
-      last_message: {
-        content: '다음 방송은 언제 하시나요?',
-        created_at: '2023-03-14T09:15:00Z',
-        is_read: true,
-      },
-      is_favorite: false,
-      unread_count: 0,
+  '/api/conversations': (config) => {
+    // 현재 사용자 ID (JWT 토큰에서 추출해야 함)
+    const currentUserId = 2; // 예시: 이영희 ID
+    
+    // 사용자에게 표시 가능한 대화방만 반환
+    return {
+      conversations: [
+        {
+          id: 1,
+          user_a_id: 2, // 이영희
+          user_b_id: 1, // 김철수
+          user_a: { id: 2, nickname: "이영희" },
+          user_b: { id: 1, nickname: "김철수" },
+          is_visible_to_user_a: true,
+          is_visible_to_user_b: true,
+          status: "active",
+          broadcast_id: 12345,
+          created_at: "2023-03-15T14:00:00Z",
+          updated_at: "2023-03-15T14:30:00Z",
+          current_user_id: currentUserId,
+          last_message: {
+            content: "음성 메시지",
+            type: "voice",
+            voice_file_url: "https://example.com/audio/message1.m4a",
+            created_at: "2023-03-15T14:30:00Z",
+            is_read: false,
+          },
+          unread_count: 3,
+        },
+        {
+          id: 2,
+          user_a_id: 2, // 이영희
+          user_b_id: 3, // 박지민
+          user_a: { id: 2, nickname: "이영희" },
+          user_b: { id: 3, nickname: "박지민" },
+          is_visible_to_user_a: true,
+          is_visible_to_user_b: false, // 박지민이 응답하지 않음
+          status: "active",
+          broadcast_id: 12346,
+          created_at: "2023-03-14T09:00:00Z",
+          updated_at: "2023-03-14T09:15:00Z",
+          current_user_id: currentUserId,
+          last_message: {
+            content: "음성 메시지",
+            type: "voice",
+            voice_file_url: "https://example.com/audio/message2.m4a",
+            created_at: "2023-03-14T09:15:00Z",
+            is_read: true,
+          },
+          unread_count: 0,
+        },
+        {
+          id: 3,
+          user_a_id: 2, // 이영희
+          user_b_id: 4, // 최수진
+          user_a: { id: 2, nickname: "이영희" },
+          user_b: { id: 4, nickname: "최수진" },
+          is_visible_to_user_a: true,
+          is_visible_to_user_b: true,
+          status: "closed_by_user_b", // 최수진이 대화를 종료함
+          broadcast_id: 12347,
+          created_at: "2023-03-13T10:00:00Z",
+          updated_at: "2023-03-13T16:45:00Z",
+          current_user_id: currentUserId,
+          last_message: {
+            content: "대화가 종료되었습니다.",
+            type: "system",
+            created_at: "2023-03-13T16:45:00Z",
+            is_read: true,
+          },
+          unread_count: 0,
+        }
+      ]
+    };
+  },
+  // 개별 대화방 정보
+  '/api/conversations/([0-9]+)': (config, matches) => {
+    const conversationId = parseInt(matches[1]);
+    // 현재 사용자 ID (JWT 토큰에서 추출해야 함)
+    const currentUserId = 2; // 예시: 이영희 ID
+    
+    // 대화방 상태 확인
+    let status = "active";
+    let is_visible_to_user_a = true;
+    let is_visible_to_user_b = true;
+    
+    // 대화방 ID가 3인 경우 종료된 대화방
+    if (conversationId === 3) {
+      status = "closed_by_user_b";
     }
-  ],
+    
+    // 대화방 ID가 2인 경우 상대방에게 보이지 않는 대화방
+    if (conversationId === 2) {
+      is_visible_to_user_b = false;
+    }
+    
+    const conversation = {
+      id: conversationId,
+      user_a_id: 2, // 이영희
+      user_b_id: 1, // 김철수
+      user_a: { id: 2, nickname: "이영희" },
+      user_b: { id: 1, nickname: "김철수" },
+      is_visible_to_user_a: is_visible_to_user_a,
+      is_visible_to_user_b: is_visible_to_user_b,
+      status: status,
+      broadcast_id: 12345,
+      created_at: "2023-03-15T14:00:00Z",
+      updated_at: "2023-03-15T14:30:00Z",
+      current_user_id: currentUserId
+    };
+    
+    // 메시지 목록
+    const messages = [
+      {
+        id: 1,
+        conversation_id: conversationId,
+        sender_id: 2, // 이영희
+        type: "voice",
+        content: null, // 음성 메시지는 content 없음
+        voice_file_url: "https://example.com/audio/broadcast1.m4a",
+        duration: 15, // 15초
+        created_at: "2023-03-15T14:00:00Z",
+        is_read: true
+      }
+    ];
+    
+    // 대화 상태가 활성 상태인 경우만 메시지 추가
+    if (status === "active") {
+      messages.push({
+        id: 2,
+        conversation_id: conversationId,
+        sender_id: 1, // 김철수
+        type: "voice",
+        content: null,
+        voice_file_url: "https://example.com/audio/reply1.m4a",
+        duration: 10, // 10초
+        created_at: "2023-03-15T14:10:00Z",
+        is_read: true
+      });
+      
+      messages.push({
+        id: 3,
+        conversation_id: conversationId,
+        sender_id: 2, // 이영희
+        type: "voice",
+        content: null,
+        voice_file_url: "https://example.com/audio/message1.m4a",
+        duration: 8, // 8초
+        created_at: "2023-03-15T14:20:00Z",
+        is_read: true
+      });
+    } else if (status.startsWith("closed")) {
+      // 종료된 대화방의 경우 시스템 메시지 추가
+      messages.push({
+        id: 99,
+        conversation_id: conversationId,
+        sender_id: null, // 시스템 메시지
+        type: "system",
+        content: "대화가 종료되었습니다.",
+        voice_file_url: null,
+        duration: null,
+        created_at: "2023-03-15T16:45:00Z",
+        is_read: true
+      });
+    }
+    
+    return {
+      conversation: conversation,
+      messages: messages
+    };
+  },
+  // 대화방 종료 API
+  '/api/conversations/([0-9]+)/close': (config, matches) => {
+    const conversationId = parseInt(matches[1]);
+    return {
+      success: true,
+      message: "대화가 종료되었습니다.",
+      conversation: {
+        id: conversationId,
+        status: "closed_by_user_a", // 현재 사용자가 종료
+        updated_at: new Date().toISOString()
+      }
+    };
+  },
+  // 브로드캐스트 답장 API
+  '/api/broadcasts/([0-9]+)/reply': (config, matches) => {
+    const broadcastId = parseInt(matches[1]);
+    return {
+      success: true,
+      message: "답장이 성공적으로 전송되었습니다.",
+      conversation_id: 101,
+      conversation: {
+        id: 101,
+        user_a_id: 1, // 브로드캐스트 보낸 사람
+        user_b_id: 2, // 응답한 사람
+        is_visible_to_user_a: true,
+        is_visible_to_user_b: true,
+        status: "active",
+        broadcast_id: broadcastId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    };
+  },
+  // 알림 API
+  '/api/v1/notifications': (config) => {
+    return {
+      notifications: [
+        {
+          id: 1,
+          type: "broadcast_reply",
+          content: "김철수님이 회원님의 방송에 답장했습니다.",
+          related_id: 1, // 대화방 ID
+          created_at: "2023-03-15T14:30:00Z",
+          is_read: false
+        },
+        {
+          id: 2,
+          type: "new_message",
+          content: "박지민님이 음성 메시지를 보냈습니다.",
+          related_id: 2, // 대화방 ID
+          created_at: "2023-03-14T09:15:00Z",
+          is_read: true
+        }
+      ],
+      unread_count: 1
+    };
+  },
   '/api/users/notification_settings': {
     receive_new_letter: true,
     letter_receive_alarm: true

@@ -31,6 +31,7 @@ export default function ConversationDetail() {
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState(null);
+  const [isClosedConversation, setIsClosedConversation] = useState(false);
   
   const flatListRef = useRef(null);
   const intervalRef = useRef(null);
@@ -46,6 +47,10 @@ export default function ConversationDetail() {
       
       // 대화 정보 설정
       setConversation(response.data.conversation);
+      
+      // 대화방 상태 확인
+      const conversationStatus = response.data.conversation?.status || '';
+      setIsClosedConversation(conversationStatus.startsWith('closed'));
       
       // 메시지 목록 설정
       setMessages(response.data.messages || []);
@@ -105,11 +110,73 @@ export default function ConversationDetail() {
     fetchConversationDetail();
   };
   
+  // 대화방 종료 함수
+  const closeConversation = async () => {
+    try {
+      Alert.alert(
+        '대화 종료',
+        '대화를 종료하시겠습니까? 상대방에게는 "대화가 종료되었습니다" 메시지가 표시됩니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { 
+            text: '종료', 
+            style: 'destructive', 
+            onPress: async () => {
+              try {
+                // API 호출
+                await axiosInstance.post(`/api/conversations/${id}/close`);
+                
+                // 성공 시 대화방 상태 업데이트
+                setIsClosedConversation(true);
+                
+                // 시스템 메시지 추가
+                const systemMessage = {
+                  id: `temp-${Date.now()}`,
+                  conversation_id: id,
+                  sender_id: null, // 시스템 메시지
+                  type: 'system',
+                  content: '대화가 종료되었습니다.',
+                  voice_file_url: null,
+                  created_at: new Date().toISOString(),
+                  is_read: true
+                };
+                
+                setMessages(prevMessages => [...prevMessages, systemMessage]);
+                
+                // 알림
+                Alert.alert('알림', '대화가 종료되었습니다.');
+                
+                // 스크롤을 맨 아래로 이동
+                if (flatListRef.current) {
+                  setTimeout(() => {
+                    flatListRef.current.scrollToEnd({ animated: true });
+                  }, 300);
+                }
+              } catch (error) {
+                console.error('대화 종료 실패:', error);
+                Alert.alert('오류', '대화 종료에 실패했습니다.');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('대화 종료 요청 실패:', error);
+      Alert.alert('오류', '대화 종료 요청에 실패했습니다.');
+    }
+  };
+  
   // 메시지 전송
   const handleSendMessage = async (uri) => {
     try {
       if (!uri) {
         Alert.alert(t('common.error'), t('conversations.noRecording'));
+        return;
+      }
+      
+      // 종료된 대화방인 경우 메시지 전송 불가
+      if (isClosedConversation) {
+        Alert.alert('알림', '종료된 대화방에는 메시지를 보낼 수 없습니다.');
         return;
       }
 
@@ -172,9 +239,11 @@ export default function ConversationDetail() {
         const newMessage = {
           id: `msg-${id}-${messages.length}`,
           sender_id: currentUser?.id,
-          content: '새 음성 메시지',
-          created_at: new Date().toISOString(),
+          type: 'voice',
+          content: null,
           voice_file_url: uri,
+          duration: recordingDuration || 10,
+          created_at: new Date().toISOString(),
           is_read: true
         };
         
@@ -202,230 +271,170 @@ export default function ConversationDetail() {
     }
   };
   
-  // 즐겨찾기 토글
-  const toggleFavorite = async () => {
-    if (!conversation) return;
+  // 메시지 렌더링
+  const renderMessage = ({ item }) => {
+    const isCurrentUserMessage = item.sender_id === currentUser?.id;
+    const isSystemMessage = item.type === 'system';
     
-    try {
-      // 모의 API 호출
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 대화 정보 업데이트
-      setConversation({
-        ...conversation,
-        favorite: !conversation.favorite,
-      });
-      
-      Alert.alert(
-        '성공', 
-        conversation.favorite ? '즐겨찾기에서 제거되었습니다.' : '즐겨찾기에 추가되었습니다.'
+    if (isSystemMessage) {
+      return (
+        <View style={styles.systemMessageContainer}>
+          <View style={styles.systemMessage}>
+            <Text style={styles.systemMessageText}>{item.content}</Text>
+          </View>
+        </View>
       );
-    } catch (error) {
-      console.error('즐겨찾기 업데이트 실패:', error.response?.data || error.message);
-      Alert.alert('오류', '즐겨찾기 업데이트에 실패했습니다.');
     }
-  };
-  
-  // 메시지 아이템 렌더링
-  const renderMessageItem = ({ item, index }) => {
-    const isMyMessage = item.sender_id === currentUser?.id;
-    const isLastMessage = index === messages.length - 1;
-    const messageDate = new Date(item.created_at);
-    
-    // 시간 포맷팅
-    const formattedTime = `${String(messageDate.getHours()).padStart(2, '0')}:${String(messageDate.getMinutes()).padStart(2, '0')}`;
-    
-    // 날짜 포맷팅
-    const formattedDate = `${messageDate.getFullYear()}-${String(messageDate.getMonth() + 1).padStart(2, '0')}-${String(messageDate.getDate()).padStart(2, '0')}`;
-    
-    // 날짜 표시 여부 결정 (첫 메시지 또는 날짜가 바뀔 때)
-    const showDate = index === 0 || 
-      new Date(messages[index - 1].created_at).toDateString() !== messageDate.toDateString();
     
     return (
-      <>
-        {showDate && (
-          <View style={styles.dateContainer}>
-            <Text style={styles.dateText}>{formattedDate}</Text>
+      <View style={isCurrentUserMessage ? styles.myMessageContainer : styles.otherMessageContainer}>
+        {!isCurrentUserMessage && (
+          <View style={styles.messageSender}>
+            <Text style={styles.senderName}>{otherUser?.nickname || '알 수 없음'}</Text>
           </View>
         )}
         
-        <View style={[
-          styles.messageContainer,
-          isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer
-        ]}>
-          <View style={styles.messageInfoContainer}>
-            <Text style={styles.senderName}>
-              {isMyMessage ? '나' : otherUser?.nickname || '상대방'}
-            </Text>
-            <View style={styles.messageStatusContainer}>
-              <Text style={styles.messageTime}>{formattedTime}</Text>
-              {isMyMessage && (
-                <Text style={[
-                  styles.readStatus, 
-                  item.is_read ? styles.readStatusRead : styles.readStatusUnread
-                ]}>
-                  {item.is_read ? '읽음' : '안읽음'}
-                </Text>
-              )}
-            </View>
-          </View>
-          
-          <View style={[
-            styles.voicePlayerContainer,
-            isMyMessage ? styles.myVoicePlayer : styles.otherVoicePlayer
-          ]}>
-            {/* 실제 오디오 URL이 없는 경우 더미 플레이어 표시 */}
-            {item.voice_file_url === 'https://example.com/audio.m4a' ? (
-              <View style={styles.dummyPlayer}>
-                <Ionicons name="volume-medium" size={24} color="#999999" />
-                <Text style={styles.dummyPlayerText}>더미 오디오 메시지</Text>
-              </View>
-            ) : (
-              <VoicePlayer 
-                uri={item.voice_file_url} 
-                style={styles.player}
-              />
-            )}
-          </View>
+        <View style={isCurrentUserMessage ? styles.myMessage : styles.otherMessage}>
+          {item.type === 'voice' && item.voice_file_url ? (
+            <VoicePlayer 
+              audioUrl={item.voice_file_url}
+              isPlaying={playingMessageId === item.id}
+              onPlayPause={(playing) => {
+                if (playing) {
+                  setPlayingMessageId(item.id);
+                } else {
+                  setPlayingMessageId(null);
+                }
+              }}
+              duration={item.duration}
+            />
+          ) : (
+            <Text style={styles.messageText}>{item.content || '(내용 없음)'}</Text>
+          )}
         </View>
-      </>
-    );
-  };
-  
-  const renderFooter = () => {
-    if (sendingMessage) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text style={styles.loadingText}>{t('common.loading')}</Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.footer}>
-        <VoiceRecorder
-          onRecordingComplete={(uri) => {
-            setRecordingUri(uri);
-            handleSendMessage(uri);
-          }}
-          maxDuration={30000} // 30초
-          style={styles.recorder}
-          recordingMessage={t('conversations.recordingInstructions')}
-        />
+        
+        <Text style={styles.messageTime}>
+          {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+        </Text>
       </View>
     );
   };
-  
-  if (loading && !conversation) {
-    return (
-      <SafeAreaView style={styles.safeAreaContainer}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text style={styles.loadingText}>로딩 중...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
   
   return (
-    <SafeAreaView style={styles.safeAreaContainer}>
-      <View style={styles.container}>
-        {/* 헤더 */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.push('/')}
-          >
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          
-          <Text style={styles.headerTitle}>
-            {otherUser?.nickname || '대화'}
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.favoriteButton}
-            onPress={toggleFavorite}
-          >
-            <Ionicons 
-              name={conversation?.favorite ? "star" : "star-outline"} 
-              size={24} 
-              color={conversation?.favorite ? "#FFC107" : "#BBBBBB"} 
-            />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      {/* 헤더 */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
         
-        {/* 메시지 목록 */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderMessageItem}
-          contentContainerStyle={styles.messagesList}
-          inverted={false}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          onContentSizeChange={() => {
-            if (flatListRef.current && messages.length > 0) {
-              flatListRef.current.scrollToEnd({ animated: true });
-            }
-          }}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                메시지가 없습니다. 첫 메시지를 보내보세요!
-              </Text>
-            </View>
-          }
-        />
+        <Text style={styles.headerTitle}>
+          {otherUser?.nickname || '대화'}
+          {isClosedConversation && ' (종료됨)'}
+        </Text>
         
-        {/* 녹음기 */}
-        {showRecorder ? (
-          <View style={styles.recorderContainer}>
-            <View style={styles.recorderHeader}>
-              <Text style={styles.recorderTitle}>메시지 녹음</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowRecorder(false)}
-              >
-                <Ionicons name="close" size={24} color="#FF3B30" />
-              </TouchableOpacity>
-            </View>
-            {renderFooter()}
-          </View>
-        ) : (
-          <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={styles.recordButton}
-              onPress={() => setShowRecorder(true)}
-              disabled={sendingMessage}
-            >
-              {sendingMessage ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Ionicons name="mic" size={24} color="#FFFFFF" />
-                  <Text style={styles.recordButtonText}>메시지 녹음하기</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+        {!isClosedConversation && (
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={closeConversation}
+          >
+            <Ionicons name="exit-outline" size={24} color="#FF3B30" />
+          </TouchableOpacity>
         )}
       </View>
+      
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>대화 내용을 불러오는 중...</Text>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messageList}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          />
+          
+          {/* 녹음기 */}
+          {showRecorder ? (
+            <View style={styles.recorderContainer}>
+              <VoiceRecorder 
+                onRecordingComplete={(uri, duration) => {
+                  setRecordingUri(uri);
+                  setRecordingDuration(duration);
+                  handleSendMessage(uri);
+                }}
+                onCancel={() => setShowRecorder(false)}
+              />
+            </View>
+          ) : (
+            !isClosedConversation && (
+              <TouchableOpacity 
+                style={styles.recordButton}
+                onPress={() => setShowRecorder(true)}
+                disabled={sendingMessage}
+              >
+                {sendingMessage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="mic" size={24} color="#FFFFFF" />
+                    <Text style={styles.recordButtonText}>음성메시지 녹음하기</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )
+          )}
+          
+          {/* 종료된 대화방 메시지 */}
+          {isClosedConversation && (
+            <View style={styles.closedBanner}>
+              <Ionicons name="information-circle-outline" size={20} color="#666" />
+              <Text style={styles.closedBannerText}>
+                이 대화는 종료되었습니다
+              </Text>
+            </View>
+          )}
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeAreaContainer: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  container: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
     backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+  },
+  closeButton: {
+    padding: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -437,43 +446,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  favoriteButton: {
-    padding: 4,
-  },
-  messagesList: {
+  messageList: {
     padding: 10,
     paddingBottom: 20,
-  },
-  dateContainer: {
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#999999',
-    backgroundColor: '#F0F0F0',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  messageContainer: {
-    maxWidth: '80%',
-    marginVertical: 5,
   },
   myMessageContainer: {
     alignSelf: 'flex-end',
@@ -481,36 +456,36 @@ const styles = StyleSheet.create({
   otherMessageContainer: {
     alignSelf: 'flex-start',
   },
-  messageInfoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  messageSender: {
     marginBottom: 4,
+  },
+  myMessage: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    overflow: 'hidden',
+    padding: 12,
+  },
+  otherMessage: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    overflow: 'hidden',
+    padding: 12,
   },
   senderName: {
     fontSize: 12,
     fontWeight: 'bold',
     color: '#666666',
   },
+  messageText: {
+    fontSize: 14,
+    color: '#333333',
+  },
   messageTime: {
     fontSize: 12,
     color: '#999999',
-    marginLeft: 4,
+    marginTop: 4,
   },
-  voicePlayerContainer: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  myVoicePlayer: {
-    backgroundColor: '#E3F2FD',
-  },
-  otherVoicePlayer: {
-    backgroundColor: '#F5F5F5',
-  },
-  player: {
-    borderRadius: 12,
-  },
-  inputContainer: {
+  recorderContainer: {
     padding: 10,
     backgroundColor: '#F9F9F9',
     borderTopWidth: 1,
@@ -535,70 +510,35 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
   },
-  recorderContainer: {
-    padding: 10,
-    backgroundColor: '#F9F9F9',
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  recorderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  systemMessageContainer: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginVertical: 16,
+    paddingHorizontal: 16,
   },
-  recorderTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  systemMessage: {
+    backgroundColor: '#E9E9E9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  closeButton: {
-    padding: 4,
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999999',
+  systemMessageText: {
+    fontSize: 12,
+    color: '#666666',
     textAlign: 'center',
   },
-  footer: {
-    padding: 10,
-    backgroundColor: '#F9F9F9',
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  recorder: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  dummyPlayer: {
+  closedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    justifyContent: 'center',
     backgroundColor: '#F0F0F0',
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
-  dummyPlayerText: {
+  closedBannerText: {
     marginLeft: 8,
-    color: '#666666',
     fontSize: 14,
-  },
-  messageStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  readStatus: {
-    fontSize: 10,
-    marginLeft: 4,
-  },
-  readStatusRead: {
-    color: '#4CAF50',
-  },
-  readStatusUnread: {
-    color: '#FF5722',
+    color: '#666666',
   },
 });

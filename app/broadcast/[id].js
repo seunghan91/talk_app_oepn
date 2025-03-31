@@ -121,6 +121,8 @@ export default function BroadcastDetail() {
         type: 'audio/m4a',
       });
       
+      // 브로드캐스트 응답 API 호출
+      // 이 API는 대화방을 생성하고 양쪽 사용자에게 visible 속성을 설정함
       const response = await axiosInstance.post(`/api/broadcasts/${id}/reply`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 60000, // 60초로 타임아웃 늘림 (대용량 파일 업로드 고려)
@@ -130,7 +132,7 @@ export default function BroadcastDetail() {
       
       Alert.alert(
         '답장 완료',
-        '메시지가 성공적으로 전송되었습니다.',
+        '메시지가 성공적으로 전송되었습니다. 이제 대화방에서 대화를 계속할 수 있습니다.',
         [
           { 
             text: '대화 보기', 
