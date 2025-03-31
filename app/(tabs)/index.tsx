@@ -38,24 +38,32 @@ export default function HomeScreen() {
             
             // 캐시 금액 로드 - 지갑 API 호출
             try {
+              // 지갑 API 호출
               const walletResponse = await axiosInstance.get('/api/v1/wallet');
+              console.log('지갑 API 응답:', walletResponse.data);
+              
               if (walletResponse.data && walletResponse.data.balance !== undefined) {
-                const walletBalance = walletResponse.data.balance || 0;
+                const walletBalance = parseInt(walletResponse.data.balance);
+                console.log('지갑 잔액 설정:', walletBalance);
                 setCashAmount(walletBalance);
                 updateUser({ cash_amount: walletBalance });
               } else {
-                // 지갑 API에서 데이터가 없을 경우 프로필의 cash_amount 사용
-                setCashAmount(response.data.user.cash_amount || 5000);
+                // 기본값 설정
+                setCashAmount(0);
+                updateUser({ cash_amount: 0 });
               }
             } catch (walletError) {
               console.error('지갑 정보 로드 실패:', walletError);
-              // 지갑 API 오류 시 프로필의 cash_amount 사용
-              setCashAmount(response.data.user.cash_amount || 5000);
+              // 오류 발생 시 기본값 설정
+              setCashAmount(0);
+              updateUser({ cash_amount: 0 });
             }
           }
         } catch (error) {
           console.error('프로필 새로고침 실패:', error);
-          setCashAmount(user.cash_amount || 5000); // 오류 시 기본값
+          const defaultBalance = user.cash_amount || 5000;
+          console.log('프로필 오류 시 기본 잔액 사용:', defaultBalance);
+          setCashAmount(defaultBalance); // 오류 시 기본값
         }
         
         // 읽지 않은 메시지 수 가져오기
