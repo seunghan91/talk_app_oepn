@@ -75,6 +75,13 @@ export const unstable_settings = {
         edit: 'edit',
       }
     },
+    // 공지사항 관련 경로
+    'announcements': {
+      screens: {
+        index: 'announcements',
+        '[id]': 'announcement-detail',
+      }
+    },
     // 알림 없음 경로
     '+not-found': {
       name: 'Not Found',
