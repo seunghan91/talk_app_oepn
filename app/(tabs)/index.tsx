@@ -180,7 +180,7 @@ export default function HomeScreen() {
               style={styles.cashContainer}
               onPress={goToWalletScreen}
             >
-              <Image source={require('../../assets/images/cash_icon.png')} style={styles.cashIcon} />
+              <Ionicons name="wallet-outline" size={24} color="#007AFF" />
               <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()} {t('common.cash')}</ThemedText>
             </TouchableOpacity>
           ) : (
