@@ -28,7 +28,7 @@ interface Transaction {
 export default function WalletScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, updateUser } = useAuth();
   const [balance, setBalance] = useState<number>(0);
   const [formattedBalance, setFormattedBalance] = useState<string>('0원');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -49,8 +49,12 @@ export default function WalletScreen() {
         // 지갑 정보 조회
         const walletResponse = await axiosInstance.get('/api/v1/wallet');
         if (walletResponse.data) {
-          setBalance(walletResponse.data.balance);
-          setFormattedBalance(walletResponse.data.formatted_balance);
+          const walletBalance = walletResponse.data.balance || 0;
+          setBalance(walletBalance);
+          setFormattedBalance(walletResponse.data.formatted_balance || `${walletBalance.toLocaleString()}원`);
+          
+          // 지갑 잔액을 AuthContext에 업데이트
+          updateUser({ cash_amount: walletBalance });
         }
         
         // 거래 내역 조회
@@ -62,8 +66,11 @@ export default function WalletScreen() {
         console.error('지갑 데이터 로드 실패:', error);
         
         // 테스트 데이터 사용
-        setBalance(5000);
+        const testBalance = 5000;
+        setBalance(testBalance);
         setFormattedBalance('₩5,000');
+        // 테스트 데이터도 AuthContext에 업데이트
+        updateUser({ cash_amount: testBalance });
         
         // 테스트용 거래 내역
         const testTransactions = [

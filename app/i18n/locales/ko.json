@@ -29,7 +29,8 @@
     "networkError": "네트워크 오류",
     "serverNotResponding": "서버가 응답하지 않습니다. 나중에 다시 시도해 주세요",
     "unexpectedError": "예상치 못한 오류가 발생했습니다",
-    "tryAgainLater": "나중에 다시 시도해 주세요"
+    "tryAgainLater": "나중에 다시 시도해 주세요",
+    "cash": "원"
   },
   "home": {
     "welcome": "환영합니다",

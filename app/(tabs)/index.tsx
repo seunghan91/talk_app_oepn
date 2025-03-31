@@ -36,16 +36,26 @@ export default function HomeScreen() {
               // 기타 필요한 정보 업데이트
             });
             
-            // 캐시 금액 설정 (서버에서 실제 데이터 사용)
-            if (response.data.user.cash_amount !== undefined) {
-              setCashAmount(response.data.user.cash_amount);
-            } else {
-              setCashAmount(5000); // 기본값
+            // 캐시 금액 로드 - 지갑 API 호출
+            try {
+              const walletResponse = await axiosInstance.get('/api/v1/wallet');
+              if (walletResponse.data && walletResponse.data.balance !== undefined) {
+                const walletBalance = walletResponse.data.balance || 0;
+                setCashAmount(walletBalance);
+                updateUser({ cash_amount: walletBalance });
+              } else {
+                // 지갑 API에서 데이터가 없을 경우 프로필의 cash_amount 사용
+                setCashAmount(response.data.user.cash_amount || 5000);
+              }
+            } catch (walletError) {
+              console.error('지갑 정보 로드 실패:', walletError);
+              // 지갑 API 오류 시 프로필의 cash_amount 사용
+              setCashAmount(response.data.user.cash_amount || 5000);
             }
           }
         } catch (error) {
           console.error('프로필 새로고침 실패:', error);
-          setCashAmount(5000); // 오류 시 기본값
+          setCashAmount(user.cash_amount || 5000); // 오류 시 기본값
         }
         
         // 읽지 않은 메시지 수 가져오기
@@ -181,7 +191,7 @@ export default function HomeScreen() {
               onPress={goToWalletScreen}
             >
               <Ionicons name="wallet-outline" size={24} color="#007AFF" />
-              <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()} {t('common.cash')}</ThemedText>
+              <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()}원</ThemedText>
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyContainer} />
