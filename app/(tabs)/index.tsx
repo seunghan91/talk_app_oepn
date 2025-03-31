@@ -1,14 +1,14 @@
 // app/(tabs)/index.tsx
-import { Image, StyleSheet, View, TouchableOpacity, Text, Alert, Linking, Platform, RefreshControl, ScrollView } from 'react-native';
+import { Image, StyleSheet, View, TouchableOpacity, Text, Alert, RefreshControl, ScrollView, Platform } from 'react-native';
 import React from 'react';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useEffect, useState, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { registerForPushNotificationsAsync, sendTestNotification, configurePushNotifications } from '../utils/_pushNotificationHelper.util';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native';
@@ -39,10 +39,13 @@ export default function HomeScreen() {
             // 캐시 금액 설정 (서버에서 실제 데이터 사용)
             if (response.data.user.cash_amount !== undefined) {
               setCashAmount(response.data.user.cash_amount);
+            } else {
+              setCashAmount(5000); // 기본값
             }
           }
         } catch (error) {
           console.error('프로필 새로고침 실패:', error);
+          setCashAmount(5000); // 오류 시 기본값
         }
         
         // 읽지 않은 메시지 수 가져오기
@@ -50,9 +53,12 @@ export default function HomeScreen() {
           const notificationsResponse = await axiosInstance.get('/api/notifications/unread_count');
           if (notificationsResponse.data && notificationsResponse.data.count !== undefined) {
             setUnreadMessages(notificationsResponse.data.count);
+          } else {
+            setUnreadMessages(3); // 기본값
           }
         } catch (error) {
           console.error('알림 개수 로드 실패:', error);
+          setUnreadMessages(3); // 오류 시 기본값
         }
       } else {
         // 로그인하지 않은 경우 초기화
@@ -73,59 +79,19 @@ export default function HomeScreen() {
   }, [loadUserInfo]);
 
   useEffect(() => {
-    // 세션 확인 및 푸시 알림 설정
-    const setupNotifications = async () => {
-      // 사용자가 로그인한 상태에서만 푸시 알림 설정
-      if (isAuthenticated && user) {
-        try {
-          // 푸시 알림 권한 요청
-          const { status: existingStatus } = await Notifications.getPermissionsAsync();
-          let finalStatus = existingStatus;
-          
-          if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-          }
-          
-          // 권한이 부여되지 않은 경우 사용자에게 설정 변경 요청
-          if (finalStatus !== 'granted') {
-            Alert.alert(
-              t('notifications.permissionTitle'),
-              t('notifications.permissionMessage'),
-              [
-                { text: t('common.cancel'), style: 'cancel' },
-                { 
-                  text: t('common.settings'), 
-                  onPress: () => Linking.openSettings() 
-                }
-              ]
-            );
-            return;
-          }
-          
-          // Expo 푸시 토큰 가져오기
-          const token = await Notifications.getExpoPushTokenAsync({
-            projectId: Constants.expoConfig?.extra?.eas?.projectId,
-          });
-          
-          // 서버에 토큰 업데이트
-          await axiosInstance.post('/api/users/update_push_token', {
-            token: token.data,
-            device_id: Constants.deviceId || Constants.installationId,
-            platform: Platform.OS
-          });
-          
-          console.log('푸시 알림 설정 완료');
-        } catch (error) {
-          console.error('푸시 알림 설정 오류:', error);
-        }
+    // 푸시 알림 설정
+    configurePushNotifications();
+    
+    // 푸시 알림 권한 요청 및 토큰 획득
+    const setupPushNotifications = async () => {
+      try {
+        await registerForPushNotificationsAsync();
+      } catch (error) {
+        console.error('푸시 알림 설정 실패:', error);
       }
     };
-
-    setupNotifications();
     
-    // 사용자 정보 로드
-    loadUserInfo();
+    setupPushNotifications();
 
     // 알림이 수신되었을 때 실행되는 리스너
     let subscription: Notifications.Subscription | undefined;
@@ -137,6 +103,9 @@ export default function HomeScreen() {
       console.error('알림 리스너 설정 실패:', error);
     }
 
+    // 사용자 정보 로드
+    loadUserInfo();
+
     // 컴포넌트 언마운트 시 리스너 제거
     return () => {
       if (subscription) {
@@ -145,73 +114,54 @@ export default function HomeScreen() {
     };
   }, [isAuthenticated, loadUserInfo]);
 
-  // 방송 화면으로 이동
-  const handleBroadcastPress = () => {
-    if (isAuthenticated) {
-      router.push('/broadcast');
-    } else {
-      Alert.alert(
-        t('auth.loginRequired'),
-        t('auth.loginRequiredMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
-        ]
-      );
-    }
-  };
-
-  // 탑업 화면으로 이동
-  const handleTopupPress = () => {
-    if (isAuthenticated) {
-      router.push('/cash/topup' as any);
-    } else {
-      Alert.alert(
-        t('auth.loginRequired'),
-        t('auth.loginRequiredMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
-        ]
-      );
-    }
-  };
-
   // 녹음 화면으로 이동
-  const handleRecordPress = () => {
-    if (isAuthenticated) {
-      router.push('/record' as any);
-    } else {
+  const goToRecordScreen = () => {
+    if (!isAuthenticated) {
+      // 로그인하지 않은 경우 로그인 화면으로 이동
       Alert.alert(
-        t('auth.loginRequired'),
-        t('auth.loginRequiredMessage'),
+        t('common.notice'),
+        t('profile.loginRequired'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          {
+            text: t('common.cancel'),
+            style: 'cancel',
+          },
+          {
+            text: t('profile.login'),
+            onPress: () => router.push('/auth' as any),
+          },
         ]
       );
+      return;
     }
+    
+    router.push('/broadcast/record' as any);
+  };
+
+  // 프로필 화면으로 이동
+  const goToProfileScreen = () => {
+    router.push('/profile' as any);
   };
 
   // 알림 화면으로 이동
-  const handleNotificationsPress = () => {
-    if (isAuthenticated) {
-      router.push('/notifications');
-    } else {
-      Alert.alert(
-        t('auth.loginRequired'),
-        t('auth.loginRequiredMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
-        ]
-      );
-    }
+  const goToNotificationsScreen = () => {
+    router.push('/notifications' as any);
+  };
+  
+  // 로그인 화면으로 이동
+  const goToLoginScreen = () => {
+    router.push('/auth' as any);
+  };
+
+  // 지갑 화면으로 이동
+  const goToWalletScreen = () => {
+    router.push('/wallet' as any);
   };
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      style={styles.safeArea}
+      contentContainerStyle={styles.scrollContainer}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -221,11 +171,15 @@ export default function HomeScreen() {
         />
       }
     >
-      <ThemedView style={styles.header}>
-        <View style={styles.userInfo}>
+      <ThemedView style={styles.container}>
+        {/* 상단 헤더 */}
+        <ThemedView style={styles.header}>
           {/* 좌측: 캐시 금액 */}
           {isAuthenticated ? (
-            <TouchableOpacity style={styles.cashContainer} onPress={handleTopupPress}>
+            <TouchableOpacity 
+              style={styles.cashContainer}
+              onPress={goToWalletScreen}
+            >
               <Image source={require('../../assets/images/cash_icon.png')} style={styles.cashIcon} />
               <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()} {t('common.cash')}</ThemedText>
             </TouchableOpacity>
@@ -233,188 +187,198 @@ export default function HomeScreen() {
             <View style={styles.emptyContainer} />
           )}
 
-          {/* 우측: 알림 아이콘 */}
-          <TouchableOpacity onPress={handleNotificationsPress} style={styles.notificationContainer}>
-            <Ionicons name="notifications-outline" size={24} color="#333333" />
-            {unreadMessages > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
-              </View>
+          {/* 우측: 프로필 및 알림 버튼 */}
+          <ThemedView style={styles.headerButtons}>
+            {isAuthenticated && (
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={goToNotificationsScreen}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#007AFF" />
+                {unreadMessages > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
-        </View>
+            
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={goToProfileScreen}
+            >
+              <Ionicons name="person-circle-outline" size={28} color="#007AFF" />
+            </TouchableOpacity>
+          </ThemedView>
+        </ThemedView>
+
+        {/* 메인 콘텐츠 */}
+        <ThemedView style={styles.content}>
+          {/* 로그인 상태 표시 */}
+          {isAuthenticated && user ? (
+            <ThemedView style={styles.userInfoContainer}>
+              <ThemedText style={styles.userInfoText}>
+                {user.nickname}님으로 로그인 되었습니다
+              </ThemedText>
+            </ThemedView>
+          ) : (
+            <ThemedView style={styles.loginRequiredContainer}>
+              <ThemedText style={styles.loginRequiredText}>
+                {t('profile.loginRequired')}
+              </ThemedText>
+              <StylishButton 
+                title={t('profile.login')} 
+                onPress={goToLoginScreen}
+                type="primary"
+                size="medium"
+                icon={<Ionicons name="log-in" size={18} color="#FFFFFF" />}
+              />
+            </ThemedView>
+          )}
+
+          {/* 중앙 녹음 버튼 */}
+          <ThemedView style={styles.recordButtonContainer}>
+            <TouchableOpacity 
+              style={[styles.recordButton, !isAuthenticated && styles.recordButtonDisabled]}
+              onPress={goToRecordScreen}
+            >
+              <Ionicons name="mic" size={64} color="#FFFFFF" />
+            </TouchableOpacity>
+            <ThemedText style={styles.recordButtonText}>
+              {t('broadcast.recordingInstructions')}
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
       </ThemedView>
-
-      {/* 퀵 액션 버튼 */}
-      <ThemedView style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleBroadcastPress}>
-          <Ionicons name="mic" size={28} color="#3498db" style={styles.actionIcon} />
-          <ThemedText style={styles.actionText}>{t('home.broadcast')}</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleRecordPress}>
-          <Ionicons name="recording" size={28} color="#e74c3c" style={styles.actionIcon} />
-          <ThemedText style={styles.actionText}>{t('home.record')}</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleTopupPress}>
-          <Ionicons name="card" size={28} color="#2ecc71" style={styles.actionIcon} />
-          <ThemedText style={styles.actionText}>{t('home.topup')}</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-
-      {/* 인기 방송 목록 */}
-      <ThemedView style={styles.sectionHeader}>
-        <ThemedText style={styles.sectionTitle}>{t('home.popularBroadcasts')}</ThemedText>
-      </ThemedView>
-
-      {/* 샘플 방송 (실제로는 API에서 가져온 데이터로 대체) */}
-      <TouchableOpacity style={styles.broadcastItem} onPress={() => router.push('/broadcast/detail/1')}>
-        <Image 
-          source={{uri: 'https://randomuser.me/api/portraits/women/33.jpg'}}
-          style={styles.broadcastImage}
-        />
-        <View style={styles.broadcastDetails}>
-          <ThemedText style={styles.broadcastTitle}>보이는 라디오 방송</ThemedText>
-          <ThemedText style={styles.broadcastSubtitle}>현재 청취자: 238명</ThemedText>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.broadcastItem} onPress={() => router.push('/broadcast/detail/2')}>
-        <Image 
-          source={{uri: 'https://randomuser.me/api/portraits/men/46.jpg'}}
-          style={styles.broadcastImage}
-        />
-        <View style={styles.broadcastDetails}>
-          <ThemedText style={styles.broadcastTitle}>심야 토크쇼</ThemedText>
-          <ThemedText style={styles.broadcastSubtitle}>현재 청취자: 124명</ThemedText>
-        </View>
-      </TouchableOpacity>
-
-      {/* 더 많은 방송 보기 버튼 */}
-      <View style={styles.buttonContainer}>
-        <StylishButton 
-          title={t('home.viewMoreBroadcasts')}
-          onPress={() => router.push('/broadcast/list' as any)}
-          type="outline"
-        />
-      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 10 : 50,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
   },
   cashContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F0F8FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   cashIcon: {
     width: 24,
     height: 24,
-    marginRight: 4,
+    marginRight: 8,
+  },
+  emptyContainer: {
+    width: 100,
   },
   cashAmount: {
-    fontSize: 14,
+    marginLeft: 6,
     fontWeight: 'bold',
+    color: '#007AFF',
   },
-  notificationContainer: {
+  headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerButton: {
+    position: 'relative',
+    marginLeft: 15,
+    padding: 5
+  },
   badge: {
     position: 'absolute',
-    right: -6,
-    top: -6,
-    backgroundColor: '#FF0000',
+    top: 0,
+    right: 0,
+    backgroundColor: '#FF3B30',
     borderRadius: 10,
-    width: 20,
+    minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF'
   },
   badgeText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  actionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-  },
-  actionIcon: {
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 12,
-  },
-  sectionHeader: {
+  content: {
+    flex: 1,
     padding: 16,
-    backgroundColor: '#F5F5F5',
   },
-  sectionTitle: {
+  userInfoContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  userInfoText: {
     fontSize: 16,
-    fontWeight: 'bold',
   },
-  broadcastItem: {
-    flexDirection: 'row',
+  loginRequiredContainer: {
+    marginBottom: 16,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF3B30',
+    alignItems: 'center',
   },
-  broadcastImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+  loginRequiredText: {
+    fontSize: 16,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-  broadcastDetails: {
+  recordButtonContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  broadcastTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  recordButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+    marginBottom: 16,
   },
-  broadcastSubtitle: {
-    fontSize: 14,
-    color: '#777777',
+  recordButtonDisabled: {
+    backgroundColor: '#CCCCCC',
   },
-  emptyText: {
+  recordButtonText: {
     textAlign: 'center',
-    padding: 20,
-    color: '#777777',
-  },
-  buttonContainer: {
-    padding: 16,
-  },
-  emptyContainer: {
-    width: 100,
+    fontSize: 16,
+    marginTop: 16,
+    color: '#666666',
   },
 });
