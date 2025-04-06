@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { registerForPushNotificationsAsync, sendTestNotification, configurePushNotifications } from '../utils/_pushNotificationHelper.util';
+import { registerForPushNotificationsAsync, sendTestNotification, configurePushNotifications } from '../utils/pushNotifications';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native';
 import StylishButton from '../../components/StylishButton';
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 10 : 50,
+    paddingTop: Platform.OS === 'ios' ? 50 : 60, // 상단 패딩 값을 증가시킴
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
@@ -345,6 +345,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+    paddingBottom: 30, // 하단 여백 추가
   },
   userInfoContainer: {
     marginBottom: 16,
@@ -383,11 +384,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 8,
+      },
+      default: {
+        boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.3)',
+      }
+    }),
     marginBottom: 16,
   },
   recordButtonDisabled: {

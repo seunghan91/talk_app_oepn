@@ -9,7 +9,7 @@ import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
 import { SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { registerForPushNotificationsAsync, sendTestNotification } from '../utils/_pushNotificationHelper.util';
+import { registerForPushNotificationsAsync, sendTestNotification } from '../utils/pushNotifications';
 import axiosInstance from '../lib/axios';
 
 // 알림 설정 인터페이스 정의

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { registerForPushNotificationsAsync, sendTestNotification } from '../utils/_pushNotificationHelper.util';
+import { registerForPushNotificationsAsync, sendTestNotification } from '../utils/pushNotifications';
 import axiosInstance from '../lib/axios';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
