@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { Alert } from 'react-native';
+import mockResponsesAuth from './mockData/auth';
+import mockResponsesBroadcasts from './mockData/broadcasts';
 
 // 개발 환경인지 확인
 const isDev = __DEV__;
@@ -12,12 +14,15 @@ const isDev = __DEV__;
 const isWeb = Platform.OS === 'web';
 
 // API 서버 URL 설정
-const API_URL = (() => {
-  // 프로덕션 환경과 개발 환경 모두 Render.com 배포 URL 사용
-  return 'https://talkk-api.onrender.com';
-})();
+const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://api.example.com';
 
-console.log(`[API 설정] 현재 환경: ${isDev ? '개발' : '프로덕션'}, 플랫폼: ${Platform.OS}, API URL: ${API_URL}`);
+// 테스트 모드 사용 여부 설정
+const USE_MOCK_DATA = true;
+
+// API 요청 타임아웃 설정
+const TIMEOUT = 10000;
+
+console.log(`[API 설정] 현재 환경: ${isDev ? '개발' : '프로덕션'}, 플랫폼: ${Platform.OS}, API URL: ${SERVER_URL}`);
 
 // API 서버 연결 상태 확인 함수
 const checkServerConnection = async () => {
@@ -28,7 +33,7 @@ const checkServerConnection = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
     
-    const url = `${API_URL}/api/health_check`;
+    const url = `${SERVER_URL}/api/health_check`;
     console.log(`[API 연결 테스트] 요청 URL: ${url}`);
     
     const response = await fetch(url, {
@@ -68,12 +73,12 @@ checkServerConnection().then(isConnected => {
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: API_URL,
-  timeout: 30000, // 30초
+  baseURL: SERVER_URL,
+  timeout: TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
+    'Accept': 'application/json'
+  }
 });
 
 // 랜덤 닉네임 생성 함수
@@ -103,184 +108,69 @@ const generateRandomNickname = () => {
 
 // 모의 응답 데이터
 const mockResponses = {
-  '/api/generate_random_nickname': {
-    nickname: generateRandomNickname()
-  },
-  '/api/auth/request_code': {
-    message: '인증코드가 발송되었습니다.',
-    success: true,
-    test_code: '123456' // 테스트용 인증코드 추가
-  },
-  '/api/auth/verify_code': {
-    message: '인증코드가 확인되었습니다.',
-    success: true,
-    verified: true
-  },
-  '/api/auth/register': (config) => {
-    // 요청 데이터 파싱
-    const requestData = JSON.parse(config.data || '{}');
-    const { phone_number, password, nickname } = requestData;
-    
-    return {
-      message: '회원가입에 성공했습니다.',
-      token: `test_token_${Date.now()}`,
-      user: {
-        id: Math.floor(Math.random() * 1000) + 10,
-        phone_number: phone_number,
-        nickname: nickname || generateRandomNickname(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    };
-  },
-  '/api/auth/login': (config) => {
-    // 요청 데이터 파싱
-    const requestData = JSON.parse(config.data || '{}');
-    const user = requestData.user || {};
-    const { phone_number, password } = user;
-    
-    // 요청 데이터 로깅
-    console.log('[테스트] 로그인 요청 데이터:', JSON.stringify(requestData, null, 2));
-    
-    // 테스트 계정 정보
-    const testAccounts = [
-      { phone: '01011111111', password: 'password', id: 1, nickname: 'A - 김철수', gender: 'male' },
-      { phone: '01022222222', password: 'password', id: 2, nickname: 'B - 이영희', gender: 'female' },
-      { phone: '01033333333', password: 'password', id: 3, nickname: 'C - 박지민', gender: 'male' },
-      { phone: '01044444444', password: 'password', id: 4, nickname: 'D - 최수진', gender: 'female' },
-      { phone: '01055555555', password: 'password', id: 5, nickname: 'E - 정민준', gender: 'male' }
-    ];
-    
-    // 테스트 계정 확인
-    const account = testAccounts.find(acc => acc.phone === phone_number && acc.password === password);
-    
-    if (account) {
-      console.log(`[테스트] 계정 로그인 성공: ${account.nickname}`);
-      return {
-        message: '로그인에 성공했습니다.',
-        token: `test_token_${account.id}_${Date.now()}`,
-        user: {
-          id: account.id,
-          phone_number: account.phone,
-          nickname: account.nickname,
-          gender: account.gender,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      };
-    } else {
-      console.log('[테스트] 계정 로그인 실패: 일치하는 계정 정보 없음');
-      console.log('요청된 전화번호:', phone_number);
-      console.log('요청된 비밀번호:', password ? '[비밀번호 입력됨]' : '[비밀번호 없음]');
-      
-      // 로그인 실패 시 오류 응답
-      throw {
-        response: {
-          status: 401,
-          data: { error: '전화번호 또는 비밀번호가 올바르지 않습니다.' }
-        }
-      };
-    }
-  },
-  '/api/broadcasts': (config) => {
-    // 테스트용 브로드캐스트 응답 생성
-    const now = new Date();
-    const expiry = new Date(now);
-    expiry.setDate(expiry.getDate() + 6); // 6일 후 만료
-    
-    return {
-      message: "방송이 성공적으로 생성되었습니다.",
-      broadcast: {
-        id: Date.now(),
-        created_at: now.toISOString(),
-        expired_at: expiry.toISOString(),
-        user: {
-          id: 2, // 이영희의 ID
-          nickname: "B - 이영희"
-        }
-      },
-      recipient_count: 4, // 자기 자신 제외
-      recipients: [
-        { id: 1, nickname: "김철수" },
-        { id: 3, nickname: "박지민" },
-        { id: 4, nickname: "최수진" },
-        { id: 5, nickname: "정민준" }
-      ]
-    };
-  },
+  // auth 및 broadcasts 관련 모의 응답은 각각의 모듈에서 가져옵니다
+  ...mockResponsesAuth,
+  ...mockResponsesBroadcasts,
+  
+  // 아직 분리되지 않은 다른 모의 응답들...
   '/api/conversations': (config) => {
     // 현재 사용자 ID (JWT 토큰에서 추출해야 함)
     const currentUserId = 2; // 예시: 이영희 ID
     
     // 사용자에게 표시 가능한 대화방만 반환
     return {
+      success: true,
       conversations: [
         {
           id: 1,
-          user_a_id: 2, // 이영희
-          user_b_id: 1, // 김철수
-          user_a: { id: 2, nickname: "이영희" },
-          user_b: { id: 1, nickname: "김철수" },
-          is_visible_to_user_a: true,
-          is_visible_to_user_b: true,
-          status: "active",
-          broadcast_id: 12345,
-          created_at: "2023-03-15T14:00:00Z",
-          updated_at: "2023-03-15T14:30:00Z",
-          current_user_id: currentUserId,
-          last_message: {
-            content: "음성 메시지",
-            type: "voice",
-            voice_file_url: "https://example.com/audio/message1.m4a",
-            created_at: "2023-03-15T14:30:00Z",
-            is_read: false,
+          with_user: {
+            id: 1,
+            nickname: "김철수",
+            gender: "male"
           },
-          unread_count: 3,
+          last_message: {
+            id: 101,
+            content: "음성 메시지",
+            created_at: "2023-03-15T14:30:00Z",
+            message_type: "voice"
+          },
+          updated_at: "2023-03-15T14:30:00Z",
+          favorite: false
         },
         {
           id: 2,
-          user_a_id: 2, // 이영희
-          user_b_id: 3, // 박지민
-          user_a: { id: 2, nickname: "이영희" },
-          user_b: { id: 3, nickname: "박지민" },
-          is_visible_to_user_a: true,
-          is_visible_to_user_b: false, // 박지민이 응답하지 않음
-          status: "active",
-          broadcast_id: 12346,
-          created_at: "2023-03-14T09:00:00Z",
-          updated_at: "2023-03-14T09:15:00Z",
-          current_user_id: currentUserId,
-          last_message: {
-            content: "음성 메시지",
-            type: "voice",
-            voice_file_url: "https://example.com/audio/message2.m4a",
-            created_at: "2023-03-14T09:15:00Z",
-            is_read: true,
+          with_user: {
+            id: 3,
+            nickname: "박지민",
+            gender: "female"
           },
-          unread_count: 0,
+          last_message: {
+            id: 102,
+            content: "음성 메시지",
+            created_at: "2023-03-14T09:15:00Z",
+            message_type: "voice"
+          },
+          updated_at: "2023-03-14T09:15:00Z",
+          favorite: true
         },
         {
           id: 3,
-          user_a_id: 2, // 이영희
-          user_b_id: 4, // 최수진
-          user_a: { id: 2, nickname: "이영희" },
-          user_b: { id: 4, nickname: "최수진" },
-          is_visible_to_user_a: true,
-          is_visible_to_user_b: true,
-          status: "closed_by_user_b", // 최수진이 대화를 종료함
-          broadcast_id: 12347,
-          created_at: "2023-03-13T10:00:00Z",
-          updated_at: "2023-03-13T16:45:00Z",
-          current_user_id: currentUserId,
-          last_message: {
-            content: "대화가 종료되었습니다.",
-            type: "system",
-            created_at: "2023-03-13T16:45:00Z",
-            is_read: true,
+          with_user: {
+            id: 4,
+            nickname: "최수진",
+            gender: "female"
           },
-          unread_count: 0,
+          last_message: {
+            id: 103,
+            content: "대화가 종료되었습니다.",
+            created_at: "2023-03-13T16:45:00Z",
+            message_type: "system"
+          },
+          updated_at: "2023-03-13T16:45:00Z",
+          favorite: false
         }
-      ]
+      ],
+      request_id: `req-${Date.now()}`
     };
   },
   // 개별 대화방 정보
@@ -289,34 +179,36 @@ const mockResponses = {
     // 현재 사용자 ID (JWT 토큰에서 추출해야 함)
     const currentUserId = 2; // 예시: 이영희 ID
     
+    let otherUserName = "김철수";
+    let otherUserId = 1;
+    
+    // 대화방 ID에 따라 상대방 정보 변경
+    if (conversationId === 2) {
+      otherUserName = "박지민";
+      otherUserId = 3;
+    } else if (conversationId === 3) {
+      otherUserName = "최수진";
+      otherUserId = 4;
+    }
+    
     // 대화방 상태 확인
     let status = "active";
-    let is_visible_to_user_a = true;
-    let is_visible_to_user_b = true;
     
     // 대화방 ID가 3인 경우 종료된 대화방
     if (conversationId === 3) {
-      status = "closed_by_user_b";
-    }
-    
-    // 대화방 ID가 2인 경우 상대방에게 보이지 않는 대화방
-    if (conversationId === 2) {
-      is_visible_to_user_b = false;
+      status = "closed";
     }
     
     const conversation = {
       id: conversationId,
-      user_a_id: 2, // 이영희
-      user_b_id: 1, // 김철수
-      user_a: { id: 2, nickname: "이영희" },
-      user_b: { id: 1, nickname: "김철수" },
-      is_visible_to_user_a: is_visible_to_user_a,
-      is_visible_to_user_b: is_visible_to_user_b,
       status: status,
-      broadcast_id: 12345,
       created_at: "2023-03-15T14:00:00Z",
       updated_at: "2023-03-15T14:30:00Z",
-      current_user_id: currentUserId
+      with_user: {
+        id: otherUserId,
+        nickname: otherUserName,
+        gender: "unspecified"
+      }
     };
     
     // 메시지 목록
@@ -324,8 +216,8 @@ const mockResponses = {
       {
         id: 1,
         conversation_id: conversationId,
-        sender_id: 2, // 이영희
-        type: "voice",
+        sender: { id: 2, nickname: "이영희" },
+        message_type: "voice",
         content: null, // 음성 메시지는 content 없음
         voice_file_url: "https://example.com/audio/broadcast1.m4a",
         duration: 15, // 15초
@@ -339,37 +231,36 @@ const mockResponses = {
       messages.push({
         id: 2,
         conversation_id: conversationId,
-        sender_id: 1, // 김철수
-        type: "voice",
+        sender: { id: otherUserId, nickname: otherUserName },
+        message_type: "voice",
         content: null,
         voice_file_url: "https://example.com/audio/reply1.m4a",
-        duration: 10, // 10초
-        created_at: "2023-03-15T14:10:00Z",
+        duration: 8, // 8초
+        created_at: "2023-03-15T14:15:00Z",
         is_read: true
       });
       
       messages.push({
         id: 3,
         conversation_id: conversationId,
-        sender_id: 2, // 이영희
-        type: "voice",
+        sender: { id: 2, nickname: "이영희" },
+        message_type: "voice",
         content: null,
-        voice_file_url: "https://example.com/audio/message1.m4a",
-        duration: 8, // 8초
-        created_at: "2023-03-15T14:20:00Z",
-        is_read: true
+        voice_file_url: "https://example.com/audio/message3.m4a",
+        duration: 12, // 12초
+        created_at: "2023-03-15T14:30:00Z",
+        is_read: false
       });
-    } else if (status.startsWith("closed")) {
-      // 종료된 대화방의 경우 시스템 메시지 추가
+    } else if (status === "closed") {
+      // 종료된 대화방인 경우 시스템 메시지 추가
       messages.push({
-        id: 99,
+        id: 2,
         conversation_id: conversationId,
-        sender_id: null, // 시스템 메시지
-        type: "system",
+        sender: null, // 시스템 메시지
+        message_type: "system",
         content: "대화가 종료되었습니다.",
         voice_file_url: null,
-        duration: null,
-        created_at: "2023-03-15T16:45:00Z",
+        created_at: "2023-03-15T15:00:00Z",
         is_read: true
       });
     }

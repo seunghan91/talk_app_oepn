@@ -75,14 +75,13 @@ export default function ConversationListScreen() {
   };
 
   const renderItem = ({ item }) => {
-    // 현재 사용자 기준으로 상대방 정보 추출
-    const currentUserId = user ? user.id : null;
-    const isUserA = currentUserId === item.user_a_id;
-    const withUser = isUserA ? item.user_b : item.user_a;
-    const lastMessage = item.last_message || { content: '', created_at: '' };
+    // 대화 상대 정보와 마지막 메시지 정보 추출
+    const withUser = item.with_user || { id: 0, nickname: '알 수 없음', gender: 'unspecified' };
+    const lastMessage = item.last_message || { id: 0, content: '', created_at: '', message_type: 'text' };
     
     // 대화방 상태에 따른 스타일 및 표시 설정
-    const isClosedConversation = item.status && item.status.startsWith('closed');
+    const isClosedConversation = lastMessage.message_type === 'system' && 
+                                lastMessage.content === '대화가 종료되었습니다.';
     
     return (
       <TouchableOpacity
@@ -111,7 +110,7 @@ export default function ConversationListScreen() {
           >
             {isClosedConversation 
               ? '대화가 종료되었습니다' 
-              : (lastMessage.content || (lastMessage.type === 'voice' ? '음성 메시지' : '새로운 대화'))}
+              : (lastMessage.content || (lastMessage.message_type === 'voice' ? '음성 메시지' : '새로운 대화'))}
           </ThemedText>
           
           {isClosedConversation && (

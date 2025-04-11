@@ -50,25 +50,21 @@ export default function ConversationDetail() {
       
       // 대화방 상태 확인
       const conversationStatus = response.data.conversation?.status || '';
-      setIsClosedConversation(conversationStatus.startsWith('closed'));
+      setIsClosedConversation(conversationStatus === 'closed');
       
       // 메시지 목록 설정
       setMessages(response.data.messages || []);
       
-      // 현재 사용자와 상대방 정보 설정
-      const conv = response.data.conversation;
-      if (conv) {
-        // 현재 사용자 ID 확인 (JWT 토큰에서 추출)
-        const currentUserId = await getCurrentUserId();
-        
-        // 현재 사용자와 상대방 정보 설정
-        if (conv.user_a_id === currentUserId) {
-          setCurrentUser(conv.user_a);
-          setOtherUser(conv.user_b);
-        } else {
-          setCurrentUser(conv.user_b);
-          setOtherUser(conv.user_a);
-        }
+      // 상대방 정보 설정
+      const withUser = response.data.conversation?.with_user;
+      if (withUser) {
+        setOtherUser(withUser);
+      }
+      
+      // 현재 사용자 정보 설정 (JWT 토큰에서 추출)
+      const userData = await getCurrentUser();
+      if (userData) {
+        setCurrentUser(userData);
       }
     } catch (error) {
       console.error('대화 정보 로드 실패:', error.response?.data || error.message);
@@ -79,20 +75,27 @@ export default function ConversationDetail() {
     }
   };
   
-  // 현재 사용자 ID 가져오기
-  const getCurrentUserId = async () => {
+  // 현재 사용자 정보 가져오기
+  const getCurrentUser = async () => {
     try {
       // AsyncStorage에서 사용자 정보 가져오기
       const userJson = await AsyncStorage.getItem('user');
       if (userJson) {
-        const userData = JSON.parse(userJson);
-        return userData.id;
+        return JSON.parse(userJson);
       }
       return null;
     } catch (error) {
       console.error('사용자 정보 가져오기 실패:', error);
       return null;
     }
+  };
+  
+  // 시간 포맷 함수
+  const formatTime = (date) => {
+    if (!date || !(date instanceof Date) || isNaN(date)) {
+      return '';
+    }
+    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   };
   
   useEffect(() => {
@@ -273,51 +276,88 @@ export default function ConversationDetail() {
   
   // 메시지 렌더링
   const renderMessage = ({ item }) => {
-    const isCurrentUserMessage = item.sender_id === currentUser?.id;
-    const isSystemMessage = item.type === 'system';
+    // 메시지 송신자 판별
+    const isCurrentUserMessage = item.sender?.id === currentUser?.id;
     
-    if (isSystemMessage) {
+    // 메시지 타입에 따른 렌더링 처리
+    if (item.message_type === 'system') {
+      // 시스템 메시지 렌더링
       return (
         <View style={styles.systemMessageContainer}>
-          <View style={styles.systemMessage}>
-            <Text style={styles.systemMessageText}>{item.content}</Text>
+          <Text style={styles.systemMessageText}>{item.content}</Text>
+        </View>
+      );
+    } else if (item.message_type === 'voice') {
+      // 음성 메시지 렌더링
+      return (
+        <View style={[
+          styles.messageContainer,
+          isCurrentUserMessage ? styles.myMessageContainer : styles.otherMessageContainer
+        ]}>
+          <View style={[
+            styles.messageBubble,
+            isCurrentUserMessage ? styles.myMessageBubble : styles.otherMessageBubble
+          ]}>
+            {/* 음성 메시지 플레이어 */}
+            <VoicePlayer
+              uri={item.voice_file_url}
+              messageId={item.id}
+              duration={item.duration || 0}
+              isMyMessage={isCurrentUserMessage}
+              isPlaying={isPlaying && playingMessageId === item.id}
+              onPlay={() => {
+                if (playingMessageId !== item.id) {
+                  setPlayingMessageId(item.id);
+                  setIsPlaying(true);
+                }
+              }}
+              onPause={() => {
+                if (playingMessageId === item.id) {
+                  setIsPlaying(false);
+                }
+              }}
+              onStop={() => {
+                if (playingMessageId === item.id) {
+                  setPlayingMessageId(null);
+                  setIsPlaying(false);
+                }
+              }}
+            />
           </View>
+          
+          {/* 메시지 전송 시간 */}
+          <Text style={[
+            styles.messageTime,
+            isCurrentUserMessage ? styles.myMessageTime : styles.otherMessageTime
+          ]}>
+            {formatTime(new Date(item.created_at))}
+          </Text>
+        </View>
+      );
+    } else {
+      // 텍스트 메시지 렌더링
+      return (
+        <View style={[
+          styles.messageContainer,
+          isCurrentUserMessage ? styles.myMessageContainer : styles.otherMessageContainer
+        ]}>
+          <View style={[
+            styles.messageBubble,
+            isCurrentUserMessage ? styles.myMessageBubble : styles.otherMessageBubble
+          ]}>
+            <Text style={styles.messageText}>{item.content}</Text>
+          </View>
+          
+          {/* 메시지 전송 시간 */}
+          <Text style={[
+            styles.messageTime,
+            isCurrentUserMessage ? styles.myMessageTime : styles.otherMessageTime
+          ]}>
+            {formatTime(new Date(item.created_at))}
+          </Text>
         </View>
       );
     }
-    
-    return (
-      <View style={isCurrentUserMessage ? styles.myMessageContainer : styles.otherMessageContainer}>
-        {!isCurrentUserMessage && (
-          <View style={styles.messageSender}>
-            <Text style={styles.senderName}>{otherUser?.nickname || '알 수 없음'}</Text>
-          </View>
-        )}
-        
-        <View style={isCurrentUserMessage ? styles.myMessage : styles.otherMessage}>
-          {item.type === 'voice' && item.voice_file_url ? (
-            <VoicePlayer 
-              audioUrl={item.voice_file_url}
-              isPlaying={playingMessageId === item.id}
-              onPlayPause={(playing) => {
-                if (playing) {
-                  setPlayingMessageId(item.id);
-                } else {
-                  setPlayingMessageId(null);
-                }
-              }}
-              duration={item.duration}
-            />
-          ) : (
-            <Text style={styles.messageText}>{item.content || '(내용 없음)'}</Text>
-          )}
-        </View>
-        
-        <Text style={styles.messageTime}>
-          {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-        </Text>
-      </View>
-    );
   };
   
   return (
@@ -515,12 +555,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     paddingHorizontal: 16,
   },
-  systemMessage: {
-    backgroundColor: '#E9E9E9',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
   systemMessageText: {
     fontSize: 12,
     color: '#666666',
@@ -540,5 +574,29 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#666666',
+  },
+  messageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  messageBubble: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#E3F2FD',
+  },
+  myMessageBubble: {
+    backgroundColor: '#E3F2FD',
+  },
+  otherMessageBubble: {
+    backgroundColor: '#F5F5F5',
+  },
+  myMessageTime: {
+    color: '#999999',
+    marginLeft: 8,
+  },
+  otherMessageTime: {
+    color: '#999999',
+    marginRight: 8,
   },
 });
