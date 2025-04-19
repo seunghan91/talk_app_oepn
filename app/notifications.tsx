@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, Alert, View, Text } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, Alert, View, Text, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
 import StylishButton from '../components/StylishButton';
+import axiosInstance from './lib/axios';
+import { useAuth } from './context/AuthContext';
 
 // 알림 타입 정의
 interface Notification {
   id: number;
-  type: 'message' | 'broadcast' | 'system' | 'broadcast_reply' | 'new_message' | 'conversation_closed';
+  type: 'message' | 'broadcast' | 'system' | 'broadcast_reply' | 'new_message' | 'conversation_closed' | 'announcement';
   title: string;
   body: string;
   read: boolean;
@@ -20,66 +22,60 @@ interface Notification {
     broadcast_id?: number;
     [key: string]: any;
   };
-  related_id?: number;
+  related_id?: number | null;
 }
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // 알림 데이터 로드
-  useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        // 테스트용 임시 데이터
-        const testNotifications: Notification[] = [
-          {
-            id: 1,
-            type: 'message',
-            title: '새 메시지',
-            body: '홍길동님이 메시지를 보냈습니다.',
-            read: false,
-            created_at: new Date().toISOString(),
-            data: { conversation_id: 123 }
-          },
-          {
-            id: 2,
-            type: 'broadcast',
-            title: '새 브로드캐스트',
-            body: '김철수님이 새 브로드캐스트를 게시했습니다.',
-            read: true,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            data: { broadcast_id: 456 }
-          },
-          {
-            id: 3,
-            type: 'system',
-            title: '시스템 알림',
-            body: '앱이 업데이트되었습니다. 새로운 기능을 확인해보세요.',
-            read: false,
-            created_at: new Date(Date.now() - 86400000).toISOString()
-          }
-        ];
-        
-        setNotifications(testNotifications);
-      } catch (error) {
-        console.error('알림 로드 실패:', error);
-        Alert.alert(t('common.error'), t('notifications.loadError'));
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadNotifications = async () => {
+    if (!isAuthenticated) {
+      router.replace('/');
+      return;
+    }
 
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/api/v1/notifications');
+      
+      if (response.data && response.data.notifications) {
+        setNotifications(response.data.notifications);
+      } else {
+        // 오류 처리
+        console.error('알림 데이터 형식 오류:', response.data);
+        Alert.alert(t('common.error'), t('notifications.loadError'));
+      }
+    } catch (error) {
+      console.error('알림 로드 실패:', error);
+      Alert.alert(t('common.error'), t('notifications.loadError'));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 초기 로드 및 새로고침
+  useEffect(() => {
     loadNotifications();
-  }, [t]);
+  }, [isAuthenticated]);
+
+  // 새로고침 처리
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadNotifications();
+  };
 
   // 알림 읽음 처리
   const markAsRead = async (notification: Notification) => {
     try {
-      // 서버에 읽음 처리 요청 (테스트에서는 생략)
-      // await axiosInstance.post(`/api/notifications/${notification.id}/read`);
+      // 서버에 읽음 처리 요청
+      await axiosInstance.post(`/api/v1/notifications/${notification.id}/read`);
       
       // 로컬 상태 업데이트
       setNotifications(notifications.map(n => 
@@ -126,14 +122,21 @@ export default function NotificationsScreen() {
       case 'conversation_closed':
         // 대화방 종료는 특별한 처리 없음
         break;
+      case 'announcement':
+        if (notification.related_id) {
+          router.push(`/announcements/${notification.related_id}`);
+        } else {
+          router.push('/announcements');
+        }
+        break;
     }
   };
 
   // 모든 알림 읽음 처리
   const markAllAsRead = async () => {
     try {
-      // 서버에 모든 알림 읽음 처리 요청 (테스트에서는 생략)
-      // await axiosInstance.post('/api/notifications/read_all');
+      // 서버에 모든 알림 읽음 처리 요청
+      await axiosInstance.post('/api/v1/notifications/read_all');
       
       // 로컬 상태 업데이트
       setNotifications(notifications.map(n => ({ ...n, read: true })));
@@ -146,9 +149,9 @@ export default function NotificationsScreen() {
   };
 
   // 알림 아이템 렌더링
-  const renderNotificationItem = ({ item }) => {
+  const renderNotificationItem = ({ item }: { item: Notification }) => {
     // 알림 종류에 따른 아이콘 및 색상 결정
-    let iconName: string = 'notifications-outline';
+    let iconName = 'notifications-outline';
     let iconColor = '#007AFF';
     
     switch (item.type) {
@@ -164,29 +167,18 @@ export default function NotificationsScreen() {
         iconName = 'close-circle-outline';
         iconColor = '#FF3B30';
         break;
+      case 'announcement':
+        iconName = 'megaphone-outline';
+        iconColor = '#8E44AD';
+        break;
+      case 'system':
+        iconName = 'information-circle-outline';
+        iconColor = '#3498DB';
+        break;
       default:
         iconName = 'notifications-outline';
         iconColor = '#007AFF';
     }
-    
-    // 알림 클릭 핸들러
-    const handleNotificationPress = () => {
-      // 알림 타입에 따라 다른 화면으로 이동
-      if (item.type === 'broadcast_reply' || item.type === 'new_message') {
-        // 대화방으로 이동
-        if (item.related_id) {
-          router.push(`/conversations/${item.related_id}`);
-        }
-      } else if (item.type === 'system') {
-        // 시스템 알림은 특별한 처리 없음
-      } else {
-        // 기본적으로 홈으로 이동
-        router.push('/');
-      }
-      
-      // 알림 읽음 처리
-      markAsRead(item);
-    };
     
     return (
       <TouchableOpacity 
@@ -194,7 +186,7 @@ export default function NotificationsScreen() {
           styles.notificationItem,
           !item.read && styles.unreadNotification
         ]}
-        onPress={handleNotificationPress}
+        onPress={() => handleNotificationPress(item)}
       >
         <View style={[styles.notificationIcon, { backgroundColor: `${iconColor}20` }]}>
           <Ionicons name={iconName as any} size={24} color={iconColor} />
@@ -204,7 +196,7 @@ export default function NotificationsScreen() {
           <ThemedText style={styles.notificationTitle}>{item.title}</ThemedText>
           <ThemedText style={styles.notificationBody}>{item.body}</ThemedText>
           <ThemedText style={styles.notificationTime}>
-            {new Date(item.created_at).toLocaleString()}
+            {new Date(item.created_at).toLocaleString('ko-KR')}
           </ThemedText>
         </View>
         
@@ -235,7 +227,7 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </ThemedView>
       
-      {loading ? (
+      {loading && !refreshing ? (
         <ThemedView style={styles.emptyContainer}>
           <ThemedText>{t('common.loading')}</ThemedText>
         </ThemedView>
@@ -250,6 +242,14 @@ export default function NotificationsScreen() {
           renderItem={renderNotificationItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#007AFF']}
+              tintColor={'#007AFF'}
+            />
+          }
         />
       )}
     </ThemedView>

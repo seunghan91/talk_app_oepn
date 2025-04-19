@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedView } from '../../components/ThemedView';
-import { ThemedText } from '../../components/ThemedText';
-import StylishButton from '../../components/StylishButton';
-import { useAuth } from '../context/AuthContext';
+import { ThemedView } from '../../../components/ThemedView';
+import { ThemedText } from '../../../components/ThemedText';
+import StylishButton from '../../../components/StylishButton';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FeedbackScreen() {
   const { t } = useTranslation();
@@ -23,12 +23,12 @@ export default function FeedbackScreen() {
   // 제안 제출 핸들러
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert(t('common.error'), t('feedback.titleRequired'));
+      Alert.alert('오류', '제목을 입력해주세요');
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert(t('common.error'), t('feedback.contentRequired'));
+      Alert.alert('오류', '내용을 입력해주세요');
       return;
     }
 
@@ -45,9 +45,9 @@ export default function FeedbackScreen() {
 
       // 성공 메시지 표시
       Alert.alert(
-        t('common.success'),
-        t('feedback.submitSuccess'),
-        [{ text: t('common.ok'), onPress: () => {
+        '성공',
+        '피드백이 성공적으로 제출되었습니다. 소중한 의견 감사합니다.',
+        [{ text: '확인', onPress: () => {
           // 폼 초기화
           setTitle('');
           setContent('');
@@ -56,7 +56,7 @@ export default function FeedbackScreen() {
       );
     } catch (error) {
       console.error('제안 제출 실패:', error);
-      Alert.alert(t('common.error'), t('feedback.submitError'));
+      Alert.alert('오류', '피드백 제출에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,20 +67,20 @@ export default function FeedbackScreen() {
       <ThemedView style={styles.container}>
         {/* 헤더 */}
         <ThemedView style={styles.header}>
-          <ThemedText type="title">{t('feedback.title')}</ThemedText>
+          <ThemedText type="title">피드백</ThemedText>
         </ThemedView>
         
         {/* 설명 */}
         <ThemedView style={styles.descriptionContainer}>
           <Ionicons name="information-circle-outline" size={24} color="#007AFF" style={styles.infoIcon} />
           <ThemedText style={styles.description}>
-            {t('feedback.description')}
+            서비스 개선을 위한 의견이나 버그 리포트를 알려주세요. 여러분의 피드백은 서비스 향상에 큰 도움이 됩니다.
           </ThemedText>
         </ThemedView>
         
         {/* 카테고리 선택 */}
         <ThemedView style={styles.categoryContainer}>
-          <ThemedText style={styles.sectionTitle}>{t('feedback.category')}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>카테고리</ThemedText>
           
           <View style={styles.categoryButtons}>
             <TouchableOpacity
@@ -101,7 +101,7 @@ export default function FeedbackScreen() {
                   category === 'bug' && styles.selectedCategoryText
                 ]}
               >
-                {t('feedback.bugReport')}
+                버그 신고
               </ThemedText>
             </TouchableOpacity>
             
@@ -123,7 +123,7 @@ export default function FeedbackScreen() {
                   category === 'feature' && styles.selectedCategoryText
                 ]}
               >
-                {t('feedback.featureRequest')}
+                기능 요청
               </ThemedText>
             </TouchableOpacity>
             
@@ -145,7 +145,7 @@ export default function FeedbackScreen() {
                   category === 'other' && styles.selectedCategoryText
                 ]}
               >
-                {t('feedback.otherFeedback')}
+                기타 의견
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -153,24 +153,24 @@ export default function FeedbackScreen() {
         
         {/* 제목 입력 */}
         <ThemedView style={styles.inputContainer}>
-          <ThemedText style={styles.sectionTitle}>{t('feedback.titleLabel')}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>제목</ThemedText>
           <TextInput
             style={styles.titleInput}
             value={title}
             onChangeText={setTitle}
-            placeholder={t('feedback.titlePlaceholder')}
+            placeholder="제목을 입력하세요"
             maxLength={100}
           />
         </ThemedView>
         
         {/* 내용 입력 */}
         <ThemedView style={styles.inputContainer}>
-          <ThemedText style={styles.sectionTitle}>{t('feedback.contentLabel')}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>내용</ThemedText>
           <TextInput
             style={styles.contentInput}
             value={content}
             onChangeText={setContent}
-            placeholder={t('feedback.contentPlaceholder')}
+            placeholder="자세한 내용을 입력하세요"
             multiline
             numberOfLines={8}
             textAlignVertical="top"
@@ -179,7 +179,7 @@ export default function FeedbackScreen() {
         
         {/* 제출 버튼 */}
         <StylishButton
-          title={isSubmitting ? t('common.processing') : t('feedback.submit')}
+          title={isSubmitting ? "처리 중..." : "제출하기"}
           onPress={handleSubmit}
           type="primary"
           size="large"
@@ -191,7 +191,7 @@ export default function FeedbackScreen() {
         
         {/* 안내 메시지 */}
         <ThemedText style={styles.note}>
-          {t('feedback.note')}
+          * 답변이 필요한 경우, 고객센터로 문의해주세요.
         </ThemedText>
       </ThemedView>
     </ScrollView>

@@ -55,7 +55,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="feedback"
+        name="feedback/index"
         options={{
           title: '제안하기',
           tabBarIcon: ({ color }) => <Ionicons name="create" size={24} color={color} />,

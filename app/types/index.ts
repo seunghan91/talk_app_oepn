@@ -50,6 +50,13 @@ export interface Notification {
   related_id?: number;
 }
 
+const types = {
+  ErrorType: 'ErrorType',
+  Notification: 'Notification'
+};
+
+export default types;
+
 /**
  * 사용자 타입
  */
