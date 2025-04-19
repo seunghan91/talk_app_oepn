@@ -63,7 +63,8 @@
       },
       "eas": {
         "projectId": "3cd35644-e5e7-4288-b9ff-be27477bbf47"
-      }
+      },
+      "apiUrl": "https://talkk-api.onrender.com"
     },
     "owner": "seunghan91"
   }
