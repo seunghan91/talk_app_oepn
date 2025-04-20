@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "talkk",
-    "schemes": ["talkk", "com.talkapp.talkk"],
+    "schemes": ["talkk", "com.talkapp.talkk2025"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "음성 메시지를 통해 새로운 인연을 만나는 소셜 네트워킹 앱",
@@ -23,14 +23,14 @@
     "runtimeVersion": "appVersion",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.talkapp.talkk"
+      "bundleIdentifier": "com.talkapp.talkk2025"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.talkapp.talkk"
+      "package": "com.talkapp.talkk2025"
     },
     "web": {
       "bundler": "metro",

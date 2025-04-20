@@ -25,7 +25,7 @@ export default function RegisterScreen() {
   const [phoneNumberError, setPhoneNumberError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGenderSelection, setShowGenderSelection] = useState(false);
-  const [selectedGender, setSelectedGender] = useState('unspecified');
+  const [selectedGender, setSelectedGender] = useState('unknown');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -120,29 +120,33 @@ export default function RegisterScreen() {
       // 하이픈 제거한 숫자만 서버로 전송
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       
-      // 테스트 모드에서는 서버 요청을 시도하되, 실패하더라도 테스트 인증번호를 표시
-      let serverResponse = null;
-      let serverError = null;
+      const response = await axiosInstance.post('/api/auth/request_code', {
+        user: {
+          phone_number: digitsOnly
+        }
+      });
       
-      try {
-        const res = await axiosInstance.post('/api/auth/request_code', {
-          user: {
-            phone_number: digitsOnly,
-          }
-        });
-        serverResponse = res.data;
-        console.log('인증코드 요청 성공:', serverResponse);
-      } catch (err) {
-        serverError = err;
-        console.log('인증코드 요청 실패:', 
-          'Status:', err.response?.status, 
-          'Data:', err.response?.data, 
-          'Message:', err.message
+      console.log('인증코드 요청 성공:', response.data);
+      
+      // 이미 가입된 사용자인지 확인 (백엔드에서 user_exists 필드를 반환하도록 수정 필요)
+      if (response.data && response.data.user_exists) {
+        // 이미 가입된 사용자인 경우 비밀번호 찾기 화면으로 안내
+        Alert.alert(
+          t('auth.userExists') || '이미 가입된 번호',
+          t('auth.userExistsMessage') || '이 번호는 이미 가입되어 있습니다. 비밀번호를 찾으시겠습니까?',
+          [
+            {
+              text: t('auth.cancel') || '취소',
+              style: 'cancel'
+            },
+            {
+              text: t('auth.findPassword') || '비밀번호 찾기',
+              onPress: () => router.replace('/auth/forgot-password')
+            }
+          ]
         );
+        return;
       }
-      
-      // 테스트용 인증번호 생성 (실제 서버 응답에서 가져오거나 테스트용 고정값 사용)
-      const testCode = serverResponse?.code || '123456';
       
       // 항상 테스트 인증번호를 표시 (서버 요청 성공 여부와 관계없이)
       Alert.alert(
@@ -385,8 +389,25 @@ export default function RegisterScreen() {
         throw new Error('서버 응답이 올바르지 않습니다.');
       }
     } catch (err) {
-      console.error('예상치 못한 오류:', err);
-      Alert.alert(t('common.error'), t('auth.registerFailed'));
+      console.log('[회원가입] 서버 오류:', err.response?.status, err.response?.data, err.message);
+      
+      // 이미 등록된 사용자인 경우 (422 에러)
+      if (err.response?.status === 422 && err.response?.data?.user_exists) {
+        Alert.alert(
+          t('auth.userExists'),
+          t('auth.userExistsMessage'),
+          [
+            { 
+              text: t('auth.goToLogin'), 
+              onPress: () => router.replace('/auth/login') 
+            }
+          ]
+        );
+      } else {
+        // 서버 오류 메시지가 있으면 표시
+        const errorMessage = err.response?.data?.error || t('auth.registerFailed');
+        Alert.alert(t('common.error'), errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -399,8 +420,9 @@ export default function RegisterScreen() {
 
   // 성별 선택 처리
   const selectGender = (gender) => {
-    console.log('성별 선택:', gender);
     setSelectedGender(gender);
+    setShowGenderSelection(false);
+    console.log('성별 선택:', gender);
     
     // 선택된 성별 로깅
     if (gender === 'unspecified') {
@@ -549,12 +571,12 @@ export default function RegisterScreen() {
                     <Ionicons 
                       name="person" 
                       size={24} 
-                      color={selectedGender === 'unspecified' ? '#8E8E93' : '#666'} 
+                      color={selectedGender === 'unknown' ? '#8E8E93' : '#666'} 
                     />
                     <ThemedText 
                       style={[
                         styles.genderText, 
-                        selectedGender === 'unspecified' && styles.selectedGenderText
+                        selectedGender === 'unknown' && styles.selectedGenderText
                       ]}
                     >
                       {t('auth.unspecified')}

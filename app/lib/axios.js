@@ -17,7 +17,7 @@ const isWeb = Platform.OS === 'web';
 const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://api.example.com';
 
 // 테스트 모드 사용 여부 설정
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false; // 실제 API 요청 사용
 
 // API 요청 타임아웃 설정
 const TIMEOUT = 10000;
@@ -286,7 +286,7 @@ const mockResponses = {
   // 브로드캐스트 답장 API
   '/api/broadcasts/([0-9]+)/reply': (config, matches) => {
     const broadcastId = parseInt(matches[1]);
-    return {
+      return {
       success: true,
       message: "답장이 성공적으로 전송되었습니다.",
       conversation_id: 101,
@@ -298,10 +298,10 @@ const mockResponses = {
         is_visible_to_user_b: true,
         status: "active",
         broadcast_id: broadcastId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    };
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      };
   },
   // 알림 API
   '/api/v1/notifications': (config) => {
@@ -373,8 +373,8 @@ const mockResponses = {
     formatted_balance: '₩5,000',
     transaction_count: 3,
     transactions: [
-      {
-        id: 1,
+    {
+      id: 1,
         amount: 1000,
         type: 'deposit',
         description: '충전',

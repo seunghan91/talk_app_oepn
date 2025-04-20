@@ -87,13 +87,28 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.talkapp.talkk'
+    flavorDimensions += ["store"]
     defaultConfig {
-        applicationId 'com.talkapp.talkk'
+        applicationId 'com.talkapp.talkk2025'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
     }
+    packagingOptions {
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/armeabi/libc++_shared.so'
+    }
+
+    productFlavors {
+        play {
+            dimension "store"
+        }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
