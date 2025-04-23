@@ -838,121 +838,106 @@ export default function RecordScreen() {
 
   // 브로드캐스트 전송
   const sendBroadcast = async () => {
-    if (!recordingUri || uploading) return;
-    
-    // 인증 여부 확인
-    if (!isAuthenticated) {
-      Alert.alert(
-        t('common.notice'),
-        t('auth.loginRequired'),
-        [
-          {
-            text: t('common.cancel'),
-            style: 'cancel'
-          },
-          {
-            text: t('auth.login'),
-            onPress: () => router.push('/auth/login')
-          }
-        ]
-      );
+    if (!recordingUri) {
+      Alert.alert(t('common.error'), t('broadcast.noRecording'));
       return;
     }
-    
+
     setUploading(true);
-    
+
     try {
-      console.log('녹음 파일 정보:', await FileSystem.getInfoAsync(recordingUri));
+      // 오디오 파일 정보 가져오기
+      const fileInfo = await FileSystem.getInfoAsync(recordingUri);
+      
+      if (!fileInfo.exists) {
+        throw new Error('파일이 존재하지 않습니다.');
+      }
+      
+      // 파일 정보 로깅
+      console.log('파일 정보:', fileInfo);
+      
+      // 파일명 및 MIME 타입 결정
+      const fileName = recordingUri.split('/').pop() || `audio_${Date.now()}.m4a`;
+      
+      // 플랫폼별 적절한 MIME 타입 설정
+      const mimeType = Platform.OS === 'ios' 
+                      ? 'audio/m4a' 
+                      : Platform.OS === 'android'
+                        ? 'audio/mp4'
+                        : 'audio/mpeg';
       
       const formData = new FormData();
       
-      // 파일 형식 확인 (파일 경로에 따라 mime 타입 추정)
-      const fileType = recordingUri.endsWith('.m4a') ? 'audio/x-m4a' : 
-                        recordingUri.endsWith('.mp3') ? 'audio/mpeg' : 'audio/aac';
-      
-      // 파일명 설정
-      const fileName = `recording_${Date.now()}.m4a`;
-      
-      // broadcast 객체 안에 audio 파라미터로 파일 추가
-      formData.append('broadcast[audio]', {
+      // 파일 객체 생성 (React Native FormData 호환 타입으로 캐스팅)
+      const fileToUpload: any = {
         uri: recordingUri,
         name: fileName,
-        type: fileType
-      } as any);
+        type: mimeType,
+      };
       
-      // 선택적으로 텍스트 필드 추가
-      formData.append('broadcast[text]', '음성 메시지');
+      // FormData에 파일 추가
+      formData.append('broadcast[audio]', fileToUpload);
       
-      // 수신자 수 지정 (선택 사항)
+      // 추가 파라미터 - snake_case 형식 사용
+      formData.append('broadcast[text]', '새 음성 메시지');
       formData.append('broadcast[recipient_count]', '5');
       
-      // API 요청 로깅
-      console.log('API 요청:', {
-        url: '/api/broadcasts',
-        method: 'post',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json'
-        },
-        data: formData
-      });
+      // 사전 에러 검사 - 업로드 전 파일 정보 확인
+      if (!fileInfo.size || fileInfo.size <= 0) {
+        console.warn('파일 크기가 0 또는 없음:', fileInfo);
+      }
       
+      // 파일 업로드 로깅
+      console.log('업로드할 파일 정보:', {
+        uri: recordingUri,
+        name: fileName,
+        type: mimeType,
+        size: fileInfo.size || 'Unknown'
+      });
+
       // API 요청
       const response = await axiosInstance.post('/api/broadcasts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json'
-        }
+        },
+        timeout: 30000, // 파일 업로드를 위해 타임아웃 연장
       });
-      
-      setUploading(false);
-      
-      console.log('브로드캐스트 전송 응답:', response.data);
-      
-      // 수신자 정보 추출
-      const recipientCount = response.data.recipient_count || Math.floor(Math.random() * 10) + 1;
-      const recipients = response.data.recipients || [];
-      
-      // 수신자 이름 목록 생성 (최대 5명까지만 표시)
-      let recipientNames = recipients.map((r: any) => r.nickname || '익명').slice(0, 5);
-      if (recipients.length > 5) {
-        recipientNames.push(`외 ${recipients.length - 5}명`);
-      }
-      
-      // 수신자가 없는 경우 모의 데이터 사용
-      if (recipientNames.length === 0) {
-        const mockRecipients = [
-          '김철수', '이영희', '박지민', '최수진', '정민준'
-        ].slice(0, Math.min(5, recipientCount));
-        recipientNames = mockRecipients;
-      }
-      
+
       // 성공 메시지 표시
+      console.log('브로드캐스트 전송 성공:', response.data);
       Alert.alert(
-        t('common.success'),
-        `방송이 ${recipientCount}명에게 전송되었습니다\n수신자: ${recipientNames.join(', ')}\n\n${t('broadcast.broadcastExpiry')}`,
+        t('broadcast.success'),
+        t('broadcast.sentSuccessfully'),
         [
-          {
-            text: t('common.ok'),
-            onPress: () => {
-              // 녹음 상태 초기화
-              setRecordingUri(null);
-              setRecordingDuration(0);
-              router.back();
-            }
+          { 
+            text: 'OK', 
+            onPress: () => router.navigate('/broadcast')
           }
         ]
       );
-    } catch (error) {
+    } catch (error: any) { // 타입 명시
       console.error('브로드캐스트 전송 실패:', error);
-      setUploading(false);
       
-      // 실패 메시지 표시
+      // 자세한 오류 정보 기록
+      if (error.response) {
+        // 서버 응답이 있는 경우
+        console.error('서버 응답:', error.response.data);
+        console.error('상태 코드:', error.response.status);
+      } else if (error.request) {
+        // 요청은 보냈으나 응답이 없는 경우
+        console.error('응답 없음:', error.request);
+      } else {
+        // 요청 설정 중 에러
+        console.error('에러 메시지:', error.message);
+      }
+      
+      // 사용자에게 오류 메시지 표시
       Alert.alert(
         t('common.error'),
-        t('broadcast.sendError'),
-        [{ text: t('common.ok') }]
+        error.response?.data?.error || t('broadcast.uploadError')
       );
+    } finally {
+      setUploading(false);
     }
   };
 

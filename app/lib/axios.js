@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 import mockResponsesAuth from './mockData/auth';
 import mockResponsesBroadcasts from './mockData/broadcasts';
+import { camelizeKeys, decamelizeKeys } from 'humps';
 
 // 개발 환경인지 확인
 const isDev = __DEV__;
@@ -13,8 +14,8 @@ const isDev = __DEV__;
 // 웹 환경인지 확인
 const isWeb = Platform.OS === 'web';
 
-// API 서버 URL 설정
-const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://api.example.com';
+// API 서버 URL 설정 - 실제 배포된 서버 주소로 변경
+const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://talkk-api.onrender.com';
 
 // 테스트 모드 사용 여부 설정
 const USE_MOCK_DATA = false; // 실제 API 요청 사용
@@ -23,6 +24,16 @@ const USE_MOCK_DATA = false; // 실제 API 요청 사용
 const TIMEOUT = 10000;
 
 console.log(`[API 설정] 현재 환경: ${isDev ? '개발' : '프로덕션'}, 플랫폼: ${Platform.OS}, API URL: ${SERVER_URL}`);
+
+// snake_case 변환 유틸리티 함수
+export const toSnakeCase = (str) => {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+};
+
+// camelCase 변환 유틸리티 함수
+export const toCamelCase = (str) => {
+  return str.replace(/(_[a-z])/g, (group) => group.replace('_', '').toUpperCase());
+};
 
 // API 서버 연결 상태 확인 함수
 const checkServerConnection = async () => {
@@ -79,6 +90,32 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
+});
+
+// 요청 데이터 변환 (camelCase → snake_case)
+axiosInstance.interceptors.request.use((config) => {
+  if (config.data && 
+      config.headers && 
+      config.headers['Content-Type'] === 'application/json' && 
+      typeof config.data === 'object' && 
+      !(config.data instanceof FormData)) {
+    // humps 라이브러리 사용하여 변환
+    config.data = decamelizeKeys(config.data);
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// 응답 데이터 변환 (snake_case → camelCase)
+axiosInstance.interceptors.response.use((response) => {
+  if (response.data && typeof response.data === 'object') {
+    // humps 라이브러리 사용하여 변환
+    response.data = camelizeKeys(response.data);
+  }
+  return response;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // 랜덤 닉네임 생성 함수
