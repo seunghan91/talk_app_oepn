@@ -7,10 +7,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "음성 메시지를 통해 새로운 인연을 만나는 소셜 네트워킹 앱",
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/3cd35644-e5e7-4288-b9ff-be27477bbf47"
-    },
+
     "runtimeVersion": "appVersion",
     "ios": {
       "supportsTablet": true,
@@ -48,15 +45,15 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "router": {
-        "origin": false
+      "extra": {
+        "router": {
+          "origin": false
+        },
+        "eas": {
+          "projectId": "ac75825a-693d-405a-842a-0bbbc76bd78d"
+        },
+        "apiUrl": "https://talkk-api.onrender.com"
       },
-      "eas": {
-        "projectId": "3cd35644-e5e7-4288-b9ff-be27477bbf47"
-      },
-      "apiUrl": "https://talkk-api.onrender.com"
-    },
     "owner": "seunghan91"
   }
 }
