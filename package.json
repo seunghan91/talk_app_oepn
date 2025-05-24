@@ -15,6 +15,14 @@
   "jest": {
     "preset": "jest-expo"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["i18next", "react-native-iap", "@expo/cli", "@expo/ngrok", "@expo/server"],
+        "listUnknownPackages": false
+      }
+    }
+  },
   "dependencies": {
     "@expo/cli": "^0.22.18",
     "@expo/ngrok": "^4.1.3",
