@@ -14,7 +14,6 @@
     "play": "재생",
     "pause": "일시정지",
     "stop": "정지",
-    "record": "녹음",
     "delete": "삭제",
     "back": "뒤로",
     "edit": "편집",
@@ -30,7 +29,11 @@
     "serverNotResponding": "서버가 응답하지 않습니다. 나중에 다시 시도해 주세요",
     "unexpectedError": "예상치 못한 오류가 발생했습니다",
     "tryAgainLater": "나중에 다시 시도해 주세요",
-    "cash": "원"
+    "cash": "원",
+    "justNow": "방금 전",
+    "minutesAgo": "{{minutes}}분 전",
+    "hoursAgo": "{{hours}}시간 전",
+    "daysAgo": "{{days}}일 전"
   },
   "home": {
     "welcome": "환영합니다",
@@ -159,10 +162,7 @@
     "title": "방송",
     "create": "방송 만들기",
     "record": "녹음",
-    "send": "전송",
-    "cancel": "취소",
     "recording": "녹음 중",
-    "tapToRecord": "탭하여 녹음 시작",
     "recordingInstructions": "버튼을 눌러 녹음을 시작하세요",
     "recordingTime": "녹음 시간",
     "noRecording": "녹음된 내용이 없습니다",
@@ -221,7 +221,28 @@
     "broadcastExpiry": "이 방송은 24시간 후에 만료됩니다",
     "broadcastExpired": "이 방송은 만료되었습니다",
     "broadcastReportSuccess": "방송이 신고되었습니다",
-    "broadcastReportError": "방송 신고에 실패했습니다"
+    "broadcastReportError": "방송 신고에 실패했습니다",
+    "received": "받은 방송",
+    "sent": "보낸 방송",
+    "all": "모든 방송",
+    "status": {
+      "delivered": "전달됨",
+      "read": "읽음",
+      "replied": "답장함"
+    },
+    "noBroadcasts": "방송이 없습니다",
+    "noBroadcastsDescription": "아직 방송이 없습니다",
+    "deleteSuccess": "방송이 삭제되었습니다",
+    "deleteError": "방송 삭제에 실패했습니다",
+    "voiceMessage": "음성 메시지",
+    "reply": "답장",
+    "replyingTo": "{{name}}님에게 답장",
+    "recordingComplete": "녹음 완료",
+    "reRecord": "다시 녹음",
+    "sendReply": "답장 보내기",
+    "replySuccess": "답장이 성공적으로 전송되었습니다",
+    "replyError": "답장 전송에 실패했습니다",
+    "noReceivedBroadcasts": "받은 방송이 없습니다"
   },
   "notifications": {
     "title": "알림",
@@ -349,4 +370,4 @@
     "submitError": "제안 제출에 실패했습니다. 다시 시도해주세요.",
     "note": "* 답변이 필요한 경우, 고객센터로 문의해주세요."
   }
-} 
+}

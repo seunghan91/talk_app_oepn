@@ -6,29 +6,49 @@
     "allowJs": true,
     "checkJs": true,
     "paths": {
-      "@app/*": ["app/*"],
-      "@components/*": ["components/*"],
-      "@hooks/*": ["hooks/*"],
-      "@constants/*": ["constants/*"],
-      "@assets/*": ["assets/*"],
-      "@utils/*": ["utils/*"],
-      "@lib/*": ["app/lib/*"],
-      "@screens/*": ["app/screens/*"],
-      "@navigation/*": ["app/navigation/*"],
-      "@context/*": ["app/context/*"],
-      "@types/*": ["types/*"]
+      "@app/*": [
+        "app/*"
+      ],
+      "@components/*": [
+        "components/*"
+      ],
+      "@hooks/*": [
+        "hooks/*"
+      ],
+      "@constants/*": [
+        "constants/*"
+      ],
+      "@assets/*": [
+        "assets/*"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ],
+      "@lib/*": [
+        "app/lib/*"
+      ],
+      "@screens/*": [
+        "app/screens/*"
+      ],
+      "@navigation/*": [
+        "app/navigation/*"
+      ],
+      "@context/*": [
+        "app/context/*"
+      ],
+      "@types/*": [
+        "types/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
     "app/auth.js",
     "app/index.js",
     "app/_layout.js",
     "app/lib/axios.js",
-    "app/(tabs)/_layout.js", 
+    "app/(tabs)/_layout.js",
     "app/lib/pushNotificationHelper.js"
   ]
 }

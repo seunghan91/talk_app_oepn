@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, FlatList, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
@@ -25,7 +25,11 @@ interface Broadcast {
   };
   is_favorite?: boolean;
   duration?: number; // 오디오 길이(초)
+  recipient_status?: 'delivered' | 'read' | 'replied'; // 수신 상태
+  received_at?: string; // 수신 시간
 }
+
+type BroadcastFilter = 'all' | 'sent' | 'received';
 
 export default function BroadcastScreen() {
   const router = useRouter();
@@ -42,6 +46,7 @@ export default function BroadcastScreen() {
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [filter, setFilter] = useState<BroadcastFilter>('received'); // 기본값을 'received'로 변경
 
   // 설정 불러오기
   useEffect(() => {
@@ -100,7 +105,19 @@ export default function BroadcastScreen() {
 
       const currentPage = resetPage ? 1 : page;
       
-      const response = await axiosInstance.get<{ broadcasts: Broadcast[], has_more: boolean }>(`/api/broadcasts?page=${currentPage}&limit=10`);
+      // filter에 따라 다른 API 호출
+      let endpoint: string;
+      if (filter === 'received') {
+        endpoint = `/api/v1/broadcasts/received?page=${currentPage}&limit=10`;
+      } else if (filter === 'sent') {
+        endpoint = `/api/v1/broadcasts?page=${currentPage}&limit=10`;
+      } else {
+        // all인 경우 - sent와 received를 둘 다 가져와야 함
+        // 일단은 sent만 표시 (추후 병합 로직 필요)
+        endpoint = `/api/v1/broadcasts?page=${currentPage}&limit=10`;
+      }
+      
+      const response = await axiosInstance.get<{ broadcasts: Broadcast[], pagination?: any }>(endpoint);
       
       if (resetPage) {
         setBroadcasts(response.data.broadcasts);
@@ -108,7 +125,12 @@ export default function BroadcastScreen() {
         setBroadcasts(prev => [...prev, ...response.data.broadcasts]);
       }
       
-      setHasMore(response.data.has_more);
+      // pagination 정보가 있으면 사용, 없으면 기존 방식
+      if (response.data.pagination) {
+        setHasMore(response.data.pagination.current_page < response.data.pagination.total_pages);
+      } else {
+        setHasMore(response.data.broadcasts.length === 10);
+      }
       
       if (!resetPage) {
         setPage(prev => prev + 1);
@@ -121,7 +143,12 @@ export default function BroadcastScreen() {
       setRefreshing(false);
       setLoadingMore(false);
     }
-  }, [page, t]);
+  }, [page, filter]);
+
+  // 필터 변경 시 브로드캐스트 다시 로드
+  useEffect(() => {
+    loadBroadcasts(true);
+  }, [filter]);
 
   // 더 불러오기
   const loadMore = useCallback(() => {
@@ -137,87 +164,109 @@ export default function BroadcastScreen() {
     loadBroadcasts(true);
   }, [loadBroadcasts]);
 
+  // 브로드캐스트 읽음 처리
+  const markAsRead = useCallback(async (broadcastId: number) => {
+    try {
+      await axiosInstance.patch(`/api/v1/broadcasts/${broadcastId}/mark_as_read`);
+    } catch (error) {
+      console.error('브로드캐스트 읽음 처리 실패:', error);
+    }
+  }, []);
+
   // 브로드캐스트 재생
   const playBroadcast = async (broadcast: Broadcast) => {
     try {
-      // 이미 재생 중인 오디오가 있으면 중지
-      if (soundRef.current) {
-        // 현재 재생 위치 저장
-        if (currentlyPlaying !== null) {
+      if (currentlyPlaying === broadcast.id) {
+        // 현재 재생 중인 브로드캐스트 일시정지
+        if (soundRef.current) {
           const status = await soundRef.current.getStatusAsync();
-          if (status.isLoaded) {
-            setPlaybackPosition(prev => ({
-              ...prev,
-              [currentlyPlaying]: status.positionMillis
-            }));
+          if (status.isLoaded && status.isPlaying) {
+            await soundRef.current.pauseAsync();
+            setCurrentlyPlaying(null);
+            return;
+          } else if (status.isLoaded && !status.isPlaying) {
+            await soundRef.current.playAsync();
+            return;
           }
         }
-        
+      }
+
+      // 기존 사운드 정리
+      if (soundRef.current) {
         await soundRef.current.unloadAsync();
-        soundRef.current = null;
       }
 
-      // 같은 브로드캐스트를 다시 클릭하면 재생 중지
-      if (currentlyPlaying === broadcast.id) {
-        setCurrentlyPlaying(null);
-        return;
-      }
-
-      // 새 오디오 로드 및 재생
-      const savedPosition = playbackPosition[broadcast.id] || 0;
-      
+      // 새 사운드 로드 및 재생
       const { sound } = await Audio.Sound.createAsync(
         { uri: broadcast.audio_url },
-        { 
-          shouldPlay: true,
-          positionMillis: savedPosition,
-        },
+        { shouldPlay: true },
         (status) => {
           if (status.isLoaded && status.didJustFinish) {
             setCurrentlyPlaying(null);
-            // 재생 완료 시 위치 초기화
-            setPlaybackPosition(prev => ({
-              ...prev,
-              [broadcast.id]: 0
-            }));
+            setPlaybackPosition((prev) => ({ ...prev, [broadcast.id]: 0 }));
             
-            // 자동재생 활성화 시 다음 브로드캐스트 재생
+            // 자동 재생
             if (autoplay) {
-              const currentIndex = broadcasts.findIndex(b => b.id === broadcast.id);
-              if (currentIndex >= 0 && currentIndex < broadcasts.length - 1) {
-                const nextBroadcast = broadcasts[currentIndex + 1];
-                playBroadcast(nextBroadcast);
+              const currentIndex = broadcasts.findIndex((b) => b.id === broadcast.id);
+              if (currentIndex < broadcasts.length - 1) {
+                playBroadcast(broadcasts[currentIndex + 1]);
               }
             }
           }
+          if (status.isLoaded && status.positionMillis) {
+            setPlaybackPosition((prev) => ({
+              ...prev,
+              [broadcast.id]: status.positionMillis / 1000,
+            }));
+          }
         }
       );
-      
+
       soundRef.current = sound;
       setCurrentlyPlaying(broadcast.id);
+      
+      // 수신한 브로드캐스트인 경우 읽음 상태로 업데이트
+      if (filter === 'received' && broadcast.recipient_status !== 'read' && broadcast.recipient_status !== 'replied') {
+        try {
+          await axiosInstance.patch(`/api/v1/broadcasts/${broadcast.id}/mark_as_read`);
+          // 로컬 상태 업데이트
+          setBroadcasts(prev => prev.map(b => 
+            b.id === broadcast.id 
+              ? { ...b, recipient_status: 'read' } 
+              : b
+          ));
+        } catch (error) {
+          console.error('브로드캐스트 읽음 처리 실패:', error);
+        }
+      }
     } catch (error) {
-      console.error('오디오 재생 실패:', error);
-      Alert.alert(t('common.error'), t('broadcast.playError'));
+      console.error('브로드캐스트 재생 실패:', error);
+      Alert.alert(t('error.title'), t('error.play_failed'));
     }
   };
 
-  // 브로드캐스트에 답장
-  const replyToBroadcast = (broadcast: Broadcast) => {
+  // 브로드캐스트에 답장하기
+  const handleReplyBroadcast = async (broadcast: Broadcast) => {
     if (!isAuthenticated) {
       Alert.alert(
         t('auth.loginRequired'),
         t('auth.loginRequiredMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
         ]
       );
       return;
     }
     
+    // 답장 화면으로 이동
     router.push({
-      pathname: '/conversation/new' as any,
-      params: { broadcastId: broadcast.id }
+      pathname: '/broadcast/reply',
+      params: { 
+        broadcastId: broadcast.id,
+        senderName: broadcast.user.nickname,
+        senderId: broadcast.user_id
+      }
     });
   };
 
@@ -229,7 +278,7 @@ export default function BroadcastScreen() {
         t('auth.loginRequiredMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
         ]
       );
       return;
@@ -264,7 +313,7 @@ export default function BroadcastScreen() {
         t('auth.loginRequiredMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
         ]
       );
       return;
@@ -301,7 +350,7 @@ export default function BroadcastScreen() {
         t('auth.loginRequiredMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
         ]
       );
       return;
@@ -361,6 +410,14 @@ export default function BroadcastScreen() {
     );
   };
 
+  // 필터 변경 처리
+  const handleFilterChange = useCallback((newFilter: BroadcastFilter) => {
+    setFilter(newFilter);
+    setBroadcasts([]);
+    setPage(1);
+    setHasMore(true);
+  }, []);
+
   // 브로드캐스트 아이템 렌더링
   const renderBroadcastItem = ({ item }: { item: Broadcast }) => {
     const isPlaying = currentlyPlaying === item.id;
@@ -372,115 +429,96 @@ export default function BroadcastScreen() {
       return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
     
+    const formatRelativeTime = (dateString: string) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInSeconds = (now.getTime() - date.getTime()) / 1000;
+      
+      if (diffInSeconds < 60) return t('common.justNow');
+      if (diffInSeconds < 3600) return t('common.minutesAgo', { minutes: Math.floor(diffInSeconds / 60) });
+      if (diffInSeconds < 86400) return t('common.hoursAgo', { hours: Math.floor(diffInSeconds / 3600) });
+      if (diffInSeconds < 604800) return t('common.daysAgo', { days: Math.floor(diffInSeconds / 86400) });
+      
+      return date.toLocaleDateString();
+    };
+    
     return (
-      <ThemedView style={styles.broadcastItem}>
-        <ThemedView style={styles.broadcastHeader}>
-          <ThemedText type="subtitle">{item.user.nickname}</ThemedText>
-          <ThemedText style={styles.timestamp}>
-            {new Date(item.created_at).toLocaleString()}
-          </ThemedText>
-        </ThemedView>
-        
-        <ThemedView style={styles.userInfo}>
-          {item.user.gender && (
-            <ThemedText style={styles.userInfoText}>
-              {t(`profile.gender${item.user.gender.charAt(0).toUpperCase() + item.user.gender.slice(1)}`)}
-            </ThemedText>
-          )}
-          {item.user.age_group && (
-            <ThemedText style={styles.userInfoText}>
-              {t(`profile.age${item.user.age_group.charAt(0).toUpperCase() + item.user.age_group.slice(1)}`)}
-            </ThemedText>
-          )}
-          {item.user.region && (
-            <ThemedText style={styles.userInfoText}>
-              {item.user.region}
-            </ThemedText>
-          )}
-          {item.duration && (
-            <ThemedText style={styles.durationText}>
-              {formatDuration(item.duration)}
-            </ThemedText>
-          )}
-        </ThemedView>
-        
-        <ThemedView style={styles.audioPlayer}>
-          <TouchableOpacity 
-            style={styles.playButton}
-            onPress={() => playBroadcast(item)}
-          >
+      <TouchableOpacity 
+        style={styles.broadcastItem}
+        onPress={() => playBroadcast(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.broadcastContent}>
+          {/* 재생 버튼 */}
+          <View style={styles.playButtonContainer}>
             <Ionicons 
               name={isPlaying ? "pause-circle" : "play-circle"} 
               size={48} 
               color="#007AFF" 
             />
-          </TouchableOpacity>
+          </View>
           
-          <ThemedView style={styles.audioWaveform}>
-            {/* 오디오 파형 표시 (간단한 구현) */}
-            {Array.from({ length: 20 }).map((_, index) => (
-              <ThemedView 
-                key={index}
-                style={[
-                  styles.waveformBar,
-                  { 
-                    height: Math.random() * 20 + 5,
-                    opacity: isPlaying ? 1 : 0.5
-                  }
-                ]}
-              />
-            ))}
-          </ThemedView>
-        </ThemedView>
-        
-        <ThemedView style={styles.actionButtons}>
-          <StylishButton
-            title={t('broadcast.reply')}
-            onPress={() => replyToBroadcast(item)}
-            type="primary"
-            size="small"
-            icon={<Ionicons name="chatbubble" size={16} color="#FFFFFF" />}
-          />
-          
-          <StylishButton
-            title={item.is_favorite ? t('broadcast.unfavorite') : t('broadcast.favorite')}
-            onPress={() => toggleFavorite(item)}
-            type={item.is_favorite ? "secondary" : "outline"}
-            size="small"
-            icon={<Ionicons name={item.is_favorite ? "star" : "star-outline"} size={16} color={item.is_favorite ? "#FFFFFF" : "#000000"} />}
-          />
-          
-          <ThemedView style={styles.moreActions}>
-            {!isOwnBroadcast && (
-              <>
-                <TouchableOpacity 
-                  style={styles.iconButton}
-                  onPress={() => reportBroadcast(item)}
-                >
-                  <Ionicons name="flag-outline" size={24} color="#FF3B30" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.iconButton}
-                  onPress={() => blockUser(item)}
-                >
-                  <Ionicons name="ban-outline" size={24} color="#FF3B30" />
-                </TouchableOpacity>
-              </>
-            )}
+          {/* 콘텐츠 정보 */}
+          <View style={styles.itemInfo}>
+            <View style={styles.headerRow}>
+              <ThemedText style={styles.userName}>{item.user.nickname}</ThemedText>
+              {item.duration && (
+                <ThemedText style={styles.duration}>{formatDuration(item.duration)}</ThemedText>
+              )}
+            </View>
             
-            {/* 자신의 브로드캐스트인 경우에만 삭제 버튼 표시 */}
-            {isOwnBroadcast && (
+            <ThemedText style={styles.userDetails}>
+              {[item.user.gender, item.user.age_group, item.user.region].filter(Boolean).join(' · ')}
+            </ThemedText>
+            
+            <View style={styles.bottomRow}>
+              <ThemedText style={styles.time}>
+                {formatRelativeTime(item.received_at || item.created_at)}
+              </ThemedText>
+              
+              {/* 수신 상태 표시 */}
+              {item.recipient_status && (
+                <View style={[
+                  styles.statusBadge,
+                  { backgroundColor: 
+                    item.recipient_status === 'replied' ? '#E8F5E9' : 
+                    item.recipient_status === 'read' ? '#E3F2FD' : '#F5F5F5' 
+                  }
+                ]}>
+                  <ThemedText style={[
+                    styles.statusText,
+                    { color: 
+                      item.recipient_status === 'replied' ? '#4CAF50' : 
+                      item.recipient_status === 'read' ? '#2196F3' : '#999' 
+                    }
+                  ]}>
+                    {t(`broadcast.status.${item.recipient_status}`)}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
+          
+          {/* 액션 버튼 */}
+          <View style={styles.actionContainer}>
+            {isOwnBroadcast ? (
               <TouchableOpacity 
-                style={styles.iconButton}
                 onPress={() => deleteBroadcast(item)}
+                style={styles.actionButton}
               >
-                <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                onPress={() => handleReplyBroadcast(item)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color="#007AFF" />
               </TouchableOpacity>
             )}
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -492,13 +530,13 @@ export default function BroadcastScreen() {
         t('auth.loginRequiredMessage'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login' as any) }
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') }
         ]
       );
       return;
     }
     
-    router.push('/broadcast/record' as any);
+    router.push('/broadcast/record');
   };
 
   // 푸터 렌더링 (더 불러오기)
@@ -513,19 +551,53 @@ export default function BroadcastScreen() {
     );
   };
 
+  const renderHeader = () => (
+    <ThemedView style={styles.headerContainer}>
+      <ThemedText style={styles.title}>{t('broadcast.title')}</ThemedText>
+      
+      {/* 필터 탭 추가 */}
+      <View style={styles.filterContainer}>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, filter === 'received' && styles.activeTab]}
+            onPress={() => handleFilterChange('received')}
+          >
+            <ThemedText style={[styles.tabText, filter === 'received' && styles.activeTabText]}>
+              {t('broadcast.received')}
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, filter === 'sent' && styles.activeTab]}
+            onPress={() => handleFilterChange('sent')}
+          >
+            <ThemedText style={[styles.tabText, filter === 'sent' && styles.activeTabText]}>
+              {t('broadcast.sent')}
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, filter === 'all' && styles.activeTab]}
+            onPress={() => handleFilterChange('all')}
+          >
+            <ThemedText style={[styles.tabText, filter === 'all' && styles.activeTabText]}>
+              {t('broadcast.all')}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <StylishButton
+        title={t('broadcast.record')}
+        icon={<Ionicons name="mic" size={20} color="#FFF" />}
+        onPress={goToRecordScreen}
+        type="primary"
+        style={{ marginTop: 16 }}
+      />
+    </ThemedView>
+  );
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">{t('broadcast.title')}</ThemedText>
-        
-        <StylishButton
-          title={t('broadcast.record')}
-          onPress={goToRecordScreen}
-          type="primary"
-          size="medium"
-          icon={<Ionicons name="mic" size={18} color="#FFFFFF" />}
-        />
-      </ThemedView>
+      {renderHeader()}
       
       {loading && !refreshing ? (
         <ThemedView style={styles.loadingContainer}>
@@ -578,11 +650,47 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  header: {
+  headerContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  filterContainer: {
+    marginVertical: 12,
+  },
+  tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    marginBottom: 16,
+    borderRadius: 6,
+  },
+  activeTab: {
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
@@ -627,70 +735,66 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DDDDDD',
   },
-  broadcastHeader: {
+  broadcastContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  playButtonContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+  },
+  itemInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  duration: {
+    fontSize: 14,
+    color: '#666',
+  },
+  userDetails: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 8,
   },
-  timestamp: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-  },
-  userInfoText: {
-    fontSize: 12,
-    color: '#666666',
-    marginRight: 8,
-    marginBottom: 4,
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  durationText: {
-    fontSize: 12,
-    color: '#666666',
-    marginRight: 8,
-    marginBottom: 4,
-    backgroundColor: '#E6F2FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  audioPlayer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  playButton: {
-    marginRight: 16,
-  },
-  audioWaveform: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-  },
-  waveformBar: {
-    width: 3,
-    backgroundColor: '#007AFF',
-    marginHorizontal: 2,
-    borderRadius: 1,
-  },
-  actionButtons: {
+  bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  moreActions: {
-    flexDirection: 'row',
+  time: {
+    fontSize: 14,
+    color: '#666',
   },
-  iconButton: {
+  statusBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
   },
   footerLoader: {
@@ -704,4 +808,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
   },
-}); 
+});
