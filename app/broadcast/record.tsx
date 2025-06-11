@@ -896,7 +896,7 @@ export default function RecordScreen() {
       });
 
       // API 요청
-      const response = await axiosInstance.post('/api/broadcasts', formData, {
+      const response = await axiosInstance.post('/api/v1/broadcasts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

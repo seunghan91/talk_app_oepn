@@ -47,7 +47,7 @@ export default function SettingsTab() {
     try {
       setLoading(true);
       // 서버 API 호출
-      const response = await axiosInstance.get('/api/users/notification_settings');
+      const response = await axiosInstance.get('/api/v1/users/notification_settings');
       console.log('서버에서 불러온 설정:', response.data);
       
       // 서버에서 받은 설정으로 상태 업데이트
@@ -103,7 +103,7 @@ export default function SettingsTab() {
       if (isAuthenticated) {
         try {
           // 서버 API 호출
-          const response = await axiosInstance.post('/api/users/notification_settings', {
+          const response = await axiosInstance.post('/api/v1/users/notification_settings', {
             receive_new_letter: newSettings.receive_new_letter,
             letter_receive_alarm: newSettings.letter_receive_alarm,
           });
@@ -126,7 +126,7 @@ export default function SettingsTab() {
             console.log('Push token:', token);
             try {
               // 서버에 토큰 전송
-              const response = await axiosInstance.post('/api/users/update_push_token', { token });
+              const response = await axiosInstance.post('/api/v1/users/update_push_token', { token });
               console.log('update_push_token 결과:', response.data);
             } catch (error) {
               console.log('토큰 저장 실패:', error);
@@ -145,7 +145,7 @@ export default function SettingsTab() {
         } else {
           // 알림 비활성화
           try {
-            await axiosInstance.post('/api/users/disable_push');
+            await axiosInstance.post('/api/v1/users/disable_push');
           } catch (error) {
             console.log('알림 비활성화 실패:', error);
             // 오류가 발생해도 로컬 설정은 유지

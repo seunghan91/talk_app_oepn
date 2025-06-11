@@ -90,7 +90,7 @@ export default function BroadcastDetail() {
       dispatch({ type: 'FETCH_START' });
       
       try {
-        const response = await axiosInstance.get(`/api/broadcasts/${id}`);
+        const response = await axiosInstance.get(`/api/v1/broadcasts/${id}`);
         dispatch({ type: 'FETCH_SUCCESS', payload: response.data });
       } catch (error) {
         console.error('브로드캐스트 정보 로드 실패:', error.response?.data || error.message);
@@ -123,7 +123,7 @@ export default function BroadcastDetail() {
       
       // 브로드캐스트 응답 API 호출
       // 이 API는 대화방을 생성하고 양쪽 사용자에게 visible 속성을 설정함
-      const response = await axiosInstance.post(`/api/broadcasts/${id}/reply`, formData, {
+      const response = await axiosInstance.post(`/api/v1/broadcasts/${id}/reply`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 60000, // 60초로 타임아웃 늘림 (대용량 파일 업로드 고려)
       });

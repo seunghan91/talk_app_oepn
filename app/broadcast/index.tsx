@@ -293,7 +293,7 @@ export default function BroadcastScreen() {
       ));
       
       // 서버에 업데이트 요청
-      await axiosInstance.post(`/api/broadcasts/${broadcast.id}/toggle_favorite`);
+      await axiosInstance.post(`/api/v1/broadcasts/${broadcast.id}/toggle_favorite`);
     } catch (error) {
       console.error('즐겨찾기 업데이트 실패:', error);
       Alert.alert(t('common.error'), t('broadcast.favoriteError'));
@@ -330,7 +330,7 @@ export default function BroadcastScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.post(`/api/broadcasts/${broadcast.id}/report`);
+              await axiosInstance.post(`/api/v1/broadcasts/${broadcast.id}/report`);
               Alert.alert(t('common.success'), t('broadcast.reportSuccess'));
             } catch (error) {
               console.error('신고 실패:', error);
@@ -367,7 +367,7 @@ export default function BroadcastScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.post(`/api/users/${broadcast.user_id}/block`);
+              await axiosInstance.post(`/api/v1/users/${broadcast.user_id}/block`);
               Alert.alert(t('common.success'), t('broadcast.blockSuccess'));
               
               // 차단된 사용자의 브로드캐스트 제거
@@ -395,7 +395,7 @@ export default function BroadcastScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axiosInstance.delete(`/api/broadcasts/${broadcast.id}`);
+              await axiosInstance.delete(`/api/v1/broadcasts/${broadcast.id}`);
               Alert.alert(t('common.success'), t('broadcast.deleteSuccess'));
               
               // 삭제된 브로드캐스트 제거
