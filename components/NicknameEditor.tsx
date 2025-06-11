@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TextInput, Button, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import axiosInstance from '../app/lib/axios';
@@ -72,7 +73,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
     setSaveAttempted(true);
     
     // 닉네임 유효성 검증
-    const validation = validateNickname(nickname);
+    const validation = validateNickname(nickname) as { isValid: boolean; message: string };
     if (!validation.isValid) {
       setError(validation.message);
       Alert.alert(t('common.error'), validation.message);
@@ -117,7 +118,7 @@ const NicknameEditor: React.FC<NicknameEditorProps> = ({
       if (serverSuccess) {
         // 서버에서 응답을 받은 후 프로필 정보 동기화
         try {
-          const profileResponse = await axiosInstance.get('/api/users/profile');
+          const profileResponse = await axiosInstance.get('/api/v1/users/profile');
           if (profileResponse.data.nickname) {
             savedNickname = profileResponse.data.nickname;
             

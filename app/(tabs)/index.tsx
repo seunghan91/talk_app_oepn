@@ -29,7 +29,7 @@ export default function HomeScreen() {
       if (isAuthenticated && user) {
         // 서버에서 프로필 정보 새로고침
         try {
-          const response = await axiosInstance.get('/api/users/profile');
+          const response = await axiosInstance.get('/api/v1/users/profile');
           if (response.data && response.data.user) {
             updateUser({
               nickname: response.data.user.nickname,

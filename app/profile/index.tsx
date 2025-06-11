@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import axiosInstance from '../lib/axios';
 import { SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import profileService from '../services/profileService';
 
 // 에러 타입 정의
 type ErrorType = 'network' | 'server' | 'auth' | 'unknown';
@@ -76,7 +77,7 @@ export default function ProfileScreen() {
       setErrorType(null);
       
       // 실제 API 호출
-      const response = await axiosInstance.get('/api/users/profile');
+      const response = await axiosInstance.get('/api/v1/users/profile');
       
       // 사용자 정보 설정
       setNickname(response.data.nickname || user?.nickname || '');
@@ -119,33 +120,22 @@ export default function ProfileScreen() {
   const generateRandomNickname = async () => {
     try {
       setSaving(true);
-      setErrorType(null);
       
-      // API 사용 없이 로컬에서 바로 생성
-      generateRandomNicknameLocally();
+      // profileService 사용하여 로컬 생성
+      const response = await profileService.generateRandomNickname() as { nickname: string; message: string };
+      setRandomNickname(response.nickname);
       
-      setSaving(false);
-    } catch (error: any) {
+      console.log('랜덤 닉네임 생성 성공:', response.nickname);
+      
+    } catch (error) {
       console.error('랜덤 닉네임 생성 실패:', error);
-      
-      // 에러 타입 설정
-      setErrorType('unknown');
-      
-      // 다시 시도
-      generateRandomNicknameLocally();
-      
+      Alert.alert(
+        t('common.error') || '오류',
+        t('profile.generateNicknameError') || '닉네임 생성 중 오류가 발생했습니다'
+      );
+    } finally {
       setSaving(false);
     }
-  };
-
-  // 로컬에서 랜덤 닉네임 생성 (개발 환경용)
-  const generateRandomNicknameLocally = () => {
-    const adjectives = ['즐거운', '행복한', '명랑한', '귀여운', '멋진', '용감한', '영리한', '재치있는', '유쾌한', '친절한'];
-    const nouns = ['곰돌이', '토끼', '사자', '호랑이', '고양이', '강아지', '여우', '판다', '코끼리', '기린'];
-    const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    const randomNum = Math.floor(Math.random() * 1000);
-    setRandomNickname(`${randomAdj}${randomNoun}${randomNum}`);
   };
 
   // 프로필 정보 업데이트 (공통 함수)
@@ -243,38 +233,57 @@ export default function ProfileScreen() {
     if (!randomNickname) {
       Alert.alert(
         t('common.notice') || '알림',
-        t('profile.generateNicknameFirst') || '먼저 랜덤 닉네임 생성 버튼을 눌러주세요.'
+        t('profile.generateNicknameFirst') || '먼저 랜덤 닉네임을 생성해주세요.'
       );
       return;
     }
-    
-    await updateProfileInfo({
-      field: 'nickname',
-      value: randomNickname,
-      endpoint: '/api/users/change_nickname',
-      successMessage: t('profile.nicknameUpdated') || '닉네임이 업데이트되었습니다',
-      errorMessage: t('profile.nicknameUpdateError') || '닉네임 업데이트 중 오류가 발생했습니다',
-      onSuccess: async () => {
-        // 프로필 데이터를 다시 가져와서 정확한 닉네임으로 업데이트
-        try {
-          const response = await axiosInstance.get('/api/users/profile');
-          if (response.data.nickname) {
-            // 사용자 정보를 AsyncStorage에도 업데이트
-            const userData = await AsyncStorage.getItem('user');
-            if (userData) {
-              const parsedUser = JSON.parse(userData);
-              parsedUser.nickname = response.data.nickname;
-              await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
-              // AuthContext 업데이트
-              updateUser({ nickname: response.data.nickname });
-              console.log('닉네임 변경 후 저장된 사용자 정보:', response.data.nickname);
-            }
+
+    try {
+      setSaving(true);
+      
+      // profileService 사용하여 닉네임 변경
+      const response = await profileService.changeNickname(randomNickname);
+      
+      console.log('닉네임 변경 성공:', response);
+      
+      // 성공 시 프로필 정보 동기화
+      try {
+        const profileResponse = await axiosInstance.get('/api/v1/users/profile');
+        if (profileResponse.data.nickname) {
+          // 사용자 정보를 AsyncStorage에도 업데이트
+          const userData = await AsyncStorage.getItem('user');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            parsedUser.nickname = profileResponse.data.nickname;
+            await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
+            // AuthContext 업데이트
+            updateUser({ nickname: profileResponse.data.nickname });
+            console.log('닉네임 변경 후 저장된 사용자 정보:', profileResponse.data.nickname);
           }
-        } catch (error) {
-          console.error('프로필 정보 업데이트 실패:', error);
         }
+      } catch (syncError) {
+        console.error('프로필 정보 동기화 실패:', syncError);
       }
-    });
+      
+      Alert.alert(
+        t('common.success') || '성공',
+        t('profile.nicknameUpdated') || '닉네임이 업데이트되었습니다'
+      );
+      
+      // 초기 상태로 복원
+      setIsChangingNickname(false);
+      setRandomNickname('');
+      await loadProfileData(); // 프로필 데이터 새로고침
+      
+    } catch (error) {
+      console.error('닉네임 변경 실패:', error);
+      Alert.alert(
+        t('common.error') || '오류',
+        t('profile.nicknameUpdateError') || '닉네임 업데이트 중 오류가 발생했습니다'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   // 성별 변경
@@ -285,7 +294,7 @@ export default function ProfileScreen() {
     await updateProfileInfo({
       field: 'gender',
       value: serverGenderValue,
-      endpoint: '/api/users/update_profile',
+      endpoint: '/api/v1/users/update_profile',
       successMessage: t('profile.genderUpdated') || '성별이 업데이트되었습니다',
       errorMessage: t('profile.genderUpdateError') || '성별 업데이트 중 오류가 발생했습니다'
     });

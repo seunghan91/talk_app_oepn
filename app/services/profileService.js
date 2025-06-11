@@ -1,4 +1,5 @@
 import axiosInstance from '../lib/axios';
+import { generateRandomNickname as generateNickname } from '../../utils/nicknameUtils';
 
 /**
  * uc0acuc6a9uc790 ud504ub85cud544 uad00ub9ac uad00ub828 API uc11cube44uc2a4
@@ -41,32 +42,49 @@ const profileService = {
   },
 
   /**
-   * ub2c9ub124uc784 ubcc0uacbd
-   * @param {string} nickname - uc0c8 ub2c9ub124uc784
-   * @returns {Promise<Object>} ubcc0uacbd uacb0uacfc
+   * 닉네임 변경 (v1 API 우선, 레거시 API fallback)
+   * @param {string} nickname - 새 닉네임
+   * @returns {Promise<Object>} 변경 결과
    */
   changeNickname: async (nickname) => {
     try {
+      // v1 API 우선 시도
       const response = await axiosInstance.post('/api/v1/users/change_nickname', {
         nickname
       });
       return response.data;
     } catch (error) {
-      console.error('ub2c9ub124uc784 ubcc0uacbd uc911 uc624ub958 ubc1cuc0dd:', error);
-      throw error;
+      console.error('v1 API 닉네임 변경 실패, 레거시 API 시도:', error);
+      
+      try {
+        // 레거시 API fallback
+        const response = await axiosInstance.post('/api/users/change_nickname', {
+          nickname
+        });
+        return response.data;
+      } catch (fallbackError) {
+        console.error('모든 닉네임 변경 API 실패:', fallbackError);
+        throw fallbackError;
+      }
     }
   },
 
   /**
-   * ub79cub364 ub2c9ub124uc784 uc0dduc131
-   * @returns {Promise<Object>} uc0dduc131ub41c ub2c9ub124uc784
+   * 랜덤 닉네임 생성 (로컬 생성)
+   * @returns {Promise<Object>} 생성된 닉네임
    */
   generateRandomNickname: async () => {
     try {
-      const response = await axiosInstance.get('/api/v1/users/random_nickname');
-      return response.data;
+      // 로컬에서 닉네임 생성 (서버 API 호출 제거)
+      const nickname = generateNickname();
+      console.log('로컬에서 랜덤 닉네임 생성됨:', nickname);
+      
+      return {
+        nickname: nickname,
+        message: '랜덤 닉네임이 생성되었습니다.'
+      };
     } catch (error) {
-      console.error('ub79cub364 ub2c9ub124uc784 uc0dduc131 uc911 uc624ub958 ubc1cuc0dd:', error);
+      console.error('랜덤 닉네임 생성 중 오류 발생:', error);
       throw error;
     }
   },
