@@ -2,6 +2,35 @@
 
 음성을 기반으로 대화할 수 있는 모바일 애플리케이션입니다.
 
+## 📱 배포 상태
+- **iOS**: 프로덕션 빌드 완료 (talkk-ios-production.ipa)
+- **Android**: 프로덕션 빌드 완료 (talkk-android-production.aab)
+- **앱스토어 배포**: 준비 완료 상태
+
+## 🔧 iOS 접속 문제 해결
+Expo 앱에서 iOS 기기 접속이 안 되는 경우:
+
+1. **터널 모드로 실행**:
+   ```bash
+   npx expo start --tunnel
+   ```
+
+2. **QR 코드 스캔 후 접속 안되는 경우**:
+   ```bash
+   # Metro 캐시 클리어
+   npx expo start --clear
+   
+   # 또는 전체 재설정
+   npm run reset-project
+   npm install
+   npx expo start --tunnel
+   ```
+
+3. **네트워크 설정 확인**:
+   - 같은 Wi-Fi 네트워크 사용 확인
+   - 회사/공용 네트워크인 경우 터널 모드 필수
+   - VPN 사용 시 해제 후 재시도
+
 ## 기능 소개
 
 - **사용자 인증**: 전화번호를 통한 인증 시스템 및 비밀번호 찾기 기능

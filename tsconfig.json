@@ -49,6 +49,8 @@
     "app/_layout.js",
     "app/lib/axios.js",
     "app/(tabs)/_layout.js",
-    "app/lib/pushNotificationHelper.js"
+    "app/lib/pushNotificationHelper.js",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ]
 }

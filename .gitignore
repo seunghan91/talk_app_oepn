@@ -40,3 +40,86 @@ app-example
 # Expo prebuild generated directories
 /android
 /ios
+
+# === 🔒 개인정보 및 보안 관련 파일들 ===
+
+# 테스트 계정 정보 (민감한 로그인 정보)
+TEST_ACCOUNT_INFO.md
+**/TEST_ACCOUNT_INFO.md
+
+# 개발자 가이드 (내부 개발 프로세스)
+XCODE_BUILD_GUIDE.md
+**/XCODE_BUILD_GUIDE.md
+
+# 빌드 파일들 (대용량 + 민감한 서명 정보)
+*.ipa
+*.aab
+*.apks
+*.app
+*.dSYM.zip
+
+# EAS 빌드 관련
+.eas/
+
+# 개발자 인증서 및 프로필
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+
+# 환경 설정 파일
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+*.env
+
+# API 키 및 토큰
+**/secrets.json
+**/config/secrets.yml
+**/config/credentials.yml
+**/api-keys.json
+
+# 로그 파일
+*.log
+logs/
+*.log.*
+
+# 데이터베이스 파일
+*.db
+*.sqlite
+*.sqlite3
+
+# 백업 파일
+*.backup
+*.bak
+*.tmp
+
+# 운영체제 생성 파일
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# IDE 설정 파일
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# 개인 메모 및 임시 파일
+TODO.md
+NOTES.md
+PERSONAL_*.md
+temp/
+scratch/
+
+# 테스트 데이터
+test-data/
+mock-data/
+sample-data/

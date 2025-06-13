@@ -45,15 +45,15 @@
     "experiments": {
       "typedRoutes": true
     },
-      "extra": {
-        "router": {
-          "origin": false
-        },
-        "eas": {
-          "projectId": "ac75825a-693d-405a-842a-0bbbc76bd78d"
-        },
-        "apiUrl": "https://talkk-api.onrender.com"
+    "extra": {
+      "router": {
+        "origin": false
       },
+      "apiUrl": "https://talkk-api.onrender.com",
+      "eas": {
+        "projectId": "a6b66f7d-73bf-4df8-9cc4-c78af6984b8b"
+      }
+    },
     "owner": "seunghan91"
   }
 }
