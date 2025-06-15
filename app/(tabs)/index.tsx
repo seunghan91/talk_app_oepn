@@ -173,7 +173,13 @@ export default function HomeScreen() {
 
   // 지갑 화면으로 이동
   const goToWalletScreen = () => {
-    router.push('/wallet' as any);
+    // 월렛 기능 비활성화 - 사용자 증가 시 오픈 예정
+    Alert.alert(
+      '준비 중인 기능',
+      '월렛 기능은 사용자가 늘어나면 오픈할 예정입니다.\n조금만 기다려주세요! 🙏',
+      [{ text: '확인' }]
+    );
+    // router.push('/wallet' as any); // 비활성화
   };
 
   return (
@@ -195,11 +201,12 @@ export default function HomeScreen() {
           {/* 좌측: 캐시 금액 */}
           {isAuthenticated ? (
             <TouchableOpacity 
-              style={styles.cashContainer}
+              style={[styles.cashContainer, styles.disabledCashContainer]}
               onPress={goToWalletScreen}
+              activeOpacity={0.7}
             >
-              <Ionicons name="wallet-outline" size={24} color="#007AFF" />
-              <ThemedText style={styles.cashAmount}>{cashAmount.toLocaleString()}원</ThemedText>
+              <Ionicons name="wallet-outline" size={24} color="#CCCCCC" />
+              <ThemedText style={styles.disabledCashAmount}>준비 중</ThemedText>
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyContainer} />
@@ -300,6 +307,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+  disabledCashContainer: {
+    backgroundColor: '#F5F5F5',
+    opacity: 0.7,
   },
   cashIcon: {
     width: 24,
@@ -408,5 +419,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
     color: '#666666',
+  },
+  disabledCashAmount: {
+    marginLeft: 6,
+    fontWeight: 'bold',
+    color: '#999999',
   },
 });

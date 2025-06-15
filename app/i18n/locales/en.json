@@ -50,6 +50,8 @@
     "nicknameChanged": "Nickname has been changed.",
     "generateRandomNickname": "Generate Random Nickname",
     "generateNicknameError": "Failed to generate random nickname.",
+    "nicknameUpdated": "Nickname has been successfully updated.",
+    "nicknameUpdateError": "An error occurred while updating nickname.",
     "loadError": "Failed to load user information.",
     "logout": "Logout",
     "logoutError": "An error occurred during logout.",

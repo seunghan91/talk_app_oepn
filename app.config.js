@@ -2,7 +2,7 @@
 export default ({ config }) => {
   // 기본값 설정 (app.json의 값들과 app.config.js 기존 값들 통합)
   const appName = process.env.APP_NAME || "TALKK";
-  const appSlug = process.env.APP_SLUG || "talkk-app";
+  const appSlug = process.env.APP_SLUG || "talk-app";
 
   return {
     ...config, // Expo CLI가 전달하는 기본 설정을 먼저 적용
@@ -74,14 +74,7 @@ export default ({ config }) => {
       ],
       "expo-font", // from app.json
       "expo-asset", // from app.json
-      [
-        "react-native-iap", // from app.config.js
-        {
-          android: {
-            defaultPurchasingLibrary: "play",
-          },
-        },
-      ],
+
       // "expo-router" 중복 제거됨
     ],
     runtimeVersion: { // from app.json, top-level로 이동
@@ -90,6 +83,6 @@ export default ({ config }) => {
     // newArchEnabled는 최상위 expo 객체 레벨에 있어야 하지만,
     // app.config.js에서는 보통 export하는 객체 최상위에 둡니다.
     // Expo CLI가 빌드 시 expo 객체 안으로 넣어줍니다.
-    newArchEnabled: true, // from app.json
+    newArchEnabled: false, // from app.json
   };
 };

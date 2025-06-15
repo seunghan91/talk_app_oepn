@@ -4,23 +4,68 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start --tunnel",
+    "start:dev": "expo start --dev-client",
+    "start:orbit": "expo start --dev-client --clear",
     "start-local": "expo start",
     "start-clear": "expo start --clear --tunnel",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
+    "test:unit": "jest tests/unit --watchAll=false",
+    "test:integration": "jest tests/integration --watchAll=false",
+    "test:e2e": "detox test",
+    "test:e2e:build": "detox build",
+    "test:e2e:ios": "detox test --configuration ios.sim.debug",
+    "test:e2e:android": "detox test --configuration android.emu.debug",
+    "test:coverage": "jest --coverage --watchAll=false",
+    "test:ci": "jest --ci --coverage --watchAll=false",
     "lint": "expo lint",
-    "setup": "bun install && npx expo prebuild"
+    "setup": "bun install && npx expo prebuild",
+    "build:dev:ios": "eas build --profile development --platform ios",
+    "build:dev:android": "eas build --profile development --platform android",
+    "build:preview:ios": "eas build --profile preview --platform ios",
+    "build:preview:android": "eas build --profile preview --platform android",
+    "build:production:ios": "eas build --profile production --platform ios",
+    "build:production:android": "eas build --profile production --platform android",
+    "build:android:dev": "eas build --platform android --profile development",
+    "build:android:test": "eas build --platform android --profile test",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:android:prod": "eas build --platform android --profile production",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:ios:prod": "eas build --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios --latest",
+    "submit:android": "eas submit --platform android --latest",
+    "build:all:preview": "eas build --platform all --profile preview",
+    "build:all:prod": "eas build --platform all --profile production"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}"
+    ],
+    "collectCoverageFrom": [
+      "app/**/*.{js,jsx,ts,tsx}",
+      "components/**/*.{js,jsx,ts,tsx}",
+      "!app/**/*.d.ts",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
   },
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": ["i18next", "react-native-iap", "@expo/cli", "@expo/ngrok", "@expo/server"],
+        "exclude": [
+          "i18next",
+          "react-native-iap",
+          "@expo/cli",
+          "@expo/ngrok",
+          "@expo/server"
+        ],
         "listUnknownPackages": false
       }
     }
@@ -62,7 +107,6 @@
     "react-i18next": "^15.4.1",
     "react-native": "0.76.9",
     "react-native-gesture-handler": "~2.20.2",
-    "react-native-iap": "^12.16.2",
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
@@ -71,11 +115,14 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^12.4.2",
     "@types/humps": "^2.0.6",
     "@types/jest": "^29.5.12",
     "@types/react": "~18.3.12",
     "@types/react-test-renderer": "^18.3.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "detox": "^20.13.5",
     "jest": "^29.2.1",
     "jest-expo": "~52.0.6",
     "react-test-renderer": "18.3.1",

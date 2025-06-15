@@ -15,12 +15,20 @@
         "simulator": true
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
       }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
     },
     "production": {
       "channel": "production",
@@ -32,6 +40,18 @@
         "credentialsSource": "remote",
         "buildConfiguration": "Release",
         "distribution": "store"
+      }
+    },
+    "test": {
+      "distribution": "internal",
+      "channel": "test",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "distribution": "internal"
       }
     }
   },
@@ -50,7 +70,14 @@
         "appleTeamId": "${APPLE_TEAM_ID}"
       },
       "android": {
-        "track": "internal"
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
+    "test": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
       }
     }
   }

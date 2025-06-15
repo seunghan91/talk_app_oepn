@@ -1,13 +1,12 @@
 {
   "expo": {
     "name": "TALKK",
-    "slug": "talkk-app",
+    "slug": "talk-app",
     "version": "1.0.0",
     "scheme": "talkk",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "description": "음성 메시지를 통해 새로운 인연을 만나는 소셜 네트워킹 앱",
-
     "runtimeVersion": "appVersion",
     "ios": {
       "supportsTablet": true,

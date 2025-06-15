@@ -876,7 +876,7 @@ export default function RecordScreen() {
       };
       
       // FormData에 파일 추가
-      formData.append('broadcast[audio]', fileToUpload);
+      formData.append('broadcast[voice_file]', fileToUpload);
       
       // 추가 파라미터 - snake_case 형식 사용
       formData.append('broadcast[text]', '새 음성 메시지');

@@ -123,3 +123,18 @@ scratch/
 test-data/
 mock-data/
 sample-data/
+
+# 테스트 결과 및 커버리지
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+*.lcov
+
+# Detox E2E 테스트
+e2e/artifacts/
+*.detox.log
+
+# 스크린샷 테스트
+__image_snapshots__/
+__screenshots__/

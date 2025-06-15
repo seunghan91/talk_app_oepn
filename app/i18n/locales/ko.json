@@ -129,6 +129,8 @@
     "changeNicknameError": "닉네임 변경 중 오류가 발생했습니다.",
     "generateRandomNickname": "랜덤 닉네임 생성",
     "generateNicknameError": "랜덤 닉네임 생성에 실패했습니다.",
+    "nicknameUpdated": "닉네임이 성공적으로 업데이트되었습니다.",
+    "nicknameUpdateError": "닉네임 업데이트 중 오류가 발생했습니다.",
     "paymentNotice": "닉네임 변경은 무료입니다.",
     "additionalInfo": "추가 정보",
     "gender": "성별",
