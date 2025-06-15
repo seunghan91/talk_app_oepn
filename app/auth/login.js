@@ -93,7 +93,7 @@ export default function LoginScreen() {
         }, null, 2));
         console.log('3. 요청 데이터 JSON 문자열:', JSON.stringify(loginData));
         console.log('4. 요청 데이터 구조 확인:');
-        console.log('   - user 객체 포함 여부:', loginData.hasOwnProperty('user'));
+        console.log('   - user 객체 포함 여부:', Object.prototype.hasOwnProperty.call(loginData, 'user'));
         console.log('   - user.phone_number 값:', loginData.user?.phone_number);
         console.log('   - user.password 값:', loginData.user?.password ? '[비밀번호 입력됨]' : '[비밀번호 없음]');
         console.log('5. __DEV__ 모드:', __DEV__ ? '활성화' : '비활성화');
