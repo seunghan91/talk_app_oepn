@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.expo/
+ios/
+android/
+coverage/
+*.config.js
+metro.config.js
+babel.config.js
+app.json
+eas.json
+package-lock.json
+yarn.lock 

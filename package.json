@@ -21,7 +21,7 @@
     "test:e2e:android": "detox test --configuration android.emu.debug",
     "test:coverage": "jest --coverage --watchAll=false",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "lint": "expo lint",
+    "lint": "expo lint --max-warnings 200",
     "setup": "bun install && npx expo prebuild",
     "build:dev:ios": "eas build --profile development --platform ios",
     "build:dev:android": "eas build --profile development --platform android",
