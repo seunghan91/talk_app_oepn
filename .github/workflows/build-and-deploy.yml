@@ -10,7 +10,7 @@ jobs:
   build-ios:
     name: Build iOS
     runs-on: macos-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
+    if: github.ref == 'refs/heads/main'
     
     steps:
       - name: 🏗 Setup repo
@@ -46,7 +46,7 @@ jobs:
   build-android:
     name: Build Android
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
+    if: github.ref == 'refs/heads/main'
     
     steps:
       - name: 🏗 Setup repo

@@ -12,7 +12,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest --watchAll",
+    "test": "jest --ci --coverage --watchAll=false",
     "test:unit": "jest tests/unit --watchAll=false",
     "test:integration": "jest tests/integration --watchAll=false",
     "test:e2e": "detox test",
