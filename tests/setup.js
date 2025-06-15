@@ -8,8 +8,7 @@ jest.mock('react-native-reanimated', () => {
   return Reanimated;
 });
 
-// Mock Animated API
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+// Mock Animated API는 jest-expo에서 자동으로 처리됨
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
