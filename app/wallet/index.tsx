@@ -84,7 +84,7 @@ export default function WalletScreen() {
             type="secondary"
           />
         </ThemedView>
-      </ThemedView>
+        </ThemedView>
     </SafeAreaView>
   );
 }

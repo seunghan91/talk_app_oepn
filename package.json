@@ -21,7 +21,7 @@
     "test:e2e:android": "detox test --configuration android.emu.debug",
     "test:coverage": "jest --coverage --watchAll=false",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "lint": "expo lint --max-warnings 200",
+    "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 200",
     "setup": "bun install && npx expo prebuild",
     "build:dev:ios": "eas build --profile development --platform ios",
     "build:dev:android": "eas build --profile development --platform android",
@@ -45,16 +45,26 @@
     "preset": "jest-expo",
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
     "testMatch": [
-      "<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}"
+      "<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}",
+      "<rootDir>/components/**/__tests__/**/*.{js,jsx,ts,tsx}"
     ],
     "collectCoverageFrom": [
       "app/**/*.{js,jsx,ts,tsx}",
       "components/**/*.{js,jsx,ts,tsx}",
       "!app/**/*.d.ts",
-      "!**/node_modules/**"
+      "!**/node_modules/**",
+      "!**/*.config.{js,ts}",
+      "!**/coverage/**"
     ],
     "coverageDirectory": "coverage",
-    "coverageReporters": ["text", "lcov", "html"]
+    "coverageReporters": ["text", "lcov", "html"],
+    "testEnvironment": "jsdom",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(jest-)?react-native|@react-native|expo|@expo|@unimodules|unimodules|sentry-expo|native-base|react-clone-referenced-element)"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/app/$1"
+    }
   },
   "expo": {
     "doctor": {
