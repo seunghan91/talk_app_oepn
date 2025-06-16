@@ -125,9 +125,12 @@ export default function SettingsTab() {
           if (token) {
             console.log('Push token:', token);
             try {
-              // 서버에 토큰 전송
-              const response = await axiosInstance.post('/api/v1/users/update_push_token', { token });
-              console.log('update_push_token 결과:', response.data);
+              // 서버에 토큰 전송 - 알림 설정 업데이트로 대체
+              const response = await axiosInstance.patch('/api/v1/users/notification_settings', { 
+                push_enabled: true,
+                push_token: token 
+              });
+              console.log('알림 활성화 결과:', response.data);
             } catch (error) {
               console.log('토큰 저장 실패:', error);
               Alert.alert('오류', '알림 설정을 저장하는 중 문제가 발생했습니다.');
@@ -145,7 +148,9 @@ export default function SettingsTab() {
         } else {
           // 알림 비활성화
           try {
-            await axiosInstance.post('/api/v1/users/disable_push');
+            await axiosInstance.patch('/api/v1/users/notification_settings', { 
+              push_enabled: false 
+            });
           } catch (error) {
             console.log('알림 비활성화 실패:', error);
             // 오류가 발생해도 로컬 설정은 유지

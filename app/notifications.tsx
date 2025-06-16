@@ -140,7 +140,7 @@ export default function NotificationsScreen() {
   const markAllAsRead = async () => {
     try {
       // 서버에 모든 알림 읽음 처리 요청
-      await axiosInstance.patch('/api/v1/notifications/mark_all_read');
+      await axiosInstance.patch('/api/v1/notifications/mark_all_as_read');
       
       // 로컬 상태 업데이트
       setNotifications(notifications.map(n => ({ ...n, read: true })));

@@ -5,7 +5,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useEffect, useState, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -122,6 +122,8 @@ export default function HomeScreen() {
     try {
       subscription = Notifications.addNotificationReceivedListener((notification) => {
         console.log('알림 수신:', notification);
+        // 새 알림이 왔을 때 알림 개수 업데이트
+        loadUserInfo();
       });
     } catch (error) {
       console.error('알림 리스너 설정 실패:', error);
@@ -137,6 +139,13 @@ export default function HomeScreen() {
       }
     };
   }, [isAuthenticated, loadUserInfo]);
+
+  // 화면이 포커스될 때마다 알림 개수 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      loadUserInfo();
+    }, [loadUserInfo])
+  );
 
 
 
