@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Animated, Easing, Alert, Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { View, StyleSheet, TouchableOpacity, Text, Animated, Easing, Alert, Platform, ViewStyle } from 'react-native';
+import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
@@ -9,23 +9,35 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // 기본 최대 녹음 시간 (초)
 const DEFAULT_MAX_DURATION = 30;
 
-export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000, style, recordingMessage }) {
+interface VoiceRecorderProps {
+  onRecordingComplete?: (uri: string) => void;
+  maxDuration?: number;
+  style?: ViewStyle;
+  recordingMessage?: string;
+}
+
+export default function VoiceRecorder({ 
+  onRecordingComplete, 
+  maxDuration = 30000, 
+  style, 
+  recordingMessage 
+}: VoiceRecorderProps) {
   const { t } = useTranslation();
-  const [recording, setRecording] = useState(null);
-  const [recordingStatus, setRecordingStatus] = useState('idle'); // idle, recording, paused, stopped
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'stopped'>('idle');
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const [recordingUri, setRecordingUri] = useState(null);
-  const [sound, setSound] = useState(null);
+  const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [maxRecordingDuration, setMaxRecordingDuration] = useState(DEFAULT_MAX_DURATION);
   
   // 애니메이션 값
   const [audioLevels, setAudioLevels] = useState(Array(10).fill(0));
   const animatedValues = useRef(audioLevels.map(() => new Animated.Value(0))).current;
-  const animationRef = useRef(null);
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
   
   // 타이머 참조
-  const durationTimerRef = useRef(null);
+  const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // 관리자 설정 로드
   useEffect(() => {
@@ -56,7 +68,9 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
       if (sound) {
         sound.unloadAsync();
       }
-      clearInterval(durationTimerRef.current);
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+      }
       stopWaveformAnimation();
     };
   }, []);
@@ -86,13 +100,11 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
       
       console.log('오디오 모드 설정 시작...');
       
-      // 오디오 모드 설정 - 올바른 iOS 인터럽션 모드 사용
+      // 오디오 모드 설정
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-        interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
@@ -127,10 +139,8 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
       startWaveformAnimation();
       
       // 최대 녹음 시간 후 자동 중지
-      setTimeout(() => {
-        if (recordingStatus === 'recording') {
-          stopRecording();
-        }
+      const timeoutId = setTimeout(() => {
+        stopRecording();
       }, maxRecordingDuration * 1000);
       
     } catch (error) {
@@ -145,7 +155,9 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
       if (!recording) return;
       
       // 타이머 중지
-      clearInterval(durationTimerRef.current);
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+      }
       
       // 파형 애니메이션 중지
       stopWaveformAnimation();
@@ -214,7 +226,7 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
   };
   
   // 재생 상태 업데이트 콜백
-  const onPlaybackStatusUpdate = (status) => {
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded) {
       if (status.didJustFinish) {
         setIsPlaying(false);
@@ -294,7 +306,7 @@ export default function VoiceRecorder({ onRecordingComplete, maxDuration = 30000
   };
   
   // 시간 포맷 (초 -> MM:SS)
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

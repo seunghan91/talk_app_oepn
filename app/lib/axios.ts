@@ -291,13 +291,14 @@ const mockResponses = {
     } else if (status === "closed") {
       // 종료된 대화방인 경우 시스템 메시지 추가
       messages.push({
-        id: 2,
+        id: 3,
         conversation_id: conversationId,
-        sender: null, // 시스템 메시지
+        sender: { id: 0, nickname: "시스템" }, // 시스템 메시지
         message_type: "system",
-        content: "대화가 종료되었습니다.",
-        voice_file_url: null,
-        created_at: "2023-03-15T15:00:00Z",
+        content: null,
+        voice_file_url: "system_message",
+        duration: 0,
+        created_at: "2024-01-15T10:35:00Z",
         is_read: true
       });
     }
@@ -640,7 +641,7 @@ export const getUserNotificationSettings = async (userId) => {
       const response = await axiosInstance.get(`/api/v1/users/notification_settings`);
       console.log('[알림 설정] 성공적으로 로드됨:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       // 404 에러가 발생하면 루트 API 엔드포인트로 재시도
       if (error.response && error.response.status === 404) {
         console.log('[알림 설정] v1 API 엔드포인트를 찾을 수 없음, 루트 API 시도');
@@ -693,7 +694,7 @@ export const updateUserNotificationSettings = async (userId, settings) => {
       const response = await axiosInstance.patch(`/api/v1/users/notification_settings`, settings);
       console.log('[알림 설정] 성공적으로 업데이트됨:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       // 404 오류가 발생하면 루트 API로 재시도
       if (error.response && error.response.status === 404) {
         console.log('[알림 설정] v1 API 엔드포인트를 찾을 수 없음, 루트 API 시도');
@@ -729,7 +730,7 @@ export const updateUserNotificationSettings = async (userId, settings) => {
 };
 
 // Reusable API Request 함수
-export const apiRequest = async (url, method, data, config = {}) => {
+export const apiRequest = async (url: string, method: string, data?: any, config: any = {}) => {
   try {
     const requestConfig = {
       method,
@@ -762,7 +763,7 @@ export const apiRequest = async (url, method, data, config = {}) => {
       status: response.status,
       headers: response.headers
     };
-  } catch (error) {
+  } catch (error: any) {
     // 오류 디버깅
     console.error(`[API 오류] ${method.toUpperCase()} ${url} - ${error.message}`);
     
@@ -798,10 +799,10 @@ export const apiRequest = async (url, method, data, config = {}) => {
 };
 
 // 일반적인 API 요청 헬퍼 함수들
-export const apiGet = (url, config) => apiRequest(url, 'get', null, config);
-export const apiPost = (url, data, config) => apiRequest(url, 'post', data, config);
-export const apiPut = (url, data, config) => apiRequest(url, 'put', data, config);
-export const apiDelete = (url, config) => apiRequest(url, 'delete', null, config);
+export const apiGet = (url: string, config?: any) => apiRequest(url, 'get', null, config);
+export const apiPost = (url: string, data?: any, config?: any) => apiRequest(url, 'post', data, config);
+export const apiPut = (url: string, data?: any, config?: any) => apiRequest(url, 'put', data, config);
+export const apiDelete = (url: string, config?: any) => apiRequest(url, 'delete', null, config);
 
 // 사용 예시:
 // const login = async (credentials) => {
@@ -827,3 +828,4 @@ Rails Gemfile에 gem 'rack-cors'를 추가하고, config/initializers/cors.rb �
 */
 
 export default axiosInstance;
+

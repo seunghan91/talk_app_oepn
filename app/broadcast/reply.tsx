@@ -6,7 +6,7 @@ import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedView } from '@components/ThemedView';
 import { ThemedText } from '@components/ThemedText';
-import { StylishButton } from '@components/StylishButton';
+import StylishButton from '@components/StylishButton';
 import VoiceRecorder from '@components/VoiceRecorder';
 import { axiosInstance } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,7 @@ interface ReplyScreenParams {
 export default function BroadcastReplyScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams<ReplyScreenParams>();
+  const params = useLocalSearchParams();
   const { isAuthenticated } = useAuth();
   
   const broadcastId = params.broadcastId as string;
@@ -167,10 +167,7 @@ export default function BroadcastReplyScreen() {
           text: t('common.ok'),
           onPress: () => {
             // 대화 화면으로 이동
-            router.replace({
-              pathname: '/conversation/detail',
-              params: { conversationId: result.data.conversation.id }
-            });
+            router.replace(`/conversations/${result.data.conversation.id}`);
           }
         }
       ]);
@@ -244,9 +241,9 @@ export default function BroadcastReplyScreen() {
             // 녹음 대기/진행 상태
             <ThemedView style={styles.recordingContent}>
               <VoiceRecorder
-                isRecording={isRecording}
-                onRecordPress={handleRecordPress}
-                duration={recordingDuration}
+                onRecordingComplete={(uri) => setRecordedUri(uri)}
+                maxDuration={30000}
+                recordingMessage={t('broadcast.recordingInstructions')}
               />
               
               {isRecording && (

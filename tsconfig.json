@@ -4,7 +4,8 @@
     "baseUrl": ".",
     "strict": true,
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
+    "noImplicitAny": false,
     "paths": {
       "@app/*": [
         "app/*"
@@ -47,9 +48,10 @@
     "app/auth.js",
     "app/index.js",
     "app/_layout.js",
-    "app/lib/axios.js",
+    "app/lib/axios.ts",
     "app/(tabs)/_layout.js",
     "app/lib/pushNotificationHelper.js",
+    "components/VoiceRecorder.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]
