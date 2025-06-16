@@ -11,16 +11,13 @@ import en from './locales/en.json';
 const getDeviceLanguage = () => {
   try {
     if (Platform.OS === 'ios') {
-      // iOS에서는 SettingsManager를 통해 언어 설정을 가져옴
-      const iosLocale = 
-        NativeModules.SettingsManager?.settings?.AppleLocale || 
-        NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] || 
-        'ko'; // 기본값으로 한국어 사용
-      return iosLocale.split('_')[0];
+      // iOS에서는 Localization API 사용
+      const locale = NativeModules?.I18nManager?.localeIdentifier || 'ko';
+      return locale.split(/[-_]/)[0];
     } else if (Platform.OS === 'android') {
       // Android에서는 I18nManager를 통해 언어 설정을 가져옴
       const androidLocale = NativeModules.I18nManager?.localeIdentifier || 'ko';
-      return androidLocale.split('_')[0];
+      return androidLocale.split(/[-_]/)[0];
     } else {
       // 웹이나 다른 플랫폼에서는 기본값으로 한국어 사용
       return 'ko';

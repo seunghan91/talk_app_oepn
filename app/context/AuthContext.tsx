@@ -39,26 +39,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadToken = async () => {
       try {
+        setIsLoading(true);
+        console.log('토큰 로드 시작...');
+        
         const token = await AsyncStorage.getItem('token');
         const userData = await AsyncStorage.getItem('user');
         
+        console.log('저장된 토큰 확인:', token ? '존재' : '없음');
+        console.log('저장된 사용자 데이터 확인:', userData ? '존재' : '없음');
+        
         if (token && userData) {
-          // 토큰을 axios 인스턴스의 기본 헤더에 설정
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          setUser(JSON.parse(userData));
-          setIsLoading(false);
-          console.log('자동 로그인 성공');
+          try {
+            // 토큰을 axios 인스턴스의 기본 헤더에 설정
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+            console.log('자동 로그인 성공:', parsedUser.nickname);
+          } catch (parseError) {
+            console.error('사용자 데이터 파싱 오류:', parseError);
+            // 잘못된 데이터 제거
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+          }
         } else {
-          setIsLoading(false);
-          console.log('저장된 토큰이 없음');
+          console.log('저장된 인증 정보가 없음 - 로그인 필요');
         }
       } catch (error) {
         console.error('자동 로그인 실패:', error);
+      } finally {
         setIsLoading(false);
+        console.log('토큰 로드 완료');
       }
     };
 
-    loadToken();
+    // 약간의 지연을 추가하여 앱 초기화 완료 후 실행
+    const timeoutId = setTimeout(loadToken, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // 로그인 함수

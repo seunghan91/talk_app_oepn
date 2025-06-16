@@ -4,7 +4,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, Redirect, Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { useColorScheme, Platform, View } from 'react-native';
+import { useColorScheme, Platform, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -105,17 +105,41 @@ function InitialLayout() {
 
   // 세그먼트 분석 및 리디렉션
   useEffect(() => {
-    if (isLoading) return;
+    console.log('InitialLayout 상태:', { isLoading, isAuthenticated, segments });
+    
+    if (isLoading) {
+      console.log('로딩 중... 라우팅 대기');
+      return;
+    }
 
     const inAuthGroup = segments[0] === 'auth';
+    console.log('현재 세그먼트:', segments, '인증 그룹 여부:', inAuthGroup);
     
-    // 리디렉션 로직
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/auth');
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)');
+    try {
+      // 리디렉션 로직
+      if (!isAuthenticated && !inAuthGroup) {
+        console.log('인증되지 않음 - 로그인 페이지로 이동');
+        router.replace('/auth');
+      } else if (isAuthenticated && inAuthGroup) {
+        console.log('인증됨 - 메인 탭으로 이동');
+        router.replace('/(tabs)');
+      } else {
+        console.log('현재 위치 유지');
+      }
+    } catch (routerError) {
+      console.error('라우터 오류:', routerError);
     }
   }, [isAuthenticated, segments, isLoading, router]);
+
+  // 로딩 중일 때 로딩 화면 표시
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <Text style={{ fontSize: 18, color: '#007AFF' }}>TALKK</Text>
+        <Text style={{ fontSize: 14, color: '#666', marginTop: 8 }}>로딩 중...</Text>
+      </View>
+    );
+  }
 
   return <Slot />;
 }
