@@ -10,7 +10,8 @@
     "runtimeVersion": "appVersion",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.talkapp.talkk2025"
+      "bundleIdentifier": "com.talkapp.talkk2025",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {

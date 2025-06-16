@@ -65,9 +65,9 @@
     },
     "production": {
       "ios": {
-        "appleId": "${APPLE_ID}",
-        "ascAppId": "${APPLE_ASC_APP_ID}",
-        "appleTeamId": "${APPLE_TEAM_ID}"
+        "appleId": "theqwe2000@naver.com",
+        "ascAppId": "127717087",
+        "appleTeamId": "AVMJBATWAT"
       },
       "android": {
         "track": "internal",
