@@ -72,7 +72,7 @@ export default function NotificationsSettings() {
   }, []);
 
   // 알림 설정 저장
-  const saveSettings = async (newSettings: NotificationSettings) => {
+  const saveSettings = async (newSettings: NotificationSettings, key?: keyof NotificationSettings) => {
     try {
       await AsyncStorage.setItem('app_settings', JSON.stringify(newSettings));
       
@@ -85,11 +85,15 @@ export default function NotificationsSettings() {
             console.log('Push token:', token);
             try {
               // 서버에 토큰 전송
-              const response = await axiosInstance.post('/api/users/update_push_token', { token });
-              console.log('update_push_token 결과:', response.data);
+              const response = await axiosInstance.patch('/api/v1/users/notification_settings', { 
+                push_token: token,
+                notifications_enabled: true 
+              });
+              console.log('알림 설정 업데이트 결과:', response.data);
+              Alert.alert(t('common.success'), '알림 설정이 저장되었습니다 (삭제예정)');
             } catch (error) {
               console.log('토큰 저장 실패:', error);
-              Alert.alert(t('common.error'), t('settings.saveError'));
+              // Alert.alert(t('common.error'), t('settings.saveError')); // 에러 알림 제거
             }
           } else {
             // 토큰 발급 실패 또는 권한 거부
@@ -103,7 +107,10 @@ export default function NotificationsSettings() {
         } else {
           // 알림 비활성화
           try {
-            await axiosInstance.post('/api/users/disable_push');
+            await axiosInstance.patch('/api/v1/users/notification_settings', { 
+              notifications_enabled: false 
+            });
+            Alert.alert(t('common.success'), '알림 설정이 저장되었습니다 (삭제예정)');
           } catch (error) {
             console.log('알림 비활성화 실패:', error);
             // 오류가 발생해도 로컬 설정은 유지
@@ -112,9 +119,14 @@ export default function NotificationsSettings() {
       }
       
       setSettings(newSettings);
+      
+      // 다른 설정들도 저장 알림 표시 (삭제예정)
+      if (key !== 'notificationsEnabled') {
+        Alert.alert(t('common.success'), '설정이 저장되었습니다 (삭제예정)');
+      }
     } catch (error) {
       console.error('알림 설정 저장 실패:', error);
-      Alert.alert(t('common.error'), t('settings.saveError'));
+      // Alert.alert(t('common.error'), t('settings.saveError')); // 에러 알림 제거
     }
   };
 
@@ -127,7 +139,7 @@ export default function NotificationsSettings() {
       // 설정은 유지하되 UI에서는 비활성화
     }
     
-    saveSettings(newSettings);
+    saveSettings(newSettings, key);
   };
 
   // 테스트 알림 전송

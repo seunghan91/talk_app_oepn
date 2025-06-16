@@ -43,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: '피드백',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star-outline" size={size} color={color} />
+            <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
           ),
         }}
       />

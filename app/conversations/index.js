@@ -136,15 +136,8 @@ export default function ConversationListScreen() {
         대화 내역이 없습니다
       </ThemedText>
       <ThemedText style={styles.emptySubtext}>
-        브로드캐스트를 보내면 대화가 시작됩니다
+        음성 메시지를 보내면 대화가 시작됩니다
       </ThemedText>
-      <TouchableOpacity 
-        style={styles.newBroadcastButton}
-        onPress={() => router.push('/broadcast/record')}
-      >
-        <Ionicons name="mic" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-        <Text style={styles.newBroadcastText}>새 브로드캐스트 녹음</Text>
-      </TouchableOpacity>
     </ThemedView>
   );
 
@@ -161,12 +154,6 @@ export default function ConversationListScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText style={styles.headerTitle}>메시지</ThemedText>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => router.push('/broadcast/record')}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
       </ThemedView>
       
       <FlatList

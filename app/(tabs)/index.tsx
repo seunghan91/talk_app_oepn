@@ -132,29 +132,7 @@ export default function HomeScreen() {
     };
   }, [isAuthenticated, loadUserInfo]);
 
-  // 녹음 화면으로 이동
-  const goToRecordScreen = () => {
-    if (!isAuthenticated) {
-      // 로그인하지 않은 경우 로그인 화면으로 이동
-      Alert.alert(
-        t('common.notice'),
-        t('profile.loginRequired'),
-        [
-          {
-            text: t('common.cancel'),
-            style: 'cancel',
-          },
-          {
-            text: t('profile.login'),
-            onPress: () => router.push('/auth' as any),
-          },
-        ]
-      );
-      return;
-    }
-    
-    router.push('/broadcast/record' as any);
-  };
+
 
   // 프로필 화면으로 이동
   const goToProfileScreen = () => {
@@ -261,16 +239,13 @@ export default function HomeScreen() {
             </ThemedView>
           )}
 
-          {/* 중앙 녹음 버튼 */}
-          <ThemedView style={styles.recordButtonContainer}>
-            <TouchableOpacity 
-              style={[styles.recordButton, !isAuthenticated && styles.recordButtonDisabled]}
-              onPress={goToRecordScreen}
-            >
-              <Ionicons name="mic" size={64} color="#FFFFFF" />
-            </TouchableOpacity>
-            <ThemedText style={styles.recordButtonText}>
-              {t('broadcast.recordingInstructions')}
+          {/* 중앙 콘텐츠 영역 - 방송 버튼 제거 */}
+          <ThemedView style={styles.centerContent}>
+            <ThemedText style={styles.welcomeText}>
+              환영합니다! 👋
+            </ThemedText>
+            <ThemedText style={styles.descriptionText}>
+              대화방에서 음성 메시지를 보내보세요
             </ThemedText>
           </ThemedView>
         </ThemedView>
@@ -424,5 +399,23 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: 'bold',
     color: '#999999',
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
