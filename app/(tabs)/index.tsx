@@ -245,14 +245,59 @@ export default function HomeScreen() {
             </ThemedView>
           )}
 
-          {/* 중앙 콘텐츠 영역 - 방송 버튼 제거 */}
-          <ThemedView style={styles.centerContent}>
-            <ThemedText style={styles.welcomeText}>
-              환영합니다! 👋
-            </ThemedText>
-            <ThemedText style={styles.descriptionText}>
-              대화방에서 음성 메시지를 보내보세요
-            </ThemedText>
+          {/* 중앙 콘텐츠 영역 - 음성 메시지 녹음 버튼 */}
+          <ThemedView style={styles.recordButtonContainer}>
+            {isAuthenticated ? (
+              <>
+                <TouchableOpacity 
+                  style={[styles.recordButton]}
+                  onPress={() => {
+                    Alert.alert(
+                      '음성 메시지',
+                      '대화방에서 음성 메시지를 보내실 수 있습니다.\n대화방 화면으로 이동하시겠습니까?',
+                      [
+                        { text: '취소', style: 'cancel' },
+                        { 
+                          text: '대화방으로', 
+                          onPress: () => router.push('/conversations' as any)
+                        }
+                      ]
+                    );
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="mic" size={48} color="#FFFFFF" />
+                </TouchableOpacity>
+                <ThemedText style={styles.recordButtonText}>
+                  음성 메시지 보내기
+                </ThemedText>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity 
+                  style={[styles.recordButton, styles.recordButtonDisabled]}
+                  onPress={() => {
+                    Alert.alert(
+                      '로그인 필요',
+                      '음성 메시지를 보내려면 로그인이 필요합니다.',
+                      [
+                        { text: '취소', style: 'cancel' },
+                        { 
+                          text: '로그인', 
+                          onPress: goToLoginScreen
+                        }
+                      ]
+                    );
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="mic" size={48} color="#FFFFFF" />
+                </TouchableOpacity>
+                <ThemedText style={styles.recordButtonText}>
+                  로그인 후 음성 메시지 보내기
+                </ThemedText>
+              </>
+            )}
           </ThemedView>
         </ThemedView>
       </ThemedView>
@@ -406,22 +451,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#999999',
   },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
+
 });
