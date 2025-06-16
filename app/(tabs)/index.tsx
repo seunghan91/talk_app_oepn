@@ -257,7 +257,7 @@ export default function HomeScreen() {
           {/* 중앙 콘텐츠 영역 - 음성 메시지 녹음 버튼 */}
           <ThemedView style={styles.recordButtonContainer}>
             {isAuthenticated ? (
-              <>
+              <ThemedView style={styles.recordButtonWrapper}>
                 <TouchableOpacity 
                   style={[styles.recordButton]}
                   onPress={() => {
@@ -280,9 +280,9 @@ export default function HomeScreen() {
                 <ThemedText style={styles.recordButtonText}>
                   음성 메시지 보내기
                 </ThemedText>
-              </>
+              </ThemedView>
             ) : (
-              <>
+              <ThemedView style={styles.recordButtonWrapper}>
                 <TouchableOpacity 
                   style={[styles.recordButton, styles.recordButtonDisabled]}
                   onPress={() => {
@@ -305,7 +305,7 @@ export default function HomeScreen() {
                 <ThemedText style={styles.recordButtonText}>
                   로그인 후 음성 메시지 보내기
                 </ThemedText>
-              </>
+              </ThemedView>
             )}
           </ThemedView>
         </ThemedView>
@@ -422,6 +422,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  recordButtonWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   recordButton: {
     width: 120,

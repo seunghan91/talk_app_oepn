@@ -8,6 +8,7 @@ import { ThemedText } from '../components/ThemedText';
 import StylishButton from '../components/StylishButton';
 import axiosInstance from './lib/axios';
 import { useAuth } from './context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 알림 타입 정의
 interface Notification {
@@ -145,11 +146,18 @@ export default function NotificationsScreen() {
       // 로컬 상태 업데이트
       setNotifications(notifications.map(n => ({ ...n, read: true })));
       
+      // 읽지 않은 알림 개수를 0으로 업데이트
+      await AsyncStorage.setItem('unreadNotifications', '0');
+      
       Alert.alert(t('common.success'), t('notifications.allMarkedAsRead'));
     } catch (error) {
       console.error('모든 알림 읽음 처리 실패:', error);
       // 에러가 발생해도 로컬에서는 읽음 처리
       setNotifications(notifications.map(n => ({ ...n, read: true })));
+      
+      // 로컬 스토리지에도 0으로 업데이트
+      await AsyncStorage.setItem('unreadNotifications', '0');
+      
       Alert.alert(t('common.notice'), '알림이 읽음 처리되었습니다');
     }
   };

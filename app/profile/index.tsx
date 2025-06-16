@@ -170,8 +170,9 @@ export default function ProfileScreen() {
           setRandomNickname('');
           setIsChangingNickname(false);
         } else if (field === 'gender') {
-          setGender(value as Gender);
-          setIsChangingGender(false);
+          // 성별은 서버 값을 UI 표시값으로 변환하여 저장
+          setGender(serverValueToGender(value));
+          // isChangingGender는 onSuccess 콜백에서 처리
         }
         
         // 성공 메시지 표시
@@ -296,7 +297,12 @@ export default function ProfileScreen() {
       value: serverGenderValue,
       endpoint: '/api/v1/users/update_profile',
       successMessage: t('profile.genderUpdated') || '성별이 업데이트되었습니다',
-      errorMessage: t('profile.genderUpdateError') || '성별 업데이트 중 오류가 발생했습니다'
+      errorMessage: t('profile.genderUpdateError') || '성별 업데이트 중 오류가 발생했습니다',
+      onSuccess: async () => {
+        // 성별 변경 UI를 닫고 프로필 데이터 새로고침
+        setIsChangingGender(false);
+        await loadProfileData();
+      }
     });
   };
 

@@ -140,7 +140,7 @@ export default function VoiceRecorder({
       
       // 최대 녹음 시간 후 자동 중지
       const timeoutId = setTimeout(() => {
-        stopRecording();
+          stopRecording();
       }, maxRecordingDuration * 1000);
       
     } catch (error) {
