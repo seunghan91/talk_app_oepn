@@ -69,14 +69,20 @@ export default function HomeScreen() {
         // 읽지 않은 메시지 수 가져오기
         try {
           const notificationsResponse = await axiosInstance.get('/api/v1/notifications');
-          if (notificationsResponse.data && notificationsResponse.data.unread_count !== undefined) {
+          console.log('알림 API 응답:', notificationsResponse.data);
+          
+          if (notificationsResponse.data && notificationsResponse.data.notifications) {
+            // 읽지 않은 알림 개수 계산
+            const unreadCount = notificationsResponse.data.notifications.filter(n => !n.read).length;
+            setUnreadMessages(unreadCount);
+          } else if (notificationsResponse.data && notificationsResponse.data.unread_count !== undefined) {
             setUnreadMessages(notificationsResponse.data.unread_count);
           } else {
-            setUnreadMessages(3); // 기본값
+            setUnreadMessages(0); // 기본값
           }
         } catch (error) {
           console.error('알림 개수 로드 실패:', error);
-          setUnreadMessages(3); // 오류 시 기본값
+          setUnreadMessages(0); // 오류 시 기본값
         }
       } else {
         // 로그인하지 않은 경우 초기화
