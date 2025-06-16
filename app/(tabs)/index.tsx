@@ -158,7 +158,7 @@ export default function HomeScreen() {
 
   // 프로필 화면으로 이동
   const goToProfileScreen = () => {
-    router.push('/profile' as any);
+                router.push('/mypage' as any);
   };
 
   // 알림 화면으로 이동

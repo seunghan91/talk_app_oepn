@@ -669,7 +669,7 @@ export default function RecordScreen() {
       // 삭제 확인 알림 표시
       Alert.alert(
         t('common.confirm'),
-        t('broadcast.deleteConfirm'),
+        '녹음을 삭제하시겠습니까?',
         [
           {
             text: t('common.cancel'),

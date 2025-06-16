@@ -357,7 +357,7 @@ export default function ProfileScreen() {
 
   // 홈으로 이동
   const goToHome = () => {
-    router.replace('/');
+    router.replace('/(tabs)');
   };
 
   // 에러 메시지 렌더링

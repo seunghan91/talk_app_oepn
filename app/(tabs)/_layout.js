@@ -57,8 +57,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="feedback/index"
         options={{
-          title: '제안하기',
-          tabBarIcon: ({ color }) => <Ionicons name="create" size={24} color={color} />,
+          title: '피드백',
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubble-ellipses" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -66,6 +66,12 @@ export default function TabLayout() {
         options={{
           title: '설정',
           tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="mypage"
+        options={{
+          href: null,  // 탭 바에서 숨김
         }}
       />
     </Tabs>

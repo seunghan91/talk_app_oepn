@@ -102,8 +102,8 @@ export default function SettingsTab() {
       // 로그인 상태인 경우 서버에도 저장
       if (isAuthenticated) {
         try {
-          // 서버 API 호출
-          const response = await axiosInstance.post('/api/v1/users/notification_settings', {
+          // 서버 API 호출 - POST 대신 PATCH 사용
+          const response = await axiosInstance.patch('/api/v1/users/notification_settings', {
             receive_new_letter: newSettings.receive_new_letter,
             letter_receive_alarm: newSettings.letter_receive_alarm,
           });
@@ -264,7 +264,7 @@ export default function SettingsTab() {
 
   // 프로필 화면으로 이동
   const goToProfile = () => {
-    router.push('/profile');
+    router.push('/mypage' as any);
   };
 
   // 테스트 알림 전송
