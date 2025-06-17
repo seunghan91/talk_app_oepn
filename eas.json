@@ -39,7 +39,8 @@
       "ios": {
         "credentialsSource": "remote",
         "buildConfiguration": "Release",
-        "distribution": "store"
+        "distribution": "store",
+        "autoIncrement": "buildNumber"
       }
     },
     "test": {

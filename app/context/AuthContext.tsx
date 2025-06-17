@@ -66,16 +66,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('자동 로그인 실패:', error);
+        // 에러 발생 시에도 로딩 상태 해제
+        console.log('오류로 인한 로딩 상태 해제');
       } finally {
         setIsLoading(false);
         console.log('토큰 로드 완료');
       }
     };
 
+    // 강제 타임아웃 설정 (5초 후 무조건 로딩 해제)
+    const forceLoadingTimeout = setTimeout(() => {
+      console.warn('AuthContext 로딩 타임아웃 (5초) - 강제 로딩 해제');
+      setIsLoading(false);
+    }, 5000);
+
     // 약간의 지연을 추가하여 앱 초기화 완료 후 실행
     const timeoutId = setTimeout(loadToken, 100);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(forceLoadingTimeout);
+    };
   }, []);
 
   // 로그인 함수

@@ -153,15 +153,37 @@ export default function RootLayout() {
   const onLayoutRootView = useMemo(() => {
     return async () => {
       if (loaded) {
-        await SplashScreen.hideAsync();
+        try {
+          await SplashScreen.hideAsync();
+          console.log('SplashScreen 숨김 완료');
+        } catch (error) {
+          console.error('SplashScreen 숨김 오류:', error);
+        }
       }
     };
   }, [loaded]);
 
+  // 강제 SplashScreen 숨김 (3초 후)
+  useEffect(() => {
+    const forceSplashTimeout = setTimeout(async () => {
+      try {
+        console.log('강제 SplashScreen 숨김 실행 (3초 타임아웃)');
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        console.warn('강제 SplashScreen 숨김 실패:', error);
+      }
+    }, 3000);
+
+    return () => clearTimeout(forceSplashTimeout);
+  }, []);
+
   if (!loaded) {
-    // 로딩 중 화면
-    return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+    // 로딩 중 화면 - 하지만 너무 오래 기다리지 않도록 함
+    console.log('폰트 로딩 중...');
+    return null; // SplashScreen이 계속 표시됨
   }
+
+  console.log('RootLayout 렌더링 시작 - 폰트 로딩 완료');
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>

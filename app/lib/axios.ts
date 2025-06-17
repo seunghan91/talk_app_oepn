@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 import mockResponsesAuth from './mockData/auth';
 import mockResponsesBroadcasts from './mockData/broadcasts';
+import mockResponsesUser from './mockData/user';
 import { camelizeKeys, decamelizeKeys } from 'humps';
 
 // 개발 환경인지 확인
@@ -148,6 +149,7 @@ const mockResponses = {
   // auth 및 broadcasts 관련 모의 응답은 각각의 모듈에서 가져옵니다
   ...mockResponsesAuth,
   ...mockResponsesBroadcasts,
+  ...mockResponsesUser,
   
   // 아직 분리되지 않은 다른 모의 응답들...
   '/api/conversations': (config) => {
