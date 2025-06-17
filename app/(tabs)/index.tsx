@@ -1,9 +1,9 @@
 // app/(tabs)/index.tsx
-import { Image, StyleSheet, View, TouchableOpacity, Text, Alert, RefreshControl, ScrollView, Platform } from 'react-native';
+import { Image, StyleSheet, View, TouchableOpacity, Text, Alert, RefreshControl, ScrollView, Platform, Animated } from 'react-native';
 import React from 'react';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,35 @@ export default function HomeScreen() {
   const [cashAmount, setCashAmount] = useState<number>(0);
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    let animation: Animated.CompositeAnimation | null = null;
+    if (isRecording) {
+      animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+
+    return () => {
+      animation?.stop();
+    };
+  }, [isRecording, pulseAnim]);
 
   // 사용자 정보 로드 (캐시 금액 등)
   const loadUserInfo = useCallback(async () => {
@@ -258,53 +287,31 @@ export default function HomeScreen() {
           <ThemedView style={styles.recordButtonContainer}>
             {isAuthenticated ? (
               <ThemedView style={styles.recordButtonWrapper}>
-                <TouchableOpacity 
-                  style={[styles.recordButton]}
-                  onPress={() => {
-                    Alert.alert(
-                      '음성 메시지',
-                      '대화방에서 음성 메시지를 보내실 수 있습니다.\n대화방 화면으로 이동하시겠습니까?',
-                      [
-                        { text: '취소', style: 'cancel' },
-                        { 
-                          text: '대화방으로', 
-                          onPress: () => router.push('/conversations' as any)
-                        }
-                      ]
-                    );
-                  }}
+                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                  <TouchableOpacity 
+                    style={[styles.recordButton, isRecording && styles.recordingButton]}
+                    onPress={() => setIsRecording(prev => !prev) /* TODO: Implement actual recording logic */}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name={isRecording ? "stop-circle-outline" : "mic"} size={48} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </Animated.View>
+                <ThemedText style={styles.recordButtonText}>
+                  {isRecording ? t('home.recordingInProgress', '녹음 중... 탭하여 중지') : t('home.recordButton', '탭해서 음성 메시지 보내기')}
+                </ThemedText>
+              </ThemedView>
+            ) : (
+              <ThemedView style={styles.recordButtonWrapper}>
+                <TouchableOpacity
+                  style={[styles.recordButton, styles.recordButtonDisabled]}
+                  onPress={goToLoginScreen}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="mic" size={48} color="#FFFFFF" />
                 </TouchableOpacity>
                 <ThemedText style={styles.recordButtonText}>
-                  음성 메시지 보내기
+                  {t('home.loginToRecord', '로그인 후 음성 메시지 보내기')}
                 </ThemedText>
-              </ThemedView>
-            ) : (
-              <ThemedView style={styles.recordButtonWrapper}>
-            <TouchableOpacity 
-                  style={[styles.recordButton, styles.recordButtonDisabled]}
-                  onPress={() => {
-                    Alert.alert(
-                      '로그인 필요',
-                      '음성 메시지를 보내려면 로그인이 필요합니다.',
-                      [
-                        { text: '취소', style: 'cancel' },
-                        { 
-                          text: '로그인', 
-                          onPress: goToLoginScreen
-                        }
-                      ]
-                    );
-                  }}
-                  activeOpacity={0.8}
-            >
-                  <Ionicons name="mic" size={48} color="#FFFFFF" />
-            </TouchableOpacity>
-            <ThemedText style={styles.recordButtonText}>
-                  로그인 후 음성 메시지 보내기
-            </ThemedText>
               </ThemedView>
             )}
           </ThemedView>
@@ -431,7 +438,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -449,6 +456,9 @@ const styles = StyleSheet.create({
       }
     }),
     marginBottom: 16,
+  },
+  recordingButton: {
+    backgroundColor: '#FF3B30',
   },
   recordButtonDisabled: {
     backgroundColor: '#CCCCCC',
