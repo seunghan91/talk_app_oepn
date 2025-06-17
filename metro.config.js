@@ -2,27 +2,8 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Hermes dSYM 문제 해결을 위한 설정
-config.transformer = {
-  ...config.transformer,
-  hermesCommand: './node_modules/react-native/sdks/hermesc/osx-bin/hermesc',
-  enableBabelRCLookup: false,
-  enableBabelRuntime: false,
-};
-
-// dSYM 생성 활성화
-config.serializer = {
-  ...config.serializer,
-  createModuleIdFactory: function () {
-    return function (path) {
-      // 안정적인 모듈 ID 생성
-      let name = path.substr(path.lastIndexOf('/') + 1);
-      if (name === 'index.js') {
-        name = path.substr(path.lastIndexOf('/', path.lastIndexOf('/') - 1) + 1);
-      }
-      return name.replace(/\W/g, '');
-    };
-  },
-};
+// 기본 Expo 설정 사용 (커스텀 설정 제거로 JS 번들 오류 해결)
+// 이전의 커스텀 hermesCommand, createModuleIdFactory 등이 
+// Release 빌드에서 RCTEventEmitter 등록 실패를 야기했음
 
 module.exports = config;

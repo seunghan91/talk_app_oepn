@@ -103,6 +103,34 @@ function InitialLayout() {
   const segments = useSegments();
   const router = useRouter();
 
+  // 🔍 디버그: 상태 변화 실시간 추적
+  useEffect(() => {
+    console.log('🔍 [DEBUG] InitialLayout 상태 변화:', { 
+      isLoading, 
+      isAuthenticated, 
+      user: user ? user.nickname : 'null',
+      segments,
+      timestamp: new Date().toISOString()
+    });
+  }, [isLoading, isAuthenticated, user, segments]);
+
+  // 🔍 디버그: 10초 후 강제 네비게이션 (빈 화면 방지)
+  useEffect(() => {
+    const forceNavigationTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('🚨 [DEBUG] 10초 타임아웃 - 강제 네비게이션 실행');
+        console.warn('🚨 [DEBUG] AuthContext 로딩이 완료되지 않아 강제로 라우팅 진행');
+        try {
+          router.replace('/(tabs)');
+        } catch (error) {
+          console.error('🚨 [DEBUG] 강제 네비게이션 실패:', error);
+        }
+      }
+    }, 10000);
+
+    return () => clearTimeout(forceNavigationTimeout);
+  }, [isLoading, router]);
+
   // 세그먼트 분석 및 리디렉션
   useEffect(() => {
     console.log('InitialLayout 상태:', { isLoading, isAuthenticated, segments });
