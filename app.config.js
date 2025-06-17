@@ -34,6 +34,12 @@ export default ({ config }) => {
       bundleIdentifier: "com.talkapp.talkk2025",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false, // from app.config.js
+        // Push Notifications를 일시적으로 비활성화
+        UIBackgroundModes: []
+      },
+      // Push Notifications 관련 entitlements 제거
+      entitlements: {
+        // "aps-environment": "development"를 제거
       },
       // runtimeVersion은 top-level로 이동
     },

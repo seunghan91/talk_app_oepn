@@ -283,7 +283,7 @@ export default function HomeScreen() {
               </ThemedView>
             ) : (
               <ThemedView style={styles.recordButtonWrapper}>
-                <TouchableOpacity 
+            <TouchableOpacity 
                   style={[styles.recordButton, styles.recordButtonDisabled]}
                   onPress={() => {
                     Alert.alert(
@@ -299,12 +299,12 @@ export default function HomeScreen() {
                     );
                   }}
                   activeOpacity={0.8}
-                >
+            >
                   <Ionicons name="mic" size={48} color="#FFFFFF" />
-                </TouchableOpacity>
-                <ThemedText style={styles.recordButtonText}>
+            </TouchableOpacity>
+            <ThemedText style={styles.recordButtonText}>
                   로그인 후 음성 메시지 보내기
-                </ThemedText>
+            </ThemedText>
               </ThemedView>
             )}
           </ThemedView>
