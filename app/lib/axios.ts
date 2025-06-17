@@ -18,7 +18,7 @@ const isWeb = Platform.OS === 'web';
 // API 서버 URL 설정 - 실제 배포된 서버 주소로 변경
 const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://talkk-api.onrender.com';
 
-// 테스트 모드 사용 여부 설정
+// 테스트 모드 사용 여부 설정 (프로덕션에서는 항상 false)
 const USE_MOCK_DATA = false; // 실제 API 요청 사용
 
 // API 요청 타임아웃 설정
@@ -36,8 +36,8 @@ export const toCamelCase = (str) => {
   return str.replace(/(_[a-z])/g, (group) => group.replace('_', '').toUpperCase());
 };
 
-// API 서버 연결 상태 확인 함수
-const checkServerConnection = async () => {
+// API 서버 연결 상태 확인 함수 (필요시에만 호출)
+export const checkServerConnection = async (): Promise<boolean> => {
   try {
     console.log('[API 연결 테스트] 시작...');
     
@@ -73,15 +73,8 @@ const checkServerConnection = async () => {
   }
 };
 
-// 테스트용 서버 연결 상태 변수 설정
-// 기본적으로 서버가 연결된 것으로 가정 (테스트 모드 비활성화)
+// 서버 연결 상태 (기본값: true, 프로덕션에서는 항상 연결된 것으로 간주)
 let serverConnected = true;
-
-// 앱 시작 시 서버 연결 테스트 실행
-checkServerConnection().then(isConnected => {
-  serverConnected = isConnected;
-  console.log(`[API 연결 상태] ${isConnected ? '연결됨 (실제 API 사용)' : '연결 실패 (테스트 모드 활성화)'}`);
-});
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -830,4 +823,3 @@ Rails Gemfile에 gem 'rack-cors'를 추가하고, config/initializers/cors.rb �
 */
 
 export default axiosInstance;
-
