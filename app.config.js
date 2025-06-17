@@ -3,16 +3,25 @@ export default ({ config }) => {
   // 기본값 설정
   const appName = process.env.APP_NAME || "TALKK";
   const appSlug = process.env.APP_SLUG || "talk-app";
+  
+  // Production API URL 강제 설정
+  const apiUrl = process.env.API_URL || 'https://talkk-api.onrender.com';
+  
+  console.log(' App Config - API URL:', apiUrl);
+  console.log(' App Config - NODE_ENV:', process.env.NODE_ENV);
 
   return {
     ...config, // app.json의 기본 설정을 먼저 적용
     name: appName,
     slug: appSlug,
     
-    // extra 설정 - API URL을 환경변수로 오버라이드 가능
+    // extra 설정 - API URL을 강제로 설정
     extra: {
       ...config.extra,
-      apiUrl: process.env.API_URL || config.extra?.apiUrl || 'https://talkk-api.onrender.com',
+      apiUrl: apiUrl,
+      // 디버깅용 추가 정보
+      buildTime: new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV || 'development',
     },
 
     // iOS 관련 설정만 오버라이드
