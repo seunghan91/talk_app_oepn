@@ -131,16 +131,6 @@ function InitialLayout() {
     }
   }, [isAuthenticated, segments, isLoading, router]);
 
-  // 로딩 중일 때 로딩 화면 표시
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <Text style={{ fontSize: 18, color: '#007AFF' }}>TALKK</Text>
-        <Text style={{ fontSize: 14, color: '#666', marginTop: 8 }}>로딩 중...</Text>
-      </View>
-    );
-  }
-
   return <Slot />;
 }
 
@@ -176,12 +166,6 @@ export default function RootLayout() {
 
     return () => clearTimeout(forceSplashTimeout);
   }, []);
-
-  if (!loaded) {
-    // 로딩 중 화면 - 하지만 너무 오래 기다리지 않도록 함
-    console.log('폰트 로딩 중...');
-    return null; // SplashScreen이 계속 표시됨
-  }
 
   console.log('RootLayout 렌더링 시작 - 폰트 로딩 완료');
 

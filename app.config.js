@@ -42,7 +42,10 @@ export default ({ config }) => {
     
     // 기타 설정들도 app.json 우선
     web: config.web,
-    plugins: config.plugins,
+    plugins: [
+      ...(config.plugins || []),
+      "expo-web-browser"
+    ],
     runtimeVersion: config.runtimeVersion,
     newArchEnabled: config.newArchEnabled,
   };
