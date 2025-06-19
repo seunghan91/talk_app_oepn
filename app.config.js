@@ -21,7 +21,8 @@ module.exports = {
   runtimeVersion: "1.0.1",
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.talkkapp.talkk"
+    bundleIdentifier: "com.talkkapp.talkk",
+    buildNumber: "32"
   },
   android: {
     adaptiveIcon: {
