@@ -1,6 +1,6 @@
 module.exports = {
   name: "TALKK",
-  slug: "talkk-app",
+  slug: "talk-app",
   version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -69,7 +69,7 @@ module.exports = {
       origin: false
     },
     eas: {
-      projectId: "12eccb4d-0689-4ee4-8255-0b6a7d45ecc9"
+      projectId: "a6b66f7d-73bf-4df8-9cc4-c78af6984b8b"
     }
   },
   owner: "seunghan91"
