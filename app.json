@@ -2,7 +2,7 @@
   "expo": {
     "name": "TALKK",
     "slug": "talkk-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "talkk",
@@ -17,10 +17,9 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/3cd35644-e5e7-4288-b9ff-be27477bbf47"
+      "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.talkkapp.talkk"
@@ -72,9 +71,6 @@
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "3cd35644-e5e7-4288-b9ff-be27477bbf47"
       }
     },
     "owner": "seunghan91"

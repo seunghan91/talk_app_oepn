@@ -1,7 +1,7 @@
 module.exports = {
   name: "TALKK",
   slug: "talkk-app",
-  version: "1.0.0",
+  version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "talkk",
@@ -16,10 +16,9 @@ module.exports = {
     backgroundColor: "#ffffff"
   },
   updates: {
-    fallbackToCacheTimeout: 0,
-    url: "https://u.expo.dev/3cd35644-e5e7-4288-b9ff-be27477bbf47"
+    fallbackToCacheTimeout: 0
   },
-  runtimeVersion: "1.0.0",
+  runtimeVersion: "1.0.1",
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.talkkapp.talkk"
@@ -69,7 +68,7 @@ module.exports = {
       origin: false
     },
     eas: {
-      projectId: "3cd35644-e5e7-4288-b9ff-be27477bbf47"
+      projectId: "12eccb4d-0689-4ee4-8255-0b6a7d45ecc9"
     }
   },
   owner: "seunghan91"
