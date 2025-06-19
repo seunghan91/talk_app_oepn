@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { Alert, Platform } from 'react-native';
 
 interface User {

@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { Announcement } from '../types';
 

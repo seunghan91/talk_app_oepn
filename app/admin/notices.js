@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { useAuth } from '../context/AuthContext';
 
 // 관리자 공지사항 관리 페이지

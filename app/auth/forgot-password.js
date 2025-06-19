@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { formatKoreanPhoneNumber, isValidKoreanPhoneNumber } from '../../utils/phoneUtils';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '../../components/ThemedView';

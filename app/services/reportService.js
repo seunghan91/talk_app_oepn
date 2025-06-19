@@ -1,4 +1,4 @@
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 
 /**
  * 신고 및 차단 시스템 관련 API 서비스

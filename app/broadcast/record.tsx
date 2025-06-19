@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
 import StylishButton from '../components/StylishButton';
-import axiosInstance from './lib/axios';
+import axiosInstance from '@lib/axios';
 import { useAuth } from './context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

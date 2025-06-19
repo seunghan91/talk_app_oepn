@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { Announcement, AnnouncementCategory } from '../types';
 

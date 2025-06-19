@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import axiosInstance from '../lib/axios'; // JWT 인증이 포함된 axios 인스턴스
+import axiosInstance from '@lib/axios'; // JWT 인증이 포함된 axios 인스턴스
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedView } from '../../components/ThemedView';

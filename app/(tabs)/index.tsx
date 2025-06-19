@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { registerForPushNotificationsAsync, configurePushNotifications } from '../utils/pushNotifications';
 import StylishButton from '../../components/StylishButton';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 
 export default function HomeScreen() {
   const router = useRouter();

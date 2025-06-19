@@ -7,7 +7,7 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
 import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import { SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import profileService from '../services/profileService';

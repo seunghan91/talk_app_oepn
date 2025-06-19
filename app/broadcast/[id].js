@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useReducer, useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import axiosInstance from '../lib/axios';
+import axiosInstance from '@lib/axios';
 import VoicePlayer from '../../components/VoicePlayer';
 import VoiceRecorder from '../../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
