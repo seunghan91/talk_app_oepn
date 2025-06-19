@@ -196,15 +196,15 @@ export default function HomeScreen() {
       <ThemedView style={styles.container}>
         {/* 상단 헤더 */}
         <ThemedView style={styles.header}>
-          {/* 좌측: 캐시 금액 */}
+          {/* 좌측: 캐시 금액 (개발 준비중) */}
           <TouchableOpacity 
-            style={isAuthenticated ? styles.cashContainer : [styles.cashContainer, styles.disabledCashContainer]} 
-            onPress={isAuthenticated ? goToWalletScreen : goToLoginScreen}
-            disabled={!isAuthenticated}
+            style={[styles.cashContainer, styles.developmentCashContainer]} 
+            onPress={goToWalletScreen}
+            disabled={true}
           >
-            <Image source={require('../../assets/images/cash_icon.png')} style={styles.cashIcon} />
-            <ThemedText style={isAuthenticated ? styles.cashAmount : styles.disabledCashAmount}>
-              {isAuthenticated ? (cashAmount ? cashAmount.toLocaleString() : '0') : t('home.loginRequired')}
+            <Image source={require('../../assets/images/cash_icon.png')} style={[styles.cashIcon, styles.developmentIcon]} />
+            <ThemedText style={styles.developmentCashText}>
+              개발 준비중
             </ThemedText>
           </TouchableOpacity>
 
@@ -444,6 +444,19 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: 'bold',
     color: '#999999',
+  },
+  developmentCashContainer: {
+    backgroundColor: '#E8E8E8',
+    opacity: 0.8,
+  },
+  developmentIcon: {
+    opacity: 0.5,
+  },
+  developmentCashText: {
+    marginLeft: 6,
+    fontWeight: 'normal',
+    color: '#666666',
+    fontSize: 12,
   },
 
 });

@@ -33,17 +33,7 @@ export default function TabLayout() {
         options={{
           title: '대화방',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      
-      <Tabs.Screen
-        name="feedback"
-        options={{
-          title: '피드백',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+            <Ionicons name="chatbubbles" size={24} color={color} />
           ),
         }}
       />
@@ -53,8 +43,32 @@ export default function TabLayout() {
         options={{
           title: '설정',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <Ionicons name="settings" size={24} color={color} />
           ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="feedback/index"
+        options={{
+          title: '피드백',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="create-outline" size={24} color={color} />
+          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="mypage"
+        options={{
+          href: null,  // 탭 바에서 숨김
+        }}
+      />
+      
+      <Tabs.Screen
+        name="notice"
+        options={{
+          href: null,  // 탭 바에서 숨김
         }}
       />
     </Tabs>
