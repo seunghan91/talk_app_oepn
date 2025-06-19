@@ -2,20 +2,15 @@
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, Redirect, Slot, useRouter, useSegments } from 'expo-router';
-import { useEffect, useMemo } from 'react';
-import { useColorScheme, Platform, View, Text } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { I18nextProvider } from 'react-i18next';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Asset } from 'expo-asset';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { I18nextProvider } from 'react-i18next';
+import 'react-native-reanimated';
 
-// i18n 설정 import
-import './i18n';
+import { useAuth, AuthProvider } from './context/AuthContext';
+import { useColorScheme } from '../hooks/useColorScheme';
 import i18n from './i18n';
 
 // SplashScreen이 자동으로 사라지지 않도록 설정
@@ -93,12 +88,11 @@ export const unstable_settings = {
 function loadFontsAsync() {
   // 폰트가 없으면 빈 객체 반환
   return useFonts({
-    ...FontAwesome.font,
   });
 }
 
-// 사용자 인증 상태에 따른 라우팅 처리
-function InitialLayout() {
+// AuthProvider 내부에서 실행되는 인증 라우팅 컴포넌트
+function AuthRedirectHandler() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -159,7 +153,7 @@ function InitialLayout() {
     }
   }, [isAuthenticated, segments, isLoading, router]);
 
-  return <Slot />;
+  return null; // 이 컴포넌트는 UI를 렌더링하지 않음
 }
 
 // 루트 레이아웃 컴포넌트
@@ -167,42 +161,30 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = loadFontsAsync();
 
-  // 앱 로딩 완료 처리
-  const onLayoutRootView = useMemo(() => {
-    return async () => {
-      if (loaded) {
-        try {
-          await SplashScreen.hideAsync();
-          console.log('SplashScreen 숨김 완료');
-        } catch (error) {
-          console.error('SplashScreen 숨김 오류:', error);
-        }
-      }
-    };
+  // 앱 로딩 완료 시 스플래시 화면 숨기기
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
   }, [loaded]);
 
-  // 강제 SplashScreen 숨김 (3초 후)
-  useEffect(() => {
-    const forceSplashTimeout = setTimeout(async () => {
-      try {
-        console.log('강제 SplashScreen 숨김 실행 (3초 타임아웃)');
-        await SplashScreen.hideAsync();
-      } catch (error) {
-        console.warn('강제 SplashScreen 숨김 실패:', error);
-      }
-    }, 3000);
-
-    return () => clearTimeout(forceSplashTimeout);
-  }, []);
-
   console.log('RootLayout 렌더링 시작 - 폰트 로딩 완료');
+
+  const onLayoutRootView = () => {
+    // 레이아웃 완료 콜백
+  };
+
+  if (!loaded) {
+    return null; // 폰트 로딩 중에는 아무것도 렌더링하지 않음
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <I18nextProvider i18n={i18n}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AuthProvider>
-            <InitialLayout />
+            <AuthRedirectHandler />
+            <Stack screenOptions={{ headerShown: false }} />
           </AuthProvider>
         </ThemeProvider>
       </I18nextProvider>
@@ -211,7 +193,7 @@ export default function RootLayout() {
 }
 
 // 커스텀 오류 경계 처리
-export function CustomErrorBoundary(props) {
+export function CustomErrorBoundary() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="error" options={{ title: 'Oops!' }} />

@@ -230,13 +230,11 @@ export default function SettingsTab() {
                 console.log('수동 로그아웃 시도');
                 await AsyncStorage.removeItem('token');
                 await AsyncStorage.removeItem('user');
-                await AsyncStorage.removeItem('userToken');
                 
                 // 웹 환경에서 추가 처리
                 if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
                   window.localStorage.removeItem('token');
                   window.localStorage.removeItem('user');
-                  window.localStorage.removeItem('userToken');
                 }
                 
                 Alert.alert(

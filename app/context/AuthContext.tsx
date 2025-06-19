@@ -96,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 토큰과 사용자 데이터를 AsyncStorage에 저장
       await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userToken', token); // 호환성을 위해 userToken도 저장
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       
       // 토큰을 axios 인스턴스의 기본 헤더에 설정
@@ -133,7 +132,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 시작');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('userToken');
       console.log('AsyncStorage에서 토큰 및 사용자 데이터 제거 완료');
       
       // axios 헤더에서 토큰 제거
@@ -148,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (typeof window !== 'undefined' && window.localStorage) {
             window.localStorage.removeItem('token');
             window.localStorage.removeItem('user');
-            window.localStorage.removeItem('userToken');
             console.log('localStorage에서 토큰 및 사용자 데이터 제거 완료');
           }
         } catch (webError) {

@@ -8,7 +8,7 @@ import { ThemedView } from '@components/ThemedView';
 import { ThemedText } from '@components/ThemedText';
 import StylishButton from '@components/StylishButton';
 import VoiceRecorder from '@components/VoiceRecorder';
-import { axiosInstance } from '../services/api';
+import axiosInstance from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 
 interface ReplyScreenParams {

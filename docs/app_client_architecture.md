@@ -11,15 +11,15 @@ Talkk 앱은 React Native + Expo SDK 51 기반의 크로스 플랫폼 모바일 
 - **오디오**: expo-av (녹음/재생)
 - **빌드/배포**: EAS Build & Update
 
-## 디렉토리 구조
+## 프로젝트 구조
 
 ```
-talk_app_oepn/
-├── app/                    # Expo Router 화면
+talk_app_oepn/  <!-- 폴더명 변경 예정: talk_app_oepn → talk_app_open -->
+├── app/                    # 앱 메인 디렉토리 (Expo Router)
 │   ├── (auth)/            # 인증 관련 화면
 │   │   ├── login.js       # 로그인
 │   │   └── verify.js      # OTP 검증
-│   ├── (tabs)/            # 탭 네비게이션
+│   ├── (tabs)/            # 탭 네비게이션 화면들
 │   │   ├── index.js       # 홈/대화 목록
 │   │   ├── broadcast.js   # 브로드캐스트
 │   │   └── profile.js     # 프로필

@@ -16,7 +16,7 @@
 #### Mac에서:
 ```bash
 # 1. 터미널에서 앱 디렉토리로 이동
-cd ~/dev/talk_app_oepn
+cd ~/dev/talk_app_oepn  # 폴더명 변경 예정: talk_app_oepn → talk_app_open
 
 # 2. 터널 모드로 시작 (iPhone 접속용)
 npx expo start --tunnel
@@ -98,13 +98,13 @@ npx expo start --clear
 
 ```bash
 # 한 번에 실행
-cd ~/dev/talk_app_oepn && npx expo start --tunnel --clear
+cd ~/dev/talk_app_oepn && npx expo start --tunnel --clear  # 폴더명 변경 예정
 
 # 백그라운드 실행
-cd ~/dev/talk_app_oepn && npx expo start --tunnel &
+cd ~/dev/talk_app_oepn && npx expo start --tunnel &  # 폴더명 변경 예정
 
 # 웹에서 즉시 확인
-cd ~/dev/talk_app_oepn && npx expo start --web
+cd ~/dev/talk_app_oepn && npx expo start --web  # 폴더명 변경 예정
 ```
 
 ## 🔍 현재 서버 상태 확인

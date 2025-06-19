@@ -328,7 +328,6 @@ export default function ProfileScreen() {
               try {
                 await AsyncStorage.removeItem('token');
                 await AsyncStorage.removeItem('user');
-                await AsyncStorage.removeItem('userToken');
                 console.log('AsyncStorage에서 토큰 제거 완료');
               } catch (storageError) {
                 console.error('AsyncStorage 토큰 제거 실패:', storageError);

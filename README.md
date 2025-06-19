@@ -1,4 +1,5 @@
-# 보이스 챗 애플리케이션
+# talk_app_open
+<!-- 폴더명 변경 예정: talk_app_oepn → talk_app_open -->
 
 음성을 기반으로 대화할 수 있는 모바일 애플리케이션입니다.
 
@@ -264,5 +265,3 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-# talkk-app
-# talk_app_oepn

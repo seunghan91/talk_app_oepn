@@ -9,121 +9,68 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { registerForPushNotificationsAsync, sendTestNotification, configurePushNotifications } from '../utils/pushNotifications';
-import Constants from 'expo-constants';
-import { SafeAreaView } from 'react-native';
+import { registerForPushNotificationsAsync, configurePushNotifications } from '../utils/pushNotifications';
 import StylishButton from '../../components/StylishButton';
 import axiosInstance from '../lib/axios';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isAuthenticated, user, logout, updateUser } = useAuth();
-  const [cashAmount, setCashAmount] = useState<number>(0);
+  const { user, isAuthenticated, updateUser } = useAuth();
+  const [cashAmount, setCashAmount] = useState<number | null>(null);
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    let animation: Animated.CompositeAnimation | null = null;
-    if (isRecording) {
-      animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-    } else {
-      pulseAnim.setValue(1);
-    }
-
-    return () => {
-      animation?.stop();
-    };
-  }, [isRecording, pulseAnim]);
 
   // 사용자 정보 로드 (캐시 금액 등)
   const loadUserInfo = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setCashAmount(null);
+      setUnreadMessages(0);
+      setRefreshing(false);
+      return;
+    }
+
     try {
-      if (isAuthenticated && user) {
-        // 서버에서 프로필 정보 새로고침
+      // 지갑 정보 로드
+      const fetchWalletInfo = async (): Promise<{ balance: number } | null> => {
         try {
-          const response = await axiosInstance.get('/api/v1/users/profile');
-          if (response.data && response.data.user) {
-            updateUser({
-              nickname: response.data.user.nickname,
-              // 기타 필요한 정보 업데이트
-            });
-            
-            // 캐시 금액 로드 - 지갑 API 호출
-            try {
-              // 지갑 API 호출
-              const walletResponse = await axiosInstance.get('/api/v1/wallet');
-              console.log('지갑 API 응답:', walletResponse.data);
-              
-              if (walletResponse.data && walletResponse.data.balance !== undefined) {
-                const walletBalance = parseInt(walletResponse.data.balance);
-                console.log('지갑 잔액 설정:', walletBalance);
-                setCashAmount(walletBalance);
-                updateUser({ cash_amount: walletBalance });
-              } else {
-                // 기본값 설정
-                setCashAmount(0);
-                updateUser({ cash_amount: 0 });
-              }
-            } catch (walletError) {
-              console.error('지갑 정보 로드 실패:', walletError);
-              // 오류 발생 시 기본값 설정
-              setCashAmount(0);
-              updateUser({ cash_amount: 0 });
-            }
-          }
-        } catch (error) {
-          console.error('프로필 새로고침 실패:', error);
-          const defaultBalance = user.cash_amount || 5000;
-          console.log('프로필 오류 시 기본 잔액 사용:', defaultBalance);
-          setCashAmount(defaultBalance); // 오류 시 기본값
+          const response = await axiosInstance.get<{ balance: number }>('/api/v1/wallet');
+          return response.data;
+        } catch (error: any) {
+          console.error('Wallet info fetch error:', error);
+          return null;
         }
-        
-        // 읽지 않은 메시지 수 가져오기
+      };
+
+      const fetchNotifications = async (): Promise<{ unread_count: number }> => {
         try {
-          const notificationsResponse = await axiosInstance.get('/api/v1/notifications');
-          console.log('알림 API 응답:', notificationsResponse.data);
-          
-          if (notificationsResponse.data && notificationsResponse.data.notifications) {
-            // 읽지 않은 알림 개수 계산
-            const unreadCount = notificationsResponse.data.notifications.filter(n => !n.read).length;
-            setUnreadMessages(unreadCount);
-          } else if (notificationsResponse.data && notificationsResponse.data.unread_count !== undefined) {
-            setUnreadMessages(notificationsResponse.data.unread_count);
-          } else {
-            setUnreadMessages(0); // 기본값
-          }
-        } catch (error) {
-          console.error('알림 개수 로드 실패:', error);
-          setUnreadMessages(0); // 오류 시 기본값
+          const response = await axiosInstance.get<{ unread_count: number }>('/api/v1/notifications');
+          return response.data;
+        } catch (error: any) {
+          console.error('Notifications fetch error:', error);
+          return { unread_count: 0 };
         }
-      } else {
-        // 로그인하지 않은 경우 초기화
-        setCashAmount(0);
-        setUnreadMessages(0);
-      }
-    } catch (error) {
+      };
+
+      const walletInfo = await fetchWalletInfo();
+      const notifications = await fetchNotifications();
+
+      const balance = walletInfo?.balance ?? 0;
+      setCashAmount(balance);
+      updateUser({ cash_amount: balance });
+
+      const unreadCount = notifications.unread_count ?? 0;
+      setUnreadMessages(unreadCount);
+
+    } catch (error: any) {
       console.error('사용자 정보 로드 실패:', error);
+      // 에러 발생 시 기존 컨텍스트 값 또는 기본값으로 설정
+      setCashAmount(user.cash_amount || 0);
+      setUnreadMessages(0);
     } finally {
       setRefreshing(false);
     }
-  }, [isAuthenticated, user, updateUser]);
+  }, [isAuthenticated, user?.id, updateUser]);
 
   // 새로고침 처리
   const onRefresh = useCallback(() => {
@@ -139,7 +86,7 @@ export default function HomeScreen() {
     const setupPushNotifications = async () => {
       try {
         await registerForPushNotificationsAsync();
-      } catch (error) {
+      } catch (error: any) {
         console.error('푸시 알림 설정 실패:', error);
       }
     };
@@ -149,12 +96,12 @@ export default function HomeScreen() {
     // 알림이 수신되었을 때 실행되는 리스너
     let subscription: Notifications.Subscription | undefined;
     try {
-      subscription = Notifications.addNotificationReceivedListener((notification) => {
+      subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
         console.log('알림 수신:', notification);
         // 새 알림이 왔을 때 알림 개수 업데이트
         loadUserInfo();
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('알림 리스너 설정 실패:', error);
     }
 
@@ -176,7 +123,32 @@ export default function HomeScreen() {
     }, [loadUserInfo])
   );
 
+  // 녹음 버튼 pulse 애니메이션
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Pulse 애니메이션 시작
+  useEffect(() => {
+    const startPulseAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    if (isAuthenticated) {
+      startPulseAnimation();
+    }
+  }, [isAuthenticated, pulseAnim]);
 
   // 프로필 화면으로 이동
   const goToProfileScreen = () => {
@@ -193,15 +165,19 @@ export default function HomeScreen() {
     router.push('/auth' as any);
   };
 
-  // 지갑 화면으로 이동
+  /**
+   * 지갑 화면으로 이동하는 함수.
+   * 현재는 기능이 준비 중이므로 알림을 표시합니다.
+   * 사용자가 헤더의 캐시 영역을 탭했을 때 호출됩니다.
+   * 
+   * @version 2.0.1
+   * @description 2025-06-17: 사용자 요청에 따라 기능 출시 전까지 '준비 중' 알림을 표시하도록 다시 수정했습니다.
+   */
   const goToWalletScreen = () => {
-    // 월렛 기능 비활성화 - 사용자 증가 시 오픈 예정
     Alert.alert(
       '준비 중인 기능',
-      '월렛 기능은 사용자가 늘어나면 오픈할 예정입니다.\n조금만 기다려주세요! 🙏',
-      [{ text: '확인' }]
+      '지갑 기능은 현재 준비 중입니다. 조금만 기다려주세요!'
     );
-    // router.push('/wallet' as any); // 비활성화
   };
 
   return (
@@ -221,20 +197,18 @@ export default function HomeScreen() {
         {/* 상단 헤더 */}
         <ThemedView style={styles.header}>
           {/* 좌측: 캐시 금액 */}
-          {isAuthenticated ? (
-            <TouchableOpacity 
-              style={[styles.cashContainer, styles.disabledCashContainer]}
-              onPress={goToWalletScreen}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="wallet-outline" size={24} color="#CCCCCC" />
-              <ThemedText style={styles.disabledCashAmount}>준비 중</ThemedText>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.emptyContainer} />
-          )}
+          <TouchableOpacity 
+            style={isAuthenticated ? styles.cashContainer : [styles.cashContainer, styles.disabledCashContainer]} 
+            onPress={isAuthenticated ? goToWalletScreen : goToLoginScreen}
+            disabled={!isAuthenticated}
+          >
+            <Image source={require('../../assets/images/cash_icon.png')} style={styles.cashIcon} />
+            <ThemedText style={isAuthenticated ? styles.cashAmount : styles.disabledCashAmount}>
+              {isAuthenticated ? (cashAmount ? cashAmount.toLocaleString() : '0') : t('home.loginRequired')}
+            </ThemedText>
+          </TouchableOpacity>
 
-          {/* 우측: 프로필 및 알림 버튼 */}
+          {/* 우측: 알림, 설정 버튼 */}
           <ThemedView style={styles.headerButtons}>
             {isAuthenticated && (
               <TouchableOpacity 
@@ -289,15 +263,15 @@ export default function HomeScreen() {
               <ThemedView style={styles.recordButtonWrapper}>
                 <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                   <TouchableOpacity 
-                    style={[styles.recordButton, isRecording && styles.recordingButton]}
-                    onPress={() => setIsRecording(prev => !prev) /* TODO: Implement actual recording logic */}
+                    style={styles.recordButton}
+                    onPress={() => router.push('/broadcast/record')}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name={isRecording ? "stop-circle-outline" : "mic"} size={48} color="#FFFFFF" />
+                    <Ionicons name="mic" size={48} color="#FFFFFF" />
                   </TouchableOpacity>
                 </Animated.View>
                 <ThemedText style={styles.recordButtonText}>
-                  {isRecording ? t('home.recordingInProgress', '녹음 중... 탭하여 중지') : t('home.recordButton', '탭해서 음성 메시지 보내기')}
+                  {t('home.recordButton', '음성 메시지 보내기')}
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -438,7 +412,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -456,9 +430,6 @@ const styles = StyleSheet.create({
       }
     }),
     marginBottom: 16,
-  },
-  recordingButton: {
-    backgroundColor: '#FF3B30',
   },
   recordButtonDisabled: {
     backgroundColor: '#CCCCCC',

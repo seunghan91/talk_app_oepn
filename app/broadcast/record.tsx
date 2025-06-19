@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Alert, TouchableOpacity, Platform, View, Animated, ActivityIndicator, Linking, StatusBar } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,9 +10,6 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import { useAuth } from '../context/AuthContext';
 
 // 최대 녹음 시간 (초)
 const MAX_RECORDING_DURATION = 30;
@@ -25,16 +22,15 @@ const AUDIO_LEVEL_INTERVAL = 100;
 
 // Screen 설정을 위한 export
 export const unstable_settings = {
-  // 헤더 숨기고 탭바 보이도록 설정
-  headerShown: false,
-  tabBarVisible: true, // Keep tab bar visible
+  // 헤더와 탭바를 보이도록 설정
+  headerShown: true,
+  tabBarVisible: true,
 };
 
 export default function RecordScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
-  const [isWeb, setIsWeb] = useState<boolean>(Platform.OS === 'web');
+  const [isWeb] = useState<boolean>(Platform.OS === 'web');
   const [mockRecordingActive, setMockRecordingActive] = useState<boolean>(false);
   const insets = useSafeAreaInsets(); // 안전 영역 insets 가져오기
   
@@ -62,7 +58,6 @@ export default function RecordScreen() {
   );
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
   const currentBarIndex = useRef<number>(0);
-  const [playbackTime, setPlaybackTime] = useState<{ current: number, total: number }>({ current: 0, total: 0 });
 
   // 컴포넌트 마운트 시 오디오 세션 설정 및 권한 요청
   useEffect(() => {
@@ -731,20 +726,12 @@ export default function RecordScreen() {
             const currentPosition = Math.floor((status.positionMillis || 0) / 1000);
             const totalDuration = Math.floor((status.durationMillis || 0) / 1000);
             // 재생 시간 상태 업데이트 (UI에 표시)
-            setPlaybackTime({
-              current: currentPosition,
-              total: totalDuration || recordingDuration // 녹음 시간을 폴백으로 사용
-            });
             
             // 재생 완료 확인
             if (status.didJustFinish) {
               setIsPlaying(false);
               stopWaveformAnimation();
               // 재생 위치 초기화
-              setPlaybackTime({
-                current: 0,
-                total: totalDuration || recordingDuration
-              });
             }
           }
         });
@@ -761,26 +748,14 @@ export default function RecordScreen() {
         
         // 모의 재생 타이머
         let currentTime = 0;
-        setPlaybackTime({
-          current: currentTime,
-          total: mockDuration
-        });
         
         const playbackTimer = setInterval(() => {
           currentTime += 1;
-          setPlaybackTime({
-            current: currentTime,
-            total: mockDuration
-          });
           
           if (currentTime >= mockDuration) {
             clearInterval(playbackTimer);
             setIsPlaying(false);
             stopWaveformAnimation();
-            setPlaybackTime({
-              current: 0,
-              total: mockDuration
-            });
           }
         }, 1000);
         
@@ -798,21 +773,12 @@ export default function RecordScreen() {
             // 현재 재생 시간 표시 (밀리초 -> 초)
             const currentPosition = Math.floor((status.positionMillis || 0) / 1000);
             const totalDuration = Math.floor((status.durationMillis || 0) / 1000);
-            // 재생 시간 상태 업데이트
-            setPlaybackTime({
-              current: currentPosition,
-              total: totalDuration || recordingDuration
-            });
             
             // 재생 완료 확인
             if (status.didJustFinish) {
               setIsPlaying(false);
               stopWaveformAnimation();
               // 재생 위치 초기화
-              setPlaybackTime({
-                current: 0,
-                total: totalDuration || recordingDuration
-              });
             }
           }
         }

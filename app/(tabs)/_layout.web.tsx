@@ -24,12 +24,10 @@ export default function TabLayout() {
         try {
           await AsyncStorage.removeItem('token');
           await AsyncStorage.removeItem('user');
-          await AsyncStorage.removeItem('userToken');
           
           if (window.localStorage) {
             window.localStorage.removeItem('token');
             window.localStorage.removeItem('user');
-            window.localStorage.removeItem('userToken');
             window.location.reload();
           }
         } catch (manualError) {
