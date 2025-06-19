@@ -52,46 +52,26 @@ target 'TALKK' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
-    
-    # 🚀 New Architecture + RN 0.77+ 호환성 설정
+
+    # 🔧 RCT-Folly/Fabric 버전 충돌 해결
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        # RCT-Folly/Fabric 버전 충돌 해결
+        # Folly 버전 강제 고정 (RN 0.79.4 호환)
         if target.name.include?('RCT-Folly') || target.name.include?('Folly')
           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
           config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
           config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
         end
         
-        # Fabric + New Architecture 설정
+        # Fabric 관련 타겟 설정
         if target.name.include?('Fabric') || target.name.include?('React-Fabric')
           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
           config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-          config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
         end
         
-        # Hermes 최적화 설정
-        if target.name.include?('hermes') || target.name.include?('Hermes')
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        end
-        
-        # React-Core 최적화
-        if target.name.include?('React-Core')
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-          config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
-        end
-        
-        # 전역 iOS 설정 통일
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        # 전역 C++ 설정 통일
         config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        
-        # New Architecture 관련 경고 제거
-        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
-        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
       end
     end
 
@@ -107,3 +87,23 @@ target 'TALKK' do
     end
   end
 end
+
+# 🎯 Expo SDK 53 + RN 0.79.4 호환 버전 고정
+def force_react_native_compatible_versions
+  # RCT-Folly 버전 고정
+  pod 'RCT-Folly', '2023.01.30.00', :modular_headers => true
+  pod 'RCT-Folly/Fabric', '2023.01.30.00'
+  
+  # React-Core 관련 버전 고정
+  pod 'React-Core', :path => '../node_modules/react-native/', :modular_headers => true
+  pod 'React-CoreModules', :path => '../node_modules/react-native/React/CoreModules'
+  pod 'ReactCommon', :path => '../node_modules/react-native/ReactCommon', :modular_headers => true
+  
+  # Fabric 구성요소 버전 고정
+  pod 'React-Fabric', :path => '../node_modules/react-native/ReactCommon', :modular_headers => true
+  pod 'React-graphics', :path => '../node_modules/react-native/ReactCommon/react/renderer/graphics'
+  pod 'React-jsi', :path => '../node_modules/react-native/ReactCommon/jsi', :modular_headers => true
+end
+
+# 버전 고정 적용
+force_react_native_compatible_versions
