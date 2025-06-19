@@ -12,67 +12,51 @@ import { useAuth } from '../context/AuthContext';
 import { registerForPushNotificationsAsync, configurePushNotifications } from '../utils/pushNotifications';
 import StylishButton from '../../components/StylishButton';
 import axiosInstance from '@lib/axios';
+import useWallet from '../../hooks/useWallet';
+import useNotifications from '../../hooks/useNotifications';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user, isAuthenticated, updateUser } = useAuth();
-  const [cashAmount, setCashAmount] = useState<number | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  
+  // 새로운 훅 사용으로 중복 요청 방지 및 캐싱 적용
+  const { wallet, isLoading: walletLoading, refreshWallet, balance, formattedBalance } = useWallet({
+    enabled: isAuthenticated
+  });
+  
+  const { unreadCount, isLoading: notificationsLoading, refreshNotifications } = useNotifications({
+    enabled: isAuthenticated
+  });
+  
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  // 사용자 정보 로드 (캐시 금액 등)
+  // 사용자 정보 로드 (새로운 훅 기반으로 간소화)
   const loadUserInfo = useCallback(async () => {
     if (!isAuthenticated || !user) {
-      setCashAmount(null);
-      setUnreadMessages(0);
       setRefreshing(false);
       return;
     }
 
     try {
-      // 지갑 정보 로드
-      const fetchWalletInfo = async (): Promise<{ balance: number } | null> => {
-        try {
-          const response = await axiosInstance.get<{ balance: number }>('/api/v1/wallet');
-          return response.data;
-        } catch (error: any) {
-          console.error('Wallet info fetch error:', error);
-          return null;
-        }
-      };
-
-      const fetchNotifications = async (): Promise<{ unread_count: number }> => {
-        try {
-          const response = await axiosInstance.get<{ unread_count: number }>('/api/v1/notifications');
-          return response.data;
-        } catch (error: any) {
-          console.error('Notifications fetch error:', error);
-          return { unread_count: 0 };
-        }
-      };
-
-      const walletInfo = await fetchWalletInfo();
-      const notifications = await fetchNotifications();
-
-      const balance = walletInfo?.balance ?? 0;
-      setCashAmount(balance);
-      updateUser({ cash_amount: balance });
-
-      const unreadCount = notifications.unread_count ?? 0;
-      setUnreadMessages(unreadCount);
-
+      // 병렬로 데이터 새로고침
+      await Promise.all([
+        refreshWallet(),
+        refreshNotifications()
+      ]);
+      
+      // 사용자 컨텍스트에 지갑 잔액 업데이트
+      if (wallet?.balance !== undefined) {
+        updateUser({ cash_amount: wallet.balance });
+      }
     } catch (error: any) {
-      console.error('사용자 정보 로드 실패:', error);
-      // 에러 발생 시 기존 컨텍스트 값 또는 기본값으로 설정
-      setCashAmount(user.cash_amount || 0);
-      setUnreadMessages(0);
+      console.error('사용자 정보 새로고침 실패:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [isAuthenticated, user?.id, updateUser]);
+  }, [isAuthenticated, user?.id, updateUser, refreshWallet, refreshNotifications, wallet?.balance]);
 
-  // 새로고침 처리
+  // 새로고침 처리 (pull-to-refresh)
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadUserInfo();
@@ -98,8 +82,8 @@ export default function HomeScreen() {
     try {
       subscription = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
         console.log('알림 수신:', notification);
-        // 새 알림이 왔을 때 알림 개수 업데이트
-        loadUserInfo();
+        // 새 알림이 왔을 때 캐시 무효화 후 새로고침
+        refreshNotifications();
       });
     } catch (error: any) {
       console.error('알림 리스너 설정 실패:', error);
@@ -216,9 +200,9 @@ export default function HomeScreen() {
                 onPress={goToNotificationsScreen}
               >
                 <Ionicons name="notifications-outline" size={24} color="#007AFF" />
-                {unreadMessages > 0 && (
+                {unreadCount > 0 && (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
+                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                   </View>
                 )}
               </TouchableOpacity>

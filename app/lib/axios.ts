@@ -21,8 +21,8 @@ const SERVER_URL = Constants.expoConfig?.extra?.apiUrl || 'https://talkk-api.onr
 // 테스트 모드 사용 여부 설정 (프로덕션에서는 항상 false)
 const USE_MOCK_DATA = false; // 실제 API 요청 사용
 
-// API 요청 타임아웃 설정
-const TIMEOUT = 10000;
+// API 요청 타임아웃 설정 (499 에러 방지를 위해 단축)
+const TIMEOUT = 5000; // 5초로 단축
 
 console.log(`[API 설정] 현재 환경: ${isDev ? '개발' : '프로덕션'}, 플랫폼: ${Platform.OS}, API URL: ${SERVER_URL}`);
 
