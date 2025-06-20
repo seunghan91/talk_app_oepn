@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>talkk</string>
-          <string>com.talkapp.talkk2025</string>
+          <string>com.talkkapp.talkk</string>
         </array>
       </dict>
       <dict>
@@ -40,8 +40,6 @@
     </array>
     <key>CFBundleVersion</key>
     <string>32</string>
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <false/>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
@@ -63,8 +61,6 @@
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
-    <key>UIBackgroundModes</key>
-    <array/>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
@@ -79,8 +75,6 @@
     <array>
       <string>UIInterfaceOrientationPortrait</string>
       <string>UIInterfaceOrientationPortraitUpsideDown</string>
-      <string>UIInterfaceOrientationLandscapeLeft</string>
-      <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>

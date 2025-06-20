@@ -86,13 +86,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.talkapp.talkk2025'
+    namespace 'com.talkkapp.talkk'
     defaultConfig {
-        applicationId 'com.talkapp.talkk2025'
+        applicationId 'com.talkkapp.talkk'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0.1"
     }
     signingConfigs {
         debug {

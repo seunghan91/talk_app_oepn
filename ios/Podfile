@@ -7,7 +7,6 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-project 'TALKK.xcodeproj'
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 install! 'cocoapods',
   :deterministic_uuids => false
@@ -52,48 +51,6 @@ target 'TALKK' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
-    
-    # 🚀 New Architecture + RN 0.77+ 호환성 설정
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # RCT-Folly/Fabric 버전 충돌 해결
-        if target.name.include?('RCT-Folly') || target.name.include?('Folly')
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        end
-        
-        # Fabric + New Architecture 설정
-        if target.name.include?('Fabric') || target.name.include?('React-Fabric')
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-          config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
-        end
-        
-        # Hermes 최적화 설정
-        if target.name.include?('hermes') || target.name.include?('Hermes')
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        end
-        
-        # React-Core 최적화
-        if target.name.include?('React-Core')
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-          config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
-        end
-        
-        # 전역 iOS 설정 통일
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        
-        # New Architecture 관련 경고 제거
-        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        config.build_settings['CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION'] = 'NO'
-        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-      end
-    end
 
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.

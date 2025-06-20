@@ -1,4 +1,4 @@
-package com.talkapp.talkk2025
+package com.talkkapp.talkk
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

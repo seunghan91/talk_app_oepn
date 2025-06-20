@@ -28,7 +28,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="talkk"/>
-        <data android:scheme="com.talkapp.talkk2025"/>
+        <data android:scheme="com.talkkapp.talkk"/>
         <data android:scheme="exp+talk-app"/>
       </intent-filter>
     </activity>

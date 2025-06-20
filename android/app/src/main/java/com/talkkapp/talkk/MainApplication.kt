@@ -1,4 +1,4 @@
-package com.talkapp.talkk2025
+package com.talkkapp.talkk
 
 import android.app.Application
 import android.content.res.Configuration
