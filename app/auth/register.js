@@ -125,7 +125,7 @@ export default function RegisterScreen() {
       let serverError = null;
       
       try {
-        const res = await axiosInstance.post('/api/auth/request_code', {
+        const res = await axiosInstance.post('/auth/request_code', {
           phone_number: digitsOnly,
         });
         serverResponse = res.data;
@@ -175,7 +175,7 @@ export default function RegisterScreen() {
       // 테스트 모드에서는 서버 요청을 시도하되, 실패하더라도 진행
       let serverResponse = null;
       try {
-        const res = await axiosInstance.post('/api/auth/verify_code', {
+        const res = await axiosInstance.post('/auth/verify_code', {
           phone_number: digitsOnly,
           code,
         });
@@ -248,7 +248,7 @@ export default function RegisterScreen() {
       console.log('회원가입 요청 데이터:', registerData);
       
       try {
-        const res = await axiosInstance.post('/api/auth/register', registerData);
+        const res = await axiosInstance.post('/auth/register', registerData);
         const serverResponse = res.data;
         console.log('회원가입 성공, 서버 응답:', serverResponse);
         

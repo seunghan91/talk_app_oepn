@@ -20,7 +20,7 @@ const NicknameEditor = ({ initialNickname, onSave, onCancel }) => {
   const generateRandomNickname = async () => {
     try {
       setIsLoading(true);
-      const res = await axiosInstance.get('/api/generate_random_nickname');
+      const res = await axiosInstance.get('/users/random_nickname');
       setNickname(res.data.nickname);
     } catch (err) {
       console.log('랜덤 닉네임 생성 실패:', err.response?.data);
@@ -39,7 +39,7 @@ const NicknameEditor = ({ initialNickname, onSave, onCancel }) => {
 
     try {
       setIsLoading(true);
-      const res = await axiosInstance.post('/api/change_nickname', {
+      const res = await axiosInstance.post('/users/change_nickname', {
         nickname
       });
       

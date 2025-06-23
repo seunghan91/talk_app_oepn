@@ -15,7 +15,7 @@ export default function ConversationListScreen() {
       console.log('[대화방] API 요청: GET /api/conversations');
       
       // GET /api/conversations
-      const response = await axiosInstance.get('/api/conversations');
+      const response = await axiosInstance.get('/conversations');
       console.log('[대화방] 응답 데이터:', response.data);
       
       // 응답 데이터 구조 확인

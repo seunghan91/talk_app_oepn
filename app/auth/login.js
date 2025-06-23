@@ -93,7 +93,7 @@ export default function LoginScreen() {
       
       try {
         console.log('[로그인] API 서버에 로그인 요청 시도...');
-        const res = await axiosInstance.post('/api/auth/login', loginData);
+        const res = await axiosInstance.post('/auth/login', loginData);
         console.log('[로그인] 서버 응답 성공:', res.data);
         
         const userData = res.data.user;
