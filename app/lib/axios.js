@@ -14,7 +14,7 @@ const isWeb = Platform.OS === 'web';
 // API 서버 URL 설정
 const API_URL = (() => {
   // 프로덕션 환경과 개발 환경 모두 Render.com 배포 URL 사용
-  return 'https://talkk-api.onrender.com';
+  return 'https://talkk-api.onrender.com/api/v1';
 })();
 
 console.log(`[API 설정] 현재 환경: ${isDev ? '개발' : '프로덕션'}, 플랫폼: ${Platform.OS}, API URL: ${API_URL}`);
