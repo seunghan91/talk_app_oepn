@@ -59,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // 토큰을 axios 인스턴스의 기본 헤더에 설정
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           setUser(JSON.parse(userData));
+          setIsAuthenticated(true);
           setIsLoading(false);
           console.log('자동 로그인 성공');
         } else {
@@ -93,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 상태 업데이트
       setUser(userData);
+      setIsAuthenticated(true);
       console.log('로그인 성공:', userData.nickname);
 
       // 사용자 프로필 정보 요청
