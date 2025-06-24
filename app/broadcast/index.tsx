@@ -73,7 +73,7 @@ export default function BroadcastScreen() {
   const loadBroadcasts = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get<{ broadcasts: Broadcast[] }>('/api/broadcasts');
+      const response = await axiosInstance.get<{ broadcasts: Broadcast[] }>('/broadcasts');
       setBroadcasts(response.data.broadcasts);
     } catch (error) {
       console.error('브로드캐스트 목록 로드 실패:', error);

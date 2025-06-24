@@ -76,7 +76,7 @@ export default function ProfileScreen() {
       setErrorType(null);
       
       // 실제 API 호출
-      const response = await axiosInstance.get('/api/users/profile');
+      const response = await axiosInstance.get('/users/profile');
       
       // 사용자 정보 설정
       setNickname(response.data.nickname || user?.nickname || '');
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
       setErrorType(null);
       
       // 실제 API 호출
-      const response = await axiosInstance.get('/api/users/random_nickname');
+      const response = await axiosInstance.get('/users/random_nickname');
       
       if (response.data.nickname) {
         setRandomNickname(response.data.nickname);

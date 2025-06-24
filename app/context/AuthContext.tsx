@@ -98,8 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('로그인 성공:', userData.nickname);
 
       // 사용자 프로필 정보 요청
-      // 프로필 화면으로 이동하지 않고 대화 탭으로 이동
-      router.replace('/conversations/');
+      // 로그인 후 홈 화면으로 이동
+      router.replace('/');
     } catch (error) {
       console.error('로그인 과정에서 오류 발생:', error);
       Alert.alert('로그인 실패', '로그인 정보를 저장하는 동안 오류가 발생했습니다.');
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 서버에 로그아웃 요청 (선택적)
       try {
-        await axiosInstance.post('/api/auth/logout');
+        await axiosInstance.post('/auth/logout');
         console.log('[로그아웃] 서버 로그아웃 요청 성공');
       } catch (error) {
         console.warn('[로그아웃] 서버 로그아웃 실패:', error);

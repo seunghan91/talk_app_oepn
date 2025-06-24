@@ -20,7 +20,7 @@ export default function BroadcastDetail() {
   useEffect(() => {
     const fetchBroadcastDetail = async () => {
       try {
-        const response = await axiosInstance.get(`/api/broadcasts/${id}`);
+        const response = await axiosInstance.get(`/broadcasts/${id}`);
         setBroadcast(response.data);
       } catch (error) {
         console.error('브로드캐스트 정보 로드 실패:', error.response?.data || error.message);

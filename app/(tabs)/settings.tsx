@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Switch, Alert, ScrollView, TouchableOpacity, Platform, View, Image } from 'react-native';
+import { StyleSheet, Switch, Alert, ScrollView, TouchableOpacity, Platform, View, Image, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as Application from 'expo-application';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import StylishButton from '../../components/StylishButton';
@@ -42,12 +43,35 @@ export default function SettingsTab() {
     }
   }, [isAuthenticated]);
 
+  // 시스템 알림 설정으로 이동하는 함수
+  const openSystemNotificationSettings = () => {
+    Alert.alert(
+      '시스템 알림 설정',
+      '핸드폰의 시스템 설정에서 TALKK 앱의 알림 권한을 관리할 수 있습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '설정으로 이동',
+          onPress: () => {
+            if (Platform.OS === 'ios') {
+              Linking.openURL('app-settings:');
+            } else {
+              // Android
+              const bundleId = Application.applicationId || 'com.talkkapp.talkk';
+              Linking.openURL(`package:${bundleId}`);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   // 서버에서 사용자 설정 불러오기
   const fetchUserSettings = async () => {
     try {
       setLoading(true);
       // 서버 API 호출
-      const response = await axiosInstance.get('/api/users/notification_settings');
+      const response = await axiosInstance.get('/users/notification_settings');
       console.log('서버에서 불러온 설정:', response.data);
       
       // 서버에서 받은 설정으로 상태 업데이트
@@ -103,7 +127,7 @@ export default function SettingsTab() {
       if (isAuthenticated) {
         try {
           // 서버 API 호출
-          const response = await axiosInstance.post('/api/users/notification_settings', {
+          const response = await axiosInstance.post('/users/notification_settings', {
             receive_new_letter: newSettings.receive_new_letter,
             letter_receive_alarm: newSettings.letter_receive_alarm,
           });
@@ -126,7 +150,7 @@ export default function SettingsTab() {
             console.log('Push token:', token);
             try {
               // 서버에 토큰 전송
-              const response = await axiosInstance.post('/api/users/update_push_token', { token });
+              const response = await axiosInstance.post('/users/update_push_token', { token });
               console.log('update_push_token 결과:', response.data);
             } catch (error) {
               console.log('토큰 저장 실패:', error);
@@ -145,7 +169,7 @@ export default function SettingsTab() {
         } else {
           // 알림 비활성화
           try {
-            await axiosInstance.post('/api/users/disable_push');
+            await axiosInstance.post('/users/disable_push');
           } catch (error) {
             console.log('알림 비활성화 실패:', error);
             // 오류가 발생해도 로컬 설정은 유지
@@ -380,6 +404,21 @@ export default function SettingsTab() {
             >
               <ThemedText style={styles.testButtonText}>테스트 알림 보내기</ThemedText>
             </TouchableOpacity>
+            
+            {/* 시스템 알림 설정 버튼 */}
+            <TouchableOpacity 
+              style={styles.systemSettingsButton}
+              onPress={openSystemNotificationSettings}
+            >
+              <View style={styles.systemSettingsContent}>
+                <Ionicons name="settings" size={20} color="#007AFF" />
+                <View style={styles.systemSettingsTextContainer}>
+                  <ThemedText style={styles.systemSettingsText}>시스템 알림 설정</ThemedText>
+                  <ThemedText style={styles.systemSettingsDescription}>핸드폰 설정에서 알림 권한 관리</ThemedText>
+                </View>
+                <Ionicons name="open" size={18} color="#CCCCCC" />
+              </View>
+            </TouchableOpacity>
           </ThemedView>
           
           {/* 로그아웃 버튼 */}
@@ -529,6 +568,32 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
+  },
+  systemSettingsButton: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#E1E5E9',
+  },
+  systemSettingsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  systemSettingsTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  systemSettingsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
+  systemSettingsDescription: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
   },
   logoutContainer: {
     marginTop: 20,

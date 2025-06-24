@@ -42,7 +42,7 @@ export default function MessagesScreen() {
       
       // 실제 API 호출
       try {
-        const response = await axiosInstance.get('/api/conversations');
+        const response = await axiosInstance.get('/conversations');
         console.log('대화 목록 응답:', response.data);
         
         // API 응답 데이터 처리

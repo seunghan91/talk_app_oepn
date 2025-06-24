@@ -41,7 +41,7 @@ export default function ConversationDetail() {
       setLoading(true);
       
       // API 호출
-      const response = await axiosInstance.get(`/api/conversations/${id}`);
+      const response = await axiosInstance.get(`/conversations/${id}`);
       console.log('대화 상세 응답:', response.data);
       
       // 대화 정보 설정
@@ -134,7 +134,7 @@ export default function ConversationDetail() {
       console.log('메시지 전송 시도:', uri);
       
       // 실제 API 호출
-      const response = await axiosInstance.post(`/api/conversations/${id}/send_message`, formData, {
+      const response = await axiosInstance.post(`/conversations/${id}/send_message`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -85,7 +85,7 @@ export default function NotificationsSettings() {
             console.log('Push token:', token);
             try {
               // 서버에 토큰 전송
-              const response = await axiosInstance.post('/api/users/update_push_token', { token });
+              const response = await axiosInstance.post('/users/update_push_token', { token });
               console.log('update_push_token 결과:', response.data);
             } catch (error) {
               console.log('토큰 저장 실패:', error);
@@ -103,7 +103,7 @@ export default function NotificationsSettings() {
         } else {
           // 알림 비활성화
           try {
-            await axiosInstance.post('/api/users/disable_push');
+            await axiosInstance.post('/users/disable_push');
           } catch (error) {
             console.log('알림 비활성화 실패:', error);
             // 오류가 발생해도 로컬 설정은 유지
