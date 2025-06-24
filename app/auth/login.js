@@ -85,8 +85,10 @@ export default function LoginScreen() {
       
       // 로그인 요청 데이터
       const loginData = {
-        phone_number: digitsOnly,
-        password: password
+        user: {
+          phone_number: digitsOnly,
+          password: password
+        }
       };
       
       console.log('[로그인] 요청 데이터:', loginData);

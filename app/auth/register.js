@@ -126,7 +126,9 @@ export default function RegisterScreen() {
       
       try {
         const res = await axiosInstance.post('/auth/request_code', {
-          phone_number: digitsOnly,
+          user: {
+            phone_number: digitsOnly,
+          }
         });
         serverResponse = res.data;
         console.log('인증코드 요청 성공:', serverResponse);
@@ -176,8 +178,10 @@ export default function RegisterScreen() {
       let serverResponse = null;
       try {
         const res = await axiosInstance.post('/auth/verify_code', {
-          phone_number: digitsOnly,
-          code,
+          user: {
+            phone_number: digitsOnly,
+            code,
+          }
         });
         serverResponse = res.data;
         console.log('인증 완료, 서버 응답:', res.data);

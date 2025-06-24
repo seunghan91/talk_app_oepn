@@ -27,7 +27,8 @@ export async function checkServerConnection() {
   console.log('[API 연결 테스트] 시작...');
   
   // 연결 테스트를 위한 요청 URL
-  const healthCheckUrl = `${API_URL}/api/health_check`;
+  // health_check는 버전 관리가 필요 없는 공통 경로이므로 직접 접근
+  const healthCheckUrl = 'https://talkk-api.onrender.com/api/health_check';
   console.log('[API 연결 테스트] 요청 URL:', healthCheckUrl);
   
   try {
@@ -79,7 +80,8 @@ export async function checkServerConnection() {
 
 // 폴백(대체) 엔드포인트 체크 함수
 async function checkFallbackEndpoint() {
-  const fallbackUrl = `${API_URL}/api/ping`;
+  // ping 경로도 버전 관리가 필요 없는 공통 경로이므로 직접 접근
+  const fallbackUrl = 'https://talkk-api.onrender.com/api/ping';
   console.log('[API 연결 테스트] 폴백 엔드포인트 시도:', fallbackUrl);
   
   try {
