@@ -24,9 +24,9 @@ export default function LoginScreen() {
 
   // 테스트 계정 목록
   const testAccounts = [
-    { phone: '01011111111', password: '123456', name: '김철수', role: 'user' },
-    { phone: '01022222222', password: '123456', name: '이영희', role: 'user' },
-    { phone: '01033333333', password: '123456', name: '박지민', role: 'user' },
+    { phone: '01011111111', password: 'password', name: '김철수', role: 'user' },
+    { phone: '01022222222', password: 'password', name: '이영희', role: 'user' },
+    { phone: '01033333333', password: 'password', name: '박지민', role: 'user' },
     { phone: '01099999999', password: 'admin123', name: '관리자', role: 'admin' }
   ];
   
