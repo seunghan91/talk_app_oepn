@@ -11,7 +11,6 @@
         "disabled": true
       },
       "ios": {
-        "autoIncrement": "buildNumber",
         "env": {
           "CLANG_CXX_LANGUAGE_STANDARD": "c++20"
         }
@@ -21,9 +20,6 @@
       "distribution": "internal",
       "cache": {
         "disabled": true
-      },
-      "ios": {
-        "autoIncrement": "buildNumber"
       }
     },
     "production": {
@@ -31,7 +27,6 @@
         "disabled": true
       },
       "ios": {
-        "autoIncrement": "buildNumber",
         "cache": {
           "disabled": true
         },
