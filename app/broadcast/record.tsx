@@ -865,8 +865,8 @@ export default function RecordScreen() {
       // 파일명 설정
       const fileName = `recording_${Date.now()}.m4a`;
       
-      // 파일 추가 - 키 이름을 'broadcast[voice_file]'에서 'voice_file'로 변경
-      formData.append('voice_file', {
+      // 파일 추가 - 서버가 기대하는 'broadcast[audio]' 형식으로 전송
+      formData.append('broadcast[audio]', {
         uri: recordingUri,
         name: fileName,
         type: fileType

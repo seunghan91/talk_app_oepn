@@ -324,7 +324,7 @@ export default function ProfileScreen() {
     await updateProfileInfo({
       field: 'gender',
       value: serverGenderValue,
-      endpoint: '/api/users/update_profile',
+      endpoint: '/users/update_profile',
       successMessage: t('profile.genderUpdated') || '성별이 업데이트되었습니다',
       errorMessage: t('profile.genderUpdateError') || '성별 업데이트 중 오류가 발생했습니다'
     });
@@ -509,7 +509,7 @@ export default function ProfileScreen() {
                           <ThemedText style={styles.generatedNickname}>{randomNickname}</ThemedText>
                         ) : (
                           <ThemedText style={styles.nicknamePlaceholder}>
-                            {t('profile.generateRandomNickname') || '랜덤 닉네임 생성 버튼을 눌러주세요'}
+                            새로운 닉네임을 생성하려면 오른쪽 버튼을 눌러주세요
                           </ThemedText>
                         )}
                         <TouchableOpacity 
@@ -520,12 +520,15 @@ export default function ProfileScreen() {
                           accessibilityHint="랜덤으로 닉네임을 생성합니다"
                         >
                           <Ionicons name="refresh" size={20} color="#007AFF" />
+                          <ThemedText style={styles.generateButtonText}>생성</ThemedText>
                         </TouchableOpacity>
                       </ThemedView>
                       
-                      <ThemedText style={styles.infoText}>
-                        * 닉네임은 랜덤으로만 생성할 수 있습니다.
-                      </ThemedText>
+                      {randomNickname && (
+                        <ThemedText style={styles.infoText}>
+                          ✨ 마음에 들지 않으면 다시 생성해보세요!
+                        </ThemedText>
+                      )}
                       
                       <ThemedView style={styles.buttonContainer}>
                         <StylishButton
@@ -539,12 +542,13 @@ export default function ProfileScreen() {
                           style={styles.cancelButton}
                         />
                         <StylishButton
-                          title="저장"
+                          title={randomNickname ? "이 닉네임으로 변경" : "닉네임 생성 후 저장"}
                           onPress={saveNickname}
                           type="primary"
                           size="small"
                           style={styles.saveButton}
                           loading={saving}
+                          disabled={!randomNickname}
                         />
                       </ThemedView>
                     </ThemedView>
@@ -618,29 +622,6 @@ export default function ProfileScreen() {
                   )}
                 </ThemedView>
                 
-                {/* 지갑 섹션 */}
-                <ThemedView 
-                  style={styles.profileSection}
-                  accessibilityLabel="지갑 섹션"
-                >
-                  <ThemedText style={styles.sectionTitle}>지갑</ThemedText>
-                  
-                  <ThemedView style={styles.walletContainer}>
-                    <ThemedView style={styles.balanceContainer}>
-                      <Ionicons name="wallet-outline" size={24} color="#007AFF" />
-                      <ThemedText style={styles.balanceText}>5,000원</ThemedText>
-                    </ThemedView>
-                    
-                    <TouchableOpacity 
-                      style={styles.chargeButton}
-                      onPress={goToWalletScreen}
-                      accessibilityLabel="충전하기"
-                      accessibilityHint="지갑 충전 화면으로 이동합니다"
-                    >
-                      <ThemedText style={styles.chargeButtonText}>충전</ThemedText>
-                    </TouchableOpacity>
-                  </ThemedView>
-                </ThemedView>
                 
                 <ThemedView style={styles.infoTextContainer}>
                   <ThemedText style={styles.infoText}>
@@ -799,7 +780,19 @@ const styles = StyleSheet.create({
     color: '#777777',
   },
   generateButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: '#E8F1FF',
+    borderRadius: 6,
+    minWidth: 60,
+  },
+  generateButtonText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   genderOptions: {
     flexDirection: 'row',
