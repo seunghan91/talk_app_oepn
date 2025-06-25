@@ -15,7 +15,10 @@
     "tunnel-no-dev": "expo start --tunnel --port 8083 --no-dev",
     "fix-deps": "node ./scripts/fix-podfile-dependencies.js",
     "clean-ios": "cd ios && rm -rf Pods Podfile.lock && rm -rf ~/Library/Developer/Xcode/DerivedData/*",
-    "rebuild-ios": "npm run clean-ios && npm run fix-deps"
+    "rebuild-ios": "npm run clean-ios && npm run fix-deps",
+    "build-sync": "node ./scripts/sync-build-number.js sync",
+    "build-increment": "node ./scripts/sync-build-number.js increment",
+    "build-ios": "npm run build-sync && eas build -p ios --profile preview"
   },
   "jest": {
     "preset": "jest-expo"
