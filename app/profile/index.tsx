@@ -121,8 +121,8 @@ export default function ProfileScreen() {
       setSaving(true);
       setErrorType(null);
       
-      // 실제 API 호출
-      const response = await axiosInstance.get('/users/random_nickname');
+      // 실제 API 호출 - 올바른 엔드포인트 사용
+      const response = await axiosInstance.get('/api/v1/users/generate_random_nickname');
       
       if (response.data.nickname) {
         setRandomNickname(response.data.nickname);
@@ -310,7 +310,7 @@ export default function ProfileScreen() {
     await updateProfileInfo({
       field: 'nickname',
       value: randomNickname,
-      endpoint: '/api/users/change_nickname',
+      endpoint: '/api/v1/users/update_profile',
       successMessage: t('profile.nicknameUpdated') || '닉네임이 업데이트되었습니다',
       errorMessage: t('profile.nicknameUpdateError') || '닉네임 업데이트 중 오류가 발생했습니다'
     });
@@ -507,6 +507,8 @@ export default function ProfileScreen() {
                       <ThemedView style={styles.nicknameContainer}>
                         {randomNickname ? (
                           <ThemedText style={styles.generatedNickname}>{randomNickname}</ThemedText>
+                        ) : nickname ? (
+                          <ThemedText style={styles.generatedNickname}>{nickname}</ThemedText>
                         ) : (
                           <ThemedText style={styles.nicknamePlaceholder}>
                             새로운 닉네임을 생성하려면 오른쪽 버튼을 눌러주세요
@@ -542,13 +544,13 @@ export default function ProfileScreen() {
                           style={styles.cancelButton}
                         />
                         <StylishButton
-                          title={randomNickname ? "이 닉네임으로 변경" : "닉네임 생성 후 저장"}
+                          title="저장"
                           onPress={saveNickname}
                           type="primary"
                           size="small"
                           style={styles.saveButton}
                           loading={saving}
-                          disabled={!randomNickname}
+                          disabled={!randomNickname && !nickname}
                         />
                       </ThemedView>
                     </ThemedView>
@@ -609,7 +611,7 @@ export default function ProfileScreen() {
                     </ThemedView>
                   ) : (
                     <ThemedView style={styles.infoRow}>
-                      <ThemedText style={styles.infoValue}>{gender || '미설정'}</ThemedText>
+                      <ThemedText style={styles.infoValue}>{gender ? genderToDisplay(gender) : '미설정'}</ThemedText>
                       <TouchableOpacity 
                         style={styles.changeButton}
                         onPress={() => setIsChangingGender(true)}

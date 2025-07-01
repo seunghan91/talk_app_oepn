@@ -16,9 +16,13 @@
     "fix-deps": "node ./scripts/fix-podfile-dependencies.js",
     "clean-ios": "cd ios && rm -rf Pods Podfile.lock && rm -rf ~/Library/Developer/Xcode/DerivedData/*",
     "rebuild-ios": "npm run clean-ios && npm run fix-deps",
-    "build-sync": "node ./scripts/sync-build-number.js sync",
-    "build-increment": "node ./scripts/sync-build-number.js increment",
-    "build-ios": "npm run build-increment && eas build -p ios --profile preview"
+    "build:increment": "node ./scripts/increment-build-number.js",
+    "build:set": "node ./scripts/increment-build-number.js --set",
+    "build:ios": "npm run build:increment && eas build -p ios --profile production --non-interactive",
+    "build:android": "npm run build:increment && eas build -p android --profile production --non-interactive",
+    "build:all": "npm run build:increment && eas build --platform all --profile production --non-interactive",
+    "submit:ios": "eas submit -p ios --profile production --non-interactive",
+    "submit:android": "eas submit -p android --profile production --non-interactive"
   },
   "jest": {
     "preset": "jest-expo"

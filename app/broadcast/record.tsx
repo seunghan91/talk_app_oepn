@@ -865,30 +865,50 @@ export default function RecordScreen() {
       // 파일명 설정
       const fileName = `recording_${Date.now()}.m4a`;
       
-      // 파일 추가 - 서버가 기대하는 'broadcast[audio]' 형식으로 전송
-      formData.append('broadcast[audio]', {
-        uri: recordingUri,
-        name: fileName,
-        type: fileType
-      } as any);
+      // 파일 추가 - React Native FormData 형식
+      if (Platform.OS === 'web') {
+        // 웹 환경에서는 Blob으로 변환
+        const response = await fetch(recordingUri);
+        const blob = await response.blob();
+        formData.append('broadcast[audio]', blob, fileName);
+      } else {
+        // 모바일 환경
+        formData.append('broadcast[audio]', {
+          uri: Platform.OS === 'android' ? recordingUri : recordingUri.replace('file://', ''),
+          name: fileName,
+          type: fileType
+        } as any);
+      }
       
       // API 요청 로깅
       console.log('API 요청:', {
-        url: '/api/broadcasts',
+        url: '/broadcasts',
         method: 'post',
         headers: {
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
         },
-        data: formData
+        fileUri: recordingUri,
+        fileName: fileName,
+        fileType: fileType
       });
+      
+      // 파일 정보 수집
+      const fileInfo = await FileSystem.getInfoAsync(recordingUri);
+      console.log('전송할 파일 정보:', fileInfo);
+      
+      // 파일이 실제로 존재하는지 확인
+      if (!fileInfo.exists || fileInfo.size === 0) {
+        throw new Error('녹음 파일이 존재하지 않거나 비어있습니다.');
+      }
       
       // API 요청
       const response = await axiosInstance.post('/broadcasts', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
-        }
+        },
+        timeout: 30000 // 30초 타임아웃
       });
       
       setUploading(false);
