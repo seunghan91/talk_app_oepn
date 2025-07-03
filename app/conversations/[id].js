@@ -14,7 +14,7 @@ import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native';
 
 export default function ConversationDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, autoPlayMessageId } = useLocalSearchParams();
   const router = useRouter();
   const { t } = useTranslation();
   
@@ -48,7 +48,20 @@ export default function ConversationDetail() {
       setConversation(response.data.conversation);
       
       // 메시지 목록 설정
-      setMessages(response.data.messages || []);
+      const messageList = response.data.messages || [];
+      setMessages(messageList);
+      
+      // 자동 재생 기능: 특정 메시지 ID가 있으면 해당 메시지를 찾아서 재생
+      if (autoPlayMessageId && messageList.length > 0) {
+        const targetMessage = messageList.find(msg => msg.id.toString() === autoPlayMessageId.toString());
+        if (targetMessage && targetMessage.voice_file_url) {
+          // 메시지를 찾았으면 자동 재생 시작
+          setTimeout(() => {
+            setPlayingMessageId(targetMessage.id);
+            console.log(`자동 재생 시작: 메시지 ID ${targetMessage.id}`);
+          }, 1000); // 1초 후 재생 시작
+        }
+      }
       
       // 현재 사용자와 상대방 정보 설정
       const conv = response.data.conversation;
@@ -275,6 +288,12 @@ export default function ConversationDetail() {
               <VoicePlayer 
                 uri={item.voice_file_url} 
                 style={styles.player}
+                autoPlay={playingMessageId === item.id}
+                onPlayStateChange={(isPlaying) => {
+                  if (!isPlaying && playingMessageId === item.id) {
+                    setPlayingMessageId(null); // 재생 완료 시 상태 초기화
+                  }
+                }}
               />
             )}
           </View>

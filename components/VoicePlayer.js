@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]; // 재생 속도 옵션
 
-export default function VoicePlayer({ uri, style, onError }) {
+export default function VoicePlayer({ uri, style, onError, autoPlay, onPlayStateChange }) {
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
@@ -30,6 +30,22 @@ export default function VoicePlayer({ uri, style, onError }) {
       }
     };
   }, [uri]);
+
+  // autoPlay 기능
+  useEffect(() => {
+    if (autoPlay && sound && !isLoading && !error) {
+      // 약간의 지연 후 자동 재생 시작
+      const timer = setTimeout(async () => {
+        try {
+          await sound.playAsync();
+        } catch (error) {
+          console.error('자동 재생 실패:', error);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoPlay, sound, isLoading, error]);
   
   // 사운드 로드 함수
   const loadSound = async () => {
@@ -69,13 +85,23 @@ export default function VoicePlayer({ uri, style, onError }) {
     if (status.isLoaded) {
       setPlaybackPosition(status.positionMillis);
       setPlaybackDuration(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
+      const wasPlaying = isPlaying;
+      const nowPlaying = status.isPlaying;
+      setIsPlaying(nowPlaying);
+      
+      // 재생 상태가 변경되었을 때 콜백 호출
+      if (wasPlaying !== nowPlaying && onPlayStateChange) {
+        onPlayStateChange(nowPlaying);
+      }
       
       // 재생 완료 시
       if (status.didJustFinish) {
         setIsPlaying(false);
         setPlaybackPosition(0);
         sound.setPositionAsync(0);
+        if (onPlayStateChange) {
+          onPlayStateChange(false);
+        }
       }
     }
   };

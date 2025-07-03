@@ -100,9 +100,14 @@ export default function NotificationsScreen() {
     switch (notification.type) {
       case 'message':
         if (notification.data?.conversation_id) {
+          const params: any = { id: notification.data.conversation_id };
+          // 특정 메시지가 있으면 자동 재생을 위해 message_id 추가
+          if (notification.data?.message_id) {
+            params.autoPlayMessageId = notification.data.message_id;
+          }
           router.push({
             pathname: '/conversations/[id]',
-            params: { id: notification.data.conversation_id }
+            params: params
           });
         }
         break;

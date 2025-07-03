@@ -17,7 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, userData: User) => Promise<void>;
   logout: () => Promise<void>;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -178,9 +178,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 사용자 정보 업데이트
-  const updateUser = (userData: Partial<User>): void => {
+  const updateUser = async (userData: Partial<User>): Promise<void> => {
     if (user) {
-      setUser({ ...user, ...userData });
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      
+      // AsyncStorage에도 업데이트된 사용자 정보 저장
+      try {
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('사용자 정보 업데이트 및 AsyncStorage 저장 완료:', userData);
+      } catch (error) {
+        console.error('사용자 정보 AsyncStorage 저장 실패:', error);
+      }
     }
   };
 

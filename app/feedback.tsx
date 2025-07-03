@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedView } from '../../components/ThemedView';
-import { ThemedText } from '../../components/ThemedText';
-import StylishButton from '../../components/StylishButton';
-import { useAuth } from '../context/AuthContext';
+import { ThemedView } from '../components/ThemedView';
+import { ThemedText } from '../components/ThemedText';
+import StylishButton from '../components/StylishButton';
+import { useAuth } from './context/AuthContext';
 
 export default function FeedbackScreen() {
   const { t } = useTranslation();

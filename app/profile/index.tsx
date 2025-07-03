@@ -76,7 +76,7 @@ export default function ProfileScreen() {
       setErrorType(null);
       
       // 실제 API 호출
-      const response = await axiosInstance.get('/users/profile');
+      const response = await axiosInstance.get('/api/v1/users/profile');
       
       // 사용자 정보 설정
       setNickname(response.data.nickname || user?.nickname || '');
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
       setErrorType(null);
       
       // 실제 API 호출 - 올바른 엔드포인트 사용
-      const response = await axiosInstance.get('/api/v1/users/generate_random_nickname');
+      const response = await axiosInstance.get('/api/v1/users/random_nickname');
       
       if (response.data.nickname) {
         setRandomNickname(response.data.nickname);
@@ -196,7 +196,7 @@ export default function ProfileScreen() {
       if (response.data.success || __DEV__) {
         // Auth 컨텍스트의 사용자 정보 업데이트
         if (updateUser) {
-          updateUser({
+          await updateUser({
             [field]: value
           });
         }
@@ -207,7 +207,9 @@ export default function ProfileScreen() {
           setRandomNickname('');
           setIsChangingNickname(false);
         } else if (field === 'gender') {
-          setGender(value as Gender);
+          // 서버 값을 UI 표시용으로 변환
+          const displayGender = serverValueToGender(value);
+          setGender(displayGender);
           setIsChangingGender(false);
         }
         
@@ -250,7 +252,7 @@ export default function ProfileScreen() {
       if (__DEV__) {
         // Auth 컨텍스트의 사용자 정보 업데이트
         if (updateUser) {
-          updateUser({
+          await updateUser({
             [field]: value
           });
         }
@@ -261,7 +263,9 @@ export default function ProfileScreen() {
           setRandomNickname('');
           setIsChangingNickname(false);
         } else if (field === 'gender') {
-          setGender(value as Gender);
+          // 서버 값을 UI 표시용으로 변환
+          const displayGender = serverValueToGender(value);
+          setGender(displayGender);
           setIsChangingGender(false);
         }
         
@@ -324,7 +328,7 @@ export default function ProfileScreen() {
     await updateProfileInfo({
       field: 'gender',
       value: serverGenderValue,
-      endpoint: '/users/update_profile',
+      endpoint: '/api/v1/users/update_profile',
       successMessage: t('profile.genderUpdated') || '성별이 업데이트되었습니다',
       errorMessage: t('profile.genderUpdateError') || '성별 업데이트 중 오류가 발생했습니다'
     });
@@ -611,7 +615,7 @@ export default function ProfileScreen() {
                     </ThemedView>
                   ) : (
                     <ThemedView style={styles.infoRow}>
-                      <ThemedText style={styles.infoValue}>{gender ? genderToDisplay(gender) : '미설정'}</ThemedText>
+                      <ThemedText style={styles.infoValue}>{gender || '미설정'}</ThemedText>
                       <TouchableOpacity 
                         style={styles.changeButton}
                         onPress={() => setIsChangingGender(true)}

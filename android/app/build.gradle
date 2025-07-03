@@ -91,7 +91,7 @@ android {
         applicationId 'com.talkkapp.talkk'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 45
+        versionCode 47
         versionName "1.0.1"
     }
     
