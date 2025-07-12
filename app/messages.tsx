@@ -1,13 +1,13 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ThemedView } from '../../components/ThemedView';
-import { ThemedText } from '../../components/ThemedText';
-import axiosInstance from '../lib/axios';
+import { ThemedView } from '../components/ThemedView';
+import { ThemedText } from '../components/ThemedText';
+import axiosInstance from './lib/axios';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native';
-import StylishButton from '../../components/StylishButton';
+import StylishButton from '../components/StylishButton';
 
 // 대화 인터페이스 정의
 interface Conversation {
