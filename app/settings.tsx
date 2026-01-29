@@ -9,9 +9,9 @@ import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
 import StylishButton from '../components/StylishButton';
 import { SafeAreaView } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { registerForPushNotificationsAsync, sendTestNotification } from '../utils/_pushNotificationHelper.util';
-import axiosInstance from '../lib/axios';
+import { useAuth } from './context/AuthContext';
+import { registerForPushNotificationsAsync, sendTestNotification } from './utils/_pushNotificationHelper.util';
+import axiosInstance from './lib/axios';
 
 // 알림 설정 인터페이스 정의
 interface NotificationSettings {
